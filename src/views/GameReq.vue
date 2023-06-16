@@ -3,30 +3,30 @@
         <div class="flex-line">
             <label>发送姓名：</label>
             <div>
-                <el-input v-model="nameWord" @input="changeName"/>
+                <el-input v-model="nameWord" @input="changeName" />
             </div>
         </div>
         <div class="flex-line">
             <label>发送类型：</label>
             <div>
                 <el-select v-model="reqType" placeholder="Select" @change="changeReqType">
-                    <el-option label="充值一" value="charge"/>
-                    <el-option label="充值二" value="charge2"/>
-                    <el-option label="邮件" value="mail"/>
+                    <el-option label="充值一" value="charge" />
+                    <el-option label="充值二" value="charge2" />
+                    <el-option label="邮件" value="mail" />
                 </el-select>
             </div>
         </div>
         <div class="flex-line">
             <label>发送数目：</label>
             <div>
-                <el-input v-model="itemNum" placeholder="数目" @change="changeItemNumber"/>
+                <el-input v-model="itemNum" placeholder="数目" @change="changeItemNumber" />
             </div>
         </div>
 
         <div class="flex-line" v-if="reqType === 'mail'">
             <label>过滤物品：</label>
             <div>
-                <el-input v-model="keyWord" placeholder="过滤" @input="changeWupin"/>
+                <el-input v-model="keyWord" placeholder="过滤" @input="changeWupin" />
             </div>
         </div>
         <div class="flex-line" v-if="reqType === 'mail'">
@@ -42,34 +42,53 @@
             <label>物品展示：</label>
             <div>
                 <el-radio-group v-model="radio" @change="changeItemId">
-                    <el-radio v-for="(item,index) in radioList" :key="index" :label="item.value">{{ item.name }}</el-radio>
+                    <el-radio v-for="(item, index) in radioList" :key="index" :label="item.value"
+                        >{{ item.name }}
+                    </el-radio>
                 </el-radio-group>
-                <el-pagination class="marginTopFive" v-if="reqType === 'mail' && pageType === 2" background hide-on-single-page layout="prev, pager, next, total" :total="listLength" :page-size="pageSize" @current-change="pageChange" @size-change="sieChange"/>
+                <el-pagination
+                    class="marginTopFive"
+                    v-if="reqType === 'mail' && pageType === 2"
+                    background
+                    hide-on-single-page
+                    layout="prev, pager, next, total"
+                    :total="listLength"
+                    :page-size="pageSize"
+                    @current-change="pageChange"
+                    @size-change="sieChange"
+                />
             </div>
         </div>
         <div class="flex-line">
             <label>执行：</label>
             <div style="display: flex">
-                <el-button style="margin-right: 10px" type="primary" @click="reqFun">发送</el-button>
+                <el-button style="margin-right: 10px" type="primary" @click="reqFun"
+                    >发送</el-button
+                >
             </div>
         </div>
         <div class="flex-line">
             <label>版本控制：</label>
             <div style="display: flex">
-                <el-upload action="/upload" :on-success="uploadSuccess" :on-error="uploadError" accept="zip">
+                <el-upload
+                    action="/upload"
+                    :on-success="uploadSuccess"
+                    :on-error="uploadError"
+                    accept="zip"
+                >
                     <el-button style="width: 100%">更新页面 v{{ version }}</el-button>
                 </el-upload>
             </div>
         </div>
-        <el-divider/>
-        <p v-for="(log,index) in logList" :key="'log'+index">{{ log }}</p>
+        <el-divider />
+        <p v-for="(log, index) in logList" :key="'log' + index">{{ log }}</p>
     </div>
 </template>
 
 <script lang="ts" setup>
-import {ref, reactive, onMounted} from 'vue'
-import {WUPIN, CHARG_WUPIN, CHARG_2_WUPIN} from '@/constant/gulong'
-import axios from "axios";
+import { ref, reactive, onMounted } from 'vue'
+import { WUPIN, CHARG_WUPIN, CHARG_2_WUPIN } from '@/constant/gulong'
+import axios from 'axios'
 // import qs from 'qs'
 
 const keyWord = ref('')
@@ -118,8 +137,8 @@ const changeItemNumber = (value: string) => {
 const changeWupin = (value: string) => {
     if (value) {
         pageType.value = 1
-        radioList.value = WUPIN.filter(i => {
-            return (value && i.name.includes(value))
+        radioList.value = WUPIN.filter((i) => {
+            return value && i.name.includes(value)
         })
         listLength.value = radioList.value.length
     }
@@ -143,9 +162,33 @@ onMounted(() => {
 
 const getParams = () => {
     let reqParams: Record<string, any> = {
-        'charge': {type: 'charge', username: nameWord.value, qu: 2, rechargeId: 10, number: Number(itemNum.value), rechargezId: '', znumber: 1, mailnum: 1},
-        'charge2': {type: 'charge2', username: nameWord.value, qu: 2, rechargeId: 10, znumber: Number(itemNum.value), rechargezId: Number(radio.value), mailnum: 1},
-        'mail': {type: 'mail', username: nameWord.value, mailid: Number(radio.value), mailnum: Number(itemNum.value), qu: 2, charge: 3}
+        charge: {
+            type: 'charge',
+            username: nameWord.value,
+            qu: 2,
+            rechargeId: 10,
+            number: Number(itemNum.value),
+            rechargezId: '',
+            znumber: 1,
+            mailnum: 1
+        },
+        charge2: {
+            type: 'charge2',
+            username: nameWord.value,
+            qu: 2,
+            rechargeId: 10,
+            znumber: Number(itemNum.value),
+            rechargezId: Number(radio.value),
+            mailnum: 1
+        },
+        mail: {
+            type: 'mail',
+            username: nameWord.value,
+            mailid: Number(radio.value),
+            mailnum: Number(itemNum.value),
+            qu: 2,
+            charge: 3
+        }
     }
     return reqParams[reqType.value]
 }
@@ -156,7 +199,7 @@ const reqFun = async () => {
         url: '/api',
         data: {
             formData: getParams(),
-            params: {act: 'send', sid: 1001}
+            params: { act: 'send', sid: 1001 }
         }
         // url: 'http://106.74.21.2:81/jkgm/user/playerapi.php',
         // data: qs.stringify(getParams()),
@@ -171,10 +214,9 @@ const uploadSuccess = (response: any) => {
 const uploadError = (response: any) => {
     logList.value.push(response)
 }
-
 </script>
 
-<style scoped lang='scss'>
+<style scoped lang="scss">
 .marginTopTen {
     margin-top: 10px;
 }
