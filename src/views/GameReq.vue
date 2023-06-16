@@ -52,7 +52,7 @@
                     background
                     hide-on-single-page
                     small
-                    layout="prev, pager, next, total"
+                    layout="prev, pager, next"
                     :total="listLength"
                     :page-size="pageSize"
                     :pager-count="pagerCount"
@@ -217,9 +217,9 @@ const uploadError = (response: any) => {
 
 onMounted(() => {
     changeReqType(reqType.value)
-    pagerCount.value = pageDiv!.value!.offsetWidth / 3 / 24
+    pagerCount.value = Math.floor(pageDiv!.value!.offsetWidth / 3 / 24)
     window.onresize = () => {
-        pagerCount.value = pageDiv!.value!.offsetWidth / 3 / 24
+        pagerCount.value = Math.floor(pageDiv!.value!.offsetWidth / 3 / 24)
     }
 })
 </script>
