@@ -21,7 +21,7 @@ app
   .use(koaBody({
     multipart: true,
     formidable: {
-      uploadDir: path.resolve('./', './dist'), // 设置文件上传目录
+      uploadDir: path.resolve('./'), // 设置文件上传目录
       keepExtensions: true // 保持文件的后缀
     }
   }))
@@ -59,7 +59,7 @@ router
     const files = ctx.request.files
     console.log('接受到上传', files.file.filepath)
     try {
-      let res = compressing.zip.uncompress(files.file.filepath, './dist/')
+      let res = compressing.zip.uncompress(files.file.filepath, './')
       if (res) {
         ctx.body = files.file.filepath + '上传解压成功'
       } else {

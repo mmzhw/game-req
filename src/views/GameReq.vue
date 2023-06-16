@@ -1,27 +1,66 @@
 <template>
     <div class="wrap">
-        <el-input v-model="keyWord" placeholder="过滤" @input="changeWupin"/>
-        <el-input v-model="nameWord" class="marginTopTen" @input="changeName"/>
-        <el-select v-model="reqType" class="marginTopTen" placeholder="Select" @change="changeReqType">
-            <el-option label="充值一" value="charge"/>
-            <el-option label="充值二" value="charge2"/>
-            <el-option label="邮件" value="mail"/>
-        </el-select>
-        <el-input v-model="itemNum" placeholder="数目" class="marginTopTen" @change="changeItemNumber"/>
-        <div style="border: 1px solid #eeeeee;padding: 10px" class="marginTopTen wrap">
-            <el-radio-group v-model="pageType" @change="changeList" v-if="reqType === 'mail'">
-                <el-radio-button :label="2">分页</el-radio-button>
-                <el-radio-button :label="1">全部</el-radio-button>
-            </el-radio-group>
-            <el-radio-group v-model="radio" class="marginTopTen" @change="changeItemId">
-                <el-radio v-for="(item,index) in radioList" :key="index" :label="item.value">{{ item.name }}</el-radio>
-            </el-radio-group>
-            <el-pagination class="marginTopFive" v-if="reqType === 'mail' && pageType === 2" background hide-on-single-page layout="total, prev, pager, next" :total="listLength" :page-size="pageSize" @current-change="pageChange" @size-change="sieChange"/>
+        <div class="flex-line">
+            <label>发送姓名：</label>
+            <div>
+                <el-input v-model="nameWord" @input="changeName"/>
+            </div>
         </div>
-        <el-button class="marginTopTen" type="primary" @click="reqFun">发送</el-button>
-        <el-upload class="marginTopTen" action="/upload" :on-success="uploadSuccess" :on-error="uploadError" accept="zip">
-            <el-button style="width: 100%">更新页面 v1.4</el-button>
-        </el-upload>
+        <div class="flex-line">
+            <label>发送类型：</label>
+            <div>
+                <el-select v-model="reqType" placeholder="Select" @change="changeReqType">
+                    <el-option label="充值一" value="charge"/>
+                    <el-option label="充值二" value="charge2"/>
+                    <el-option label="邮件" value="mail"/>
+                </el-select>
+            </div>
+        </div>
+        <div class="flex-line">
+            <label>发送数目：</label>
+            <div>
+                <el-input v-model="itemNum" placeholder="数目" @change="changeItemNumber"/>
+            </div>
+        </div>
+
+        <div class="flex-line" v-if="reqType === 'mail'">
+            <label>过滤物品：</label>
+            <div>
+                <el-input v-model="keyWord" placeholder="过滤" @input="changeWupin"/>
+            </div>
+        </div>
+        <div class="flex-line" v-if="reqType === 'mail'">
+            <label>展示方式：</label>
+            <div>
+                <el-radio-group v-model="pageType" @change="changeList">
+                    <el-radio-button :label="2">分页</el-radio-button>
+                    <el-radio-button :label="1">全部</el-radio-button>
+                </el-radio-group>
+            </div>
+        </div>
+        <div class="flex-line">
+            <label>物品展示：</label>
+            <div>
+                <el-radio-group v-model="radio" @change="changeItemId">
+                    <el-radio v-for="(item,index) in radioList" :key="index" :label="item.value">{{ item.name }}</el-radio>
+                </el-radio-group>
+                <el-pagination class="marginTopFive" v-if="reqType === 'mail' && pageType === 2" background hide-on-single-page layout="prev, pager, next, total" :total="listLength" :page-size="pageSize" @current-change="pageChange" @size-change="sieChange"/>
+            </div>
+        </div>
+        <div class="flex-line">
+            <label>执行：</label>
+            <div style="display: flex">
+                <el-button style="margin-right: 10px" type="primary" @click="reqFun">发送</el-button>
+            </div>
+        </div>
+        <div class="flex-line">
+            <label>版本控制：</label>
+            <div style="display: flex">
+                <el-upload action="/upload" :on-success="uploadSuccess" :on-error="uploadError" accept="zip">
+                    <el-button style="width: 100%">更新页面 v{{ version }}</el-button>
+                </el-upload>
+            </div>
+        </div>
         <el-divider/>
         <p v-for="(log,index) in logList" :key="'log'+index">{{ log }}</p>
     </div>
@@ -43,12 +82,13 @@ const listLength = ref(WUPIN.length)
 const pageSize = ref(10)
 let radioList: any = ref([])
 let logList: any = ref([])
-
+// @ts-ignore
+const version = ref(__Admin_VERSION__ as string)
 
 //切换全部/分页
 const changeList = (value: number) => {
     if (value === 1) {
-        changeWupin(keyWord.value)
+        radioList.value = WUPIN
     } else {
         keyWord.value = ''
         radioList.value = WUPIN.slice(0, 10)
@@ -125,10 +165,10 @@ const reqFun = async () => {
     logList.value.push(result?.data)
 }
 
-const uploadSuccess = (response:any) => {
+const uploadSuccess = (response: any) => {
     logList.value.push(response)
 }
-const uploadError = (response:any) => {
+const uploadError = (response: any) => {
     logList.value.push(response)
 }
 
@@ -147,5 +187,29 @@ const uploadError = (response:any) => {
     padding: 10px;
     display: flex;
     flex-direction: column;
+}
+
+.flex-line {
+    display: flex;
+    margin-bottom: 10px;
+
+    > label {
+        text-align: right;
+        width: 100px;
+        padding-right: 10px;
+        box-sizing: border-box;
+        height: 32px;
+        line-height: 32px;
+    }
+
+    > div {
+        flex: 1;
+    }
+
+    ::v-deep {
+        .el-radio-group {
+            display: flex;
+        }
+    }
 }
 </style>
