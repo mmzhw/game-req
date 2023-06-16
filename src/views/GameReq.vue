@@ -40,7 +40,7 @@
         </div>
         <div class="flex-line">
             <label>物品展示：</label>
-            <div>
+            <div ref="pageDiv">
                 <el-radio-group v-model="radio" @change="changeItemId">
                     <el-radio v-for="(item, index) in radioList" :key="index" :label="item.value"
                         >{{ item.name }}
@@ -51,9 +51,11 @@
                     v-if="reqType === 'mail' && pageType === 2"
                     background
                     hide-on-single-page
+                    small
                     layout="prev, pager, next, total"
                     :total="listLength"
                     :page-size="pageSize"
+                    :pager-count="pagerCount"
                     @current-change="pageChange"
                     @size-change="sieChange"
                 />
@@ -63,8 +65,8 @@
             <label>执行：</label>
             <div style="display: flex">
                 <el-button style="margin-right: 10px" type="primary" @click="reqFun"
-                    >发送</el-button
-                >
+                    >发送
+                </el-button>
             </div>
         </div>
         <div class="flex-line">
@@ -99,8 +101,10 @@ const reqType = ref(window.localStorage.getItem('reqType') || 'mail')
 const pageType = ref(2)
 const listLength = ref(WUPIN.length)
 const pageSize = ref(10)
+const pagerCount = ref(5)
 let radioList: any = ref([])
 let logList: any = ref([])
+const pageDiv = ref<HTMLElement>()
 // @ts-ignore
 const version = ref(__Admin_VERSION__ as string)
 
@@ -156,10 +160,6 @@ const sieChange = (sizes: number) => {
     pageChange(1)
 }
 
-onMounted(() => {
-    changeReqType(reqType.value)
-})
-
 const getParams = () => {
     let reqParams: Record<string, any> = {
         charge: {
@@ -214,6 +214,14 @@ const uploadSuccess = (response: any) => {
 const uploadError = (response: any) => {
     logList.value.push(response)
 }
+
+onMounted(() => {
+    changeReqType(reqType.value)
+    pagerCount.value = pageDiv!.value!.offsetWidth / 3 / 24
+    window.onresize = () => {
+        pagerCount.value = pageDiv!.value!.offsetWidth / 3 / 24
+    }
+})
 </script>
 
 <style scoped lang="scss">
@@ -237,7 +245,7 @@ const uploadError = (response: any) => {
 
     > label {
         text-align: right;
-        width: 100px;
+        width: 85px;
         padding-right: 10px;
         box-sizing: border-box;
         height: 32px;
@@ -246,6 +254,7 @@ const uploadError = (response: any) => {
 
     > div {
         flex: 1;
+        overflow-x: auto;
     }
 
     ::v-deep {
