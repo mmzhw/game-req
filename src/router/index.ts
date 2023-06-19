@@ -18,9 +18,14 @@ const router = createRouter({
         //   component: () => import('../views/AboutView.vue')
         // },
         {
-            path: '/',
-            name: 'game-req',
-            component: () => import('../views/GameReq.vue')
+            path: '/glqxz',
+            name: 'glqxz',
+            component: () => import('../views/GameReq-glqxz.vue')
+        },
+        {
+            path: '/gjqt',
+            name: 'gjqt',
+            component: () => import('../views/GameReq-gjqt.vue')
         }
     ]
 })
