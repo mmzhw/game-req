@@ -1,4 +1,4 @@
-export const WUPIN: Array<{ name: string; value: string }> = [
+const WUPIN: ItemsSingle[] = [
     { name: '李寻欢侠魂', value: '1' },
     { name: '谢晓峰侠魂', value: '2' },
     { name: '陆小凤侠魂', value: '3' },
@@ -3710,8 +3710,7 @@ export const WUPIN: Array<{ name: string; value: string }> = [
     { name: '暴躁戒4阶', value: '999983' },
     { name: '暴躁戒5阶', value: '999984' }
 ]
-
-export const CHARG_WUPIN: Array<{ name: string; value: string }> = [
+const CHARG_WUPIN: ItemsSingle[] = [
     { name: '600元宝', value: '2' },
     { name: '680元宝', value: '3' },
     { name: '1980元宝', value: '4' },
@@ -3725,7 +3724,7 @@ export const CHARG_WUPIN: Array<{ name: string; value: string }> = [
     { name: '19980元宝', value: '12' },
     { name: '32980元宝', value: '13' }
 ]
-export const CHARG_2_WUPIN: Array<{ name: string; value: string }> = [
+const CHARG_2_WUPIN: ItemsSingle[] = [
     { name: '真气', value: '5' },
     { name: 'VIP积分', value: '9' },
     { name: '英魂值', value: '10' },
@@ -3743,3 +3742,5 @@ export const CHARG_2_WUPIN: Array<{ name: string; value: string }> = [
     { name: '勇者之杯', value: '21' },
     { name: '侠客之杯', value: '22' }
 ]
+
+export default { WUPIN, CHARG_WUPIN, CHARG_2_WUPIN }

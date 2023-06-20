@@ -18,15 +18,23 @@ const router = createRouter({
         //   component: () => import('../views/AboutView.vue')
         // },
         {
-            path: '/glqxz',
-            name: 'glqxz',
-            component: () => import('../views/GameReq-glqxz.vue')
+            path: '/',
+            redirect: () => {
+                // 方法接收目标路由作为参数
+                // return 重定向的字符串路径/路径对象
+                return { name: 'manage', params: { id: '1' } }
+            }
         },
         {
-            path: '/gjqt',
-            name: 'gjqt',
-            component: () => import('../views/GameReq-gjqt.vue')
+            path: '/manage/:id',
+            name: 'manage',
+            component: () => import('../views/GameReq.vue')
         }
+        // {
+        //     path: '/gjqt',
+        //     name: 'gjqt',
+        //     component: () => import('../views/GameReq-gjqt.vue')
+        // }
     ]
 })
 

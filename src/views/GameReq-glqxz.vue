@@ -43,8 +43,11 @@
             <div ref="pageDiv">
                 <template v-if="radioList?.length > 0">
                     <el-radio-group v-model="radio" @change="changeItemId">
-                        <el-radio v-for="(item, index) in radioList" :key="index" :label="item.value"
-                        >{{ item.name }}
+                        <el-radio
+                            v-for="(item, index) in radioList"
+                            :key="index"
+                            :label="item.value"
+                            >{{ item.name }}
                         </el-radio>
                     </el-radio-group>
                     <el-pagination
@@ -68,103 +71,107 @@
             <label>执行：</label>
             <div style="display: flex">
                 <el-button style="margin-right: 10px" type="primary" @click="reqFun"
-                >发送
+                    >发送
                 </el-button>
             </div>
         </div>
-        <control-server @uploadSuccess="uploadSuccess" @uploadError="uploadError" label-width="85"></control-server>
+        <control-server
+            @uploadSuccess="uploadSuccess"
+            @uploadError="uploadError"
+            label-width="85"
+        ></control-server>
         <el-divider />
         <p v-for="(log, index) in logList" :key="'log' + index">{{ log }}</p>
     </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, onMounted } from "vue";
-import { WUPIN, CHARG_WUPIN, CHARG_2_WUPIN } from "@/constant/gulong";
-import axios from "axios";
-import ControlServer from "../components/Control-Server.vue";
+import { ref, reactive, onMounted } from 'vue'
+import gulong from '@/constant/gulong'
+import axios from 'axios'
+import ControlServer from '../components/Control-Server.vue'
 
 // import qs from 'qs'
 
-const keyWord = ref("");
-const nameWord = ref(window.localStorage.getItem("nameWord") || "桃花碧柔");
-const itemNum = ref(window.localStorage.getItem("itemNumber"));
-const radio = ref(window.localStorage.getItem("itemId"));
-const reqType = ref(window.localStorage.getItem("reqType") || "mail");
-const pageType = ref(2);
-const listLength = ref(WUPIN.length);
-const pageSize = ref(10);
-const pagerCount = ref(5);
-let radioList: any = ref([]);
-let logList: any = ref([]);
-const pageDiv = ref<HTMLElement>();
+const keyWord = ref('')
+const nameWord = ref(window.localStorage.getItem('nameWord') || '桃花碧柔')
+const itemNum = ref(window.localStorage.getItem('itemNumber'))
+const radio = ref(window.localStorage.getItem('itemId'))
+const reqType = ref(window.localStorage.getItem('reqType') || 'mail')
+const pageType = ref(2)
+const listLength = ref(gulong.WUPIN.length)
+const pageSize = ref(10)
+const pagerCount = ref(5)
+let radioList: any = ref([])
+let logList: any = ref([])
+const pageDiv = ref<HTMLElement>()
 
 //切换全部/分页
 const changeList = (value: number) => {
     if (value === 1) {
-        radioList.value = WUPIN;
+        radioList.value = gulong.WUPIN
     } else {
-        keyWord.value = "";
-        radioList.value = WUPIN.slice(0, 10);
+        keyWord.value = ''
+        radioList.value = gulong.WUPIN.slice(0, 10)
     }
-};
+}
 //切换物品id
 const changeItemId = (item: number) => {
-    window.localStorage.setItem("itemId", String(item));
-};
+    window.localStorage.setItem('itemId', String(item))
+}
 //切换充值类型
 const changeReqType = (type: string) => {
-    reqType.value = type;
-    if (type === "charge") {
-        radioList.value = CHARG_WUPIN;
-    } else if (type === "charge2") {
-        radioList.value = CHARG_2_WUPIN;
-    } else if (type === "mail") {
-        changeList(2);
+    reqType.value = type
+    if (type === 'charge') {
+        radioList.value = gulong.CHARG_WUPIN
+    } else if (type === 'charge2') {
+        radioList.value = gulong.CHARG_2_WUPIN
+    } else if (type === 'mail') {
+        changeList(2)
     }
-    window.localStorage.setItem("reqType", type);
-};
+    window.localStorage.setItem('reqType', type)
+}
 //修改发送数目
 const changeItemNumber = (value: string) => {
-    window.localStorage.setItem("itemNumber", value);
-};
+    window.localStorage.setItem('itemNumber', value)
+}
 //过滤物品
 const changeWupin = (value: string) => {
     if (value) {
-        pageType.value = 1;
-        radioList.value = WUPIN.filter((i) => {
-            return value && i.name.includes(value);
-        });
-        listLength.value = radioList.value.length;
+        pageType.value = 1
+        radioList.value = gulong.WUPIN.filter((i) => {
+            return value && i.name.includes(value)
+        })
+        listLength.value = radioList.value.length
     }
-};
+}
 const changeName = (value: string) => {
-    window.localStorage.setItem("nameWord", value);
-};
+    window.localStorage.setItem('nameWord', value)
+}
 //翻页
 const pageChange = (size: number) => {
-    radioList.value = WUPIN.slice((size - 1) * pageSize.value, pageSize.value * size);
-};
+    radioList.value = gulong.WUPIN.slice((size - 1) * pageSize.value, pageSize.value * size)
+}
 //分页数目切换
 const sieChange = (sizes: number) => {
-    pageSize.value = sizes;
-    pageChange(1);
-};
+    pageSize.value = sizes
+    pageChange(1)
+}
 
 const getParams = () => {
     let reqParams: Record<string, any> = {
         charge: {
-            type: "charge",
+            type: 'charge',
             username: nameWord.value,
             qu: 2,
             rechargeId: 10,
             number: Number(itemNum.value),
-            rechargezId: "",
+            rechargezId: '',
             znumber: 1,
             mailnum: 1
         },
         charge2: {
-            type: "charge2",
+            type: 'charge2',
             username: nameWord.value,
             qu: 2,
             rechargeId: 10,
@@ -173,48 +180,48 @@ const getParams = () => {
             mailnum: 1
         },
         mail: {
-            type: "mail",
+            type: 'mail',
             username: nameWord.value,
             mailid: Number(radio.value),
             mailnum: Number(itemNum.value),
             qu: 2,
             charge: 3
         }
-    };
-    return reqParams[reqType.value];
-};
+    }
+    return reqParams[reqType.value]
+}
 
 const reqFun = async () => {
     let result = await axios({
-        method: "post",
-        url: "/api",
+        method: 'post',
+        url: '/api',
         data: {
             formData: getParams(),
-            params: { act: "send", sid: 1001 },
-            realReqUrl: "http://106.74.21.2:81/jkgm/user/playerapi.php",
-            realReqMethod: "post"
+            params: { act: 'send', sid: 1001 },
+            realReqUrl: 'http://106.74.21.2:81/jkgm/user/playerapi.php',
+            realReqMethod: 'post'
         }
         // url: 'http://106.74.21.2:81/jkgm/user/playerapi.php',
         // data: qs.stringify(getParams()),
         // params: {act: 'send', sid: 1001}
-    });
-    logList.value.push(result?.data);
-};
+    })
+    logList.value.push(result?.data)
+}
 
 const uploadSuccess = (response: any) => {
-    logList.value.push(response);
-};
+    logList.value.push(response)
+}
 const uploadError = (response: any) => {
-    logList.value.push(response);
-};
+    logList.value.push(response)
+}
 
 onMounted(() => {
-    changeReqType(reqType.value);
-    pagerCount.value = Math.floor(pageDiv!.value!.offsetWidth / 3 / 24);
+    changeReqType(reqType.value)
+    pagerCount.value = Math.floor(pageDiv!.value!.offsetWidth / 3 / 24)
     window.onresize = () => {
-        pagerCount.value = Math.floor(pageDiv!.value!.offsetWidth / 3 / 24);
-    };
-});
+        pagerCount.value = Math.floor(pageDiv!.value!.offsetWidth / 3 / 24)
+    }
+})
 </script>
 
 <style scoped src="../assets/game-req.scss"></style>
