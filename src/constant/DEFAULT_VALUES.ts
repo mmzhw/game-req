@@ -2,10 +2,11 @@ import gujianqitan from "@/constant/gujianqitan";
 import gulong from "@/constant/gulong";
 
 const glqxz: ItemsGJQT = {
-    nameWord: window.localStorage.getItem("glqxznameWord") || "桃花碧柔",
-    itemNum: window.localStorage.getItem("glqxzitemNumber") || "",
-    itemId: window.localStorage.getItem("glqxzitemId") || "",
-    reqType: window.localStorage.getItem("glqxzreqType") || "mail",
+    nameWord: window.localStorage.getItem("glqxz" + "nameWord") || "桃花碧柔",
+    itemNum: window.localStorage.getItem("glqxz" + "itemNumber") || "",
+    itemId: window.localStorage.getItem("glqxz" + "itemId") || "",
+    reqType: window.localStorage.getItem("glqxz" + "reqType") || "mail",
+    filterName: window.localStorage.getItem("glqxz" + "filterName") || "",
     mail: gulong.WUPIN,
     charge: gulong.CHARG_WUPIN,
     charge2: gulong.CHARG_2_WUPIN,
@@ -49,10 +50,11 @@ const glqxz: ItemsGJQT = {
 };
 
 const gjqt: ItemsGJQT = {
-    nameWord: window.localStorage.getItem("gjqtnameWord") || "31505037001",
-    itemNum: window.localStorage.getItem("gjqtitemNumber") || "",
-    itemId: window.localStorage.getItem("gjqtitemId") || "",
-    reqType: window.localStorage.getItem("gjqtreqType") || "mail",
+    nameWord: window.localStorage.getItem("gjqt" + "nameWord") || "31505037001",
+    itemNum: window.localStorage.getItem("gjqt" + "itemNumber") || "",
+    itemId: window.localStorage.getItem("gjqt" + "itemId") || "",
+    reqType: window.localStorage.getItem("gjqt" + "reqType") || "mail",
+    filterName: window.localStorage.getItem("gjqt" + "filterName") || "",
     mail: gujianqitan.WUPIN,
     charge: gujianqitan.CHARG_WUPIN,
     charge2: [],
@@ -81,6 +83,6 @@ const gjqt: ItemsGJQT = {
     realReqMethod: "post"
 };
 
-const defaultValues:any = { glqxz, gjqt };
+const defaultValues: any = { glqxz, gjqt };
 
 export default defaultValues;

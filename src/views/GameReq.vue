@@ -166,6 +166,7 @@ const changeItemNumber = (value: string) => {
 //过滤物品
 const changeWupin = (value: string) => {
     if (value) {
+        window.localStorage.setItem(routeType.value + "filterName", value);
         pageType.value = 1;
         radioList.value = defaultValues[routeType.value as string]?.mail.filter((i: ItemsSingle) => {
             return value && i.name.includes(value);
@@ -231,6 +232,9 @@ onMounted(() => {
             pagerCount.value = Math.floor(pageDiv!.value!.offsetWidth / 3 / 24);
         };
     }
+
+    let filterName = window.localStorage.getItem(routeType.value + "filterName")
+
 });
 const initPage = (id: string) => {
     if (id) {
@@ -242,6 +246,8 @@ const initPage = (id: string) => {
     reqType.value = defaultValues[routeType.value as string]?.reqType;
     listLength.value = defaultValues[routeType.value as string]?.mail.length;
     changeReqType(reqType.value);
+    keyWord.value = defaultValues[routeType.value as string]?.filterName
+    changeWupin(keyWord.value)
 };
 </script>
 
