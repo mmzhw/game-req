@@ -8,6 +8,7 @@ const glqxz: ItemsGJQT = {
     itemId: window.localStorage.getItem('glqxz' + 'itemId') || '',
     reqType: window.localStorage.getItem('glqxz' + 'reqType') || 'mail',
     filterName: window.localStorage.getItem('glqxz' + 'filterName') || '',
+    sendIntervalTime: Number(window.localStorage.getItem('glqxz' + 'IntervalTime')) || 1000,
     mail: gulong.WUPIN,
     charge: gulong.CHARG_WUPIN,
     charge2: gulong.CHARG_2_WUPIN,
@@ -56,6 +57,7 @@ const gjqt: ItemsGJQT = {
     itemId: window.localStorage.getItem('gjqt' + 'itemId') || '',
     reqType: window.localStorage.getItem('gjqt' + 'reqType') || 'mail',
     filterName: window.localStorage.getItem('gjqt' + 'filterName') || '',
+    sendIntervalTime: Number(window.localStorage.getItem('gjqt' + 'IntervalTime')) || 1000,
     mail: gujianqitan.WUPIN,
     charge: gujianqitan.CHARG_WUPIN,
     charge2: [],
@@ -81,7 +83,7 @@ const gjqt: ItemsGJQT = {
         return null
     },
     realReqUrl: 'http://61.171.55.117:8090/ht/gm/query.php',
-    realReqMethod: 'post'
+    realReqMethod: 'post',
 }
 
 const mhjh: ItemsGJQT = {
@@ -90,6 +92,7 @@ const mhjh: ItemsGJQT = {
     itemId: window.localStorage.getItem('mhjh' + 'itemId') || '',
     reqType: window.localStorage.getItem('mhjh' + 'reqType') || 'mail',
     filterName: window.localStorage.getItem('mhjh' + 'filterName') || '',
+    sendIntervalTime: Number(window.localStorage.getItem('mhjh' + 'IntervalTime')) || 1000,
     mail: menghuanjianghu.WUPIN,
     charge: menghuanjianghu.CHARG_WUPIN,
     charge2: [],

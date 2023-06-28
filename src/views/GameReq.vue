@@ -19,7 +19,7 @@
             <div class="flex-line">
                 <label>发送姓名：</label>
                 <div>
-                    <el-input v-model="nameWord" @input="changeName" />
+                    <el-input v-model="nameWord" @input="changeName"/>
                 </div>
             </div>
             <div class="flex-line">
@@ -31,22 +31,22 @@
                         placeholder="Select"
                         @change="changeReqType"
                     >
-                        <el-option label="充值一" value="charge" />
-                        <el-option label="充值二" value="charge2" />
-                        <el-option label="邮件" value="mail" />
+                        <el-option label="充值一" value="charge"/>
+                        <el-option label="充值二" value="charge2"/>
+                        <el-option label="邮件" value="mail"/>
                     </el-select>
                 </div>
             </div>
             <div class="flex-line">
                 <label>发送数目：</label>
                 <div>
-                    <el-input v-model="itemNum" placeholder="数目" @change="changeItemNumber" />
+                    <el-input v-model="itemNum" placeholder="数目" @change="changeItemNumber"/>
                 </div>
             </div>
             <div class="flex-line" v-if="reqType === 'mail'">
                 <label>过滤物品：</label>
                 <div>
-                    <el-input v-model="keyWord" placeholder="过滤" @input="changeWupin" />
+                    <el-input v-model="keyWord" placeholder="过滤" @input="changeWupin"/>
                 </div>
             </div>
             <el-radio-group
@@ -77,19 +77,26 @@
                 <template #default><span>{{ pageObj.current }}页 / {{ itemsList?.length }}条</span></template>
             </el-pagination>
             <el-button class="marginBottomTen" style="width: 100%" type="primary" @click="reqFun">发送</el-button>
+            <div class="flex-space-between marginBottomTen">
+                <el-button style="flex: 1" type="primary" @click="reqFunInterval">开启定时发送</el-button>
+                <el-button style="width: 50px;margin-left: 10px" type="primary" @click="reqFunIntervalClose">停止</el-button>
+                <el-input style="width: 50px;margin-left: 10px" size="small" v-model="intervalObj.time" @input="changeIntervalTime"/>
+            </div>
         </div>
 
-        <el-divider v-if="logList.length > 0" class="dividerLine" />
-        <p v-for="(log, index) in logList" :key="'log' + index">{{ log }}</p>
+        <el-table :data="logList" style="width: 100%" border>
+            <el-table-column prop="no" label="序号" width="80"/>
+            <el-table-column prop="message" label="内容"/>
+        </el-table>
     </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue';
+import {ref, computed, onMounted} from 'vue';
 import defaultValues from '@/constant/DEFAULT_VALUES';
 import axios from 'axios';
 import ControlServer from '../components/Control-Server.vue';
-import { useRoute, useRouter } from 'vue-router';
+import {useRoute, useRouter} from 'vue-router';
 
 let routerParams = useRoute().params;
 const router = useRouter();
@@ -105,6 +112,9 @@ const pageObj: any = ref({
     sizes: [10, 20, 50, 100, 1000, 5000],
     current: 1,
     layout: ''
+});
+const intervalObj: any = ref({
+    id: null, time: 1000
 });
 let itemsList: any = ref([]);
 let logList: any = ref([]);
@@ -134,9 +144,14 @@ onMounted(() => {
 
 //切换页面
 const changeRouteType = (value: string) => {
-    router.push({ name: 'manage', params: { id: value } });
+    router.push({name: 'manage', params: {id: value}});
     initPage(value);
 };
+
+//修改了定时器间隔
+const changeIntervalTime = (value: string) => {
+    window.localStorage.setItem(routeType.value + 'IntervalTime', String(value));
+}
 
 //切换物品id
 const changeItemId = (item: number) => {
@@ -202,14 +217,27 @@ const reqFun = async () => {
             realReqMethod: defaultValues[routeType.value as string]?.realReqMethod
         }
     });
-    logList.value.push(result?.data);
+    logList.value.unshift({no: logList.value.length + 1, message: result?.data});
 };
+const reqFunInterval = () => {
+    if (intervalObj.value.id) {
+        return
+    }
+    intervalObj.value.id = setInterval(() => {
+        reqFun()
+    }, intervalObj.value.time)
+}
+const reqFunIntervalClose = () => {
+    if (intervalObj.value.id) {
+        clearInterval(intervalObj.value.id)
+    }
+}
 
 const uploadSuccess = (response: any) => {
-    logList.value.push(response);
+    logList.value.unshift({no: logList.value.length + 1, message: response});
 };
 const uploadError = (response: any) => {
-    logList.value.push(response);
+    logList.value.unshift({no: logList.value.length + 1, message: response});
 };
 
 const initPage = (id: string) => {
@@ -221,8 +249,11 @@ const initPage = (id: string) => {
         itemNum.value = defaultValues[routeType.value as string]?.itemNum;
         choosedItem.value = defaultValues[routeType.value as string]?.itemId;
         keyWord.value = defaultValues[routeType.value as string]?.filterName;
+        intervalObj.value.time = defaultValues[routeType.value as string]?.sendIntervalTime;
         changeReqType(defaultValues[routeType.value as string]?.reqType);
-        changeWupin(keyWord.value);
+        if (reqType.value === 'mail'){
+            changeWupin(keyWord.value);
+        }
     }
 };
 </script>
@@ -270,6 +301,7 @@ const initPage = (id: string) => {
         .el-radio-button__inner {
             margin-bottom: 0;
         }
+
         .el-radio-button {
             margin-bottom: 5px;
         }
@@ -283,7 +315,5 @@ const initPage = (id: string) => {
         }
     }
 }
-.dividerLine{
-    margin: 0 0 10px;
-}
+
 </style>

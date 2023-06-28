@@ -9,7 +9,7 @@
                 :on-error="uploadError"
                 accept="zip"
             >
-                <el-button style="width: 100%">前端更新 v{{ version }}</el-button>
+                <el-button style="width: 100%">前端 {{ version }}</el-button>
             </el-upload>
             <el-upload
                 class="singleButton"
@@ -18,7 +18,7 @@
                 :on-error="uploadError"
                 accept="js"
             >
-                <el-button style="width: 100%">服务更新</el-button>
+                <el-button style="width: 100%">服务端</el-button>
             </el-upload>
         </div>
         <!--                <el-button class="singleButton" @click="reStartServer">重启服务</el-button>-->

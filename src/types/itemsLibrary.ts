@@ -9,6 +9,7 @@ interface ItemsGJQT {
     itemId: string
     reqType: string
     filterName: string
+    sendIntervalTime: number
     mail: ItemsSingle[]
     charge: ItemsSingle[]
     charge2: ItemsSingle[]
