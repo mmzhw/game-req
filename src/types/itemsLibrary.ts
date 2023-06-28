@@ -1,4 +1,3 @@
-
 interface ItemsSingle {
     name: string
     value: string
