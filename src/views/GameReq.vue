@@ -11,6 +11,7 @@
                 <el-radio-group v-model="routeType" @change="changeRouteType">
                     <el-radio-button label="glqxz">古龙群侠传</el-radio-button>
                     <el-radio-button label="gjqt">古剑奇谭</el-radio-button>
+                    <el-radio-button label="mhjh">梦幻江湖</el-radio-button>
                 </el-radio-group>
             </div>
         </div>
@@ -146,6 +147,7 @@ const changeReqType = (type: string) => {
     if (type) {
         reqType.value = type;
         itemsList.value = defaultValues[routeType.value as string][type];
+        pageObj.value.current = 1
         window.localStorage.setItem(routeType.value + 'reqType', type);
     }
 };
@@ -267,6 +269,9 @@ const initPage = (id: string) => {
     :deep {
         .el-radio-button__inner {
             margin-bottom: 0;
+        }
+        .el-radio-button {
+            margin-bottom: 5px;
         }
     }
 }
