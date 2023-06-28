@@ -1,3 +1,7 @@
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
 .marginTopTen {
     margin-top: 10px;
 }
@@ -14,12 +18,9 @@
     margin-bottom: 5px;
 }
 
-.wrap {
+.paddingTen {
     padding: 10px;
-    display: flex;
-    flex-direction: column;
 }
-
 .flex-line {
     display: flex;
     margin-bottom: 10px;
@@ -38,7 +39,7 @@
         overflow-x: auto;
     }
 
-    ::v-deep {
+    :deep {
         .el-radio-group {
             display: flex;
         }

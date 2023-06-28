@@ -1,17 +1,15 @@
 <template>
-    <div class="wrap">
-        <div style="padding-left: 10px">
-            <div class="flex-line" style="margin-bottom: 0">
-                <label>游戏选择：</label>
-                <div>
-                    <el-radio-group v-model="routeType" @change="changeRouteType">
-                        <el-radio-button label="glqxz">古龙群侠传</el-radio-button>
-                        <el-radio-button label="gjqt">古剑奇谭</el-radio-button>
-                    </el-radio-group>
-                </div>
+    <div class="flex-column paddingTen">
+        <div class="flex-line marginBottomFive">
+            <label>游戏选择：</label>
+            <div class="gameTypeWrap">
+                <el-radio-group v-model="routeType" @change="changeRouteType">
+                    <el-radio-button label="glqxz">古龙群侠传</el-radio-button>
+                    <el-radio-button label="gjqt">古剑奇谭</el-radio-button>
+                </el-radio-group>
             </div>
         </div>
-        <div class="wrap" v-show="hasPage">
+        <div class="flex-column" v-show="hasPage">
             <div class="flex-line">
                 <label>发送姓名：</label>
                 <div>
@@ -229,16 +227,15 @@ const initPage = (id: string) => {
     width: 85px;
 }
 
-::v-deep {
+:deep {
     .el-radio-button {
         margin-right: 5px;
-    }
-
-    .el-radio-button__inner {
-        box-shadow: none !important;
-        border: 1px solid #dcdfe6;
-        border-radius: 4px;
-        margin-bottom: 5px;
+        .el-radio-button__inner {
+            box-shadow: none !important;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px !important;
+            margin-bottom: 5px;
+        }
     }
 }
 
@@ -247,15 +244,23 @@ const initPage = (id: string) => {
     justify-content: space-between;
     flex-wrap: wrap;
 
-    ::v-deep {
+    :deep {
         .el-radio-button {
-            width: 49%;
+            width: calc((100% - 10px) / 2);
             margin: 0;
+            .el-radio-button__inner {
+                width: 100%;
+                font-size: 12px;
+                border-radius: 4px !important;
+            }
         }
+    }
+}
 
+.gameTypeWrap{
+    :deep {
         .el-radio-button__inner {
-            width: 100%;
-            font-size: 12px;
+            margin-bottom: 0;
         }
     }
 }

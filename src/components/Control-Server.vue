@@ -1,29 +1,24 @@
 <template>
-    <div>
-        <div class="flex-line">
-            <label :style="{ width: props.labelWidth + 'px' }">版本控制：</label>
-            <div style="display: flex">
-                <el-upload
-                    class="singleButton"
-                    action="/upload"
-                    :on-success="uploadSuccess"
-                    :on-error="uploadError"
-                    accept="zip"
-                >
-                    <el-button style="width: 100%">前端更新 v{{ version }}</el-button>
-                </el-upload>
-                <el-upload
-                    class="singleButton"
-                    action="/uploadServer"
-                    :on-success="uploadSuccess"
-                    :on-error="uploadError"
-                    accept="js"
-                >
-                    <el-button style="width: 100%">服务更新</el-button>
-                </el-upload>
-                <!--                <el-button class="singleButton" @click="reStartServer">重启服务</el-button>-->
-            </div>
-        </div>
+    <div style="display: flex;justify-content: space-between">
+        <el-upload
+            class="singleButton"
+            action="/upload"
+            :on-success="uploadSuccess"
+            :on-error="uploadError"
+            accept="zip"
+        >
+            <el-button style="width: 100%">前端更新 v{{ version }}</el-button>
+        </el-upload>
+        <el-upload
+            class="singleButton"
+            action="/uploadServer"
+            :on-success="uploadSuccess"
+            :on-error="uploadError"
+            accept="js"
+        >
+            <el-button style="width: 100%">服务更新</el-button>
+        </el-upload>
+        <!--                <el-button class="singleButton" @click="reStartServer">重启服务</el-button>-->
     </div>
 </template>
 
@@ -36,7 +31,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
     //分别抛出是两个函数
-    (e: 'uploadSuccess', id: any): any //change是事件名，id是参数，后面：number是函数返回的类型
+    (e: 'uploadSuccess', value: any): any
     (e: 'uploadError', value: any): any
 }>()
 
@@ -56,6 +51,11 @@ const uploadError = (response: any) => {
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
 .singleButton {
-    margin-right: 10px;
+    width: calc((100% - 10px) / 2);
+    :deep{
+        .el-upload{
+            width: 100%;
+        }
+    }
 }
 </style>
