@@ -1,5 +1,10 @@
 <template>
     <div class="flex-column paddingTen">
+        <control-server
+            @uploadSuccess="uploadSuccess"
+            @uploadError="uploadError"
+            label-width="85"
+        ></control-server>
         <div class="flex-line marginBottomFive">
             <label>游戏选择：</label>
             <div class="gameTypeWrap">
@@ -58,6 +63,7 @@
             </el-radio-group>
             <el-pagination
                 class="marginBottomTen"
+                :class="isMobile && 'pagePaginationMobile'"
                 background
                 :layout="pageObj.layout"
                 :page-sizes="pageObj.sizes"
@@ -66,16 +72,14 @@
                 :current-page="pageObj.current"
                 @current-change="pageCurrentChange"
                 @size-change="pageSizeChange"
-            />
+            >
+                <template #default><span>{{ pageObj.current }}页 / {{ itemsList?.length }}条</span></template>
+            </el-pagination>
             <el-button class="marginBottomTen" style="width: 100%" type="primary" @click="reqFun">发送</el-button>
-            <control-server
-                @uploadSuccess="uploadSuccess"
-                @uploadError="uploadError"
-                label-width="85"
-            ></control-server>
-            <el-divider />
-            <p v-for="(log, index) in logList" :key="'log' + index">{{ log }}</p>
         </div>
+
+        <el-divider v-if="logList.length > 0" class="dividerLine" />
+        <p v-for="(log, index) in logList" :key="'log' + index">{{ log }}</p>
     </div>
 </template>
 
@@ -120,9 +124,9 @@ let realItemsList = computed(() => {
 
 onMounted(() => {
     if (isMobile.value) {
-        pageObj.value.layout = 'prev, next, sizes, total';
+        pageObj.value.layout = 'prev, next, sizes, ->, slot';
     } else {
-        pageObj.value.layout = 'prev, pager, next, sizes, total';
+        pageObj.value.layout = 'prev, pager, next, jumper, sizes, ->, total';
     }
     initPage('');
 });
@@ -210,7 +214,7 @@ const initPage = (id: string) => {
     if (id) {
         routeType.value = id;
     }
-    if (routeType.value && defaultValues[routeType.value as string]){
+    if (routeType.value && defaultValues[routeType.value as string]) {
         nameWord.value = defaultValues[routeType.value as string]?.nameWord;
         itemNum.value = defaultValues[routeType.value as string]?.itemNum;
         choosedItem.value = defaultValues[routeType.value as string]?.itemId;
@@ -230,6 +234,7 @@ const initPage = (id: string) => {
 :deep {
     .el-radio-button {
         margin-right: 5px;
+
         .el-radio-button__inner {
             box-shadow: none !important;
             border: 1px solid #dcdfe6;
@@ -248,6 +253,7 @@ const initPage = (id: string) => {
         .el-radio-button {
             width: calc((100% - 10px) / 2);
             margin: 0;
+
             .el-radio-button__inner {
                 width: 100%;
                 font-size: 12px;
@@ -257,11 +263,22 @@ const initPage = (id: string) => {
     }
 }
 
-.gameTypeWrap{
+.gameTypeWrap {
     :deep {
         .el-radio-button__inner {
             margin-bottom: 0;
         }
     }
+}
+
+.pagePaginationMobile {
+    :deep {
+        .el-pagination__sizes {
+            margin-left: 5px;
+        }
+    }
+}
+.dividerLine{
+    margin: 0 0 10px;
 }
 </style>

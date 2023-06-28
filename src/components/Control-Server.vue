@@ -1,23 +1,26 @@
 <template>
-    <div style="display: flex;justify-content: space-between">
-        <el-upload
-            class="singleButton"
-            action="/upload"
-            :on-success="uploadSuccess"
-            :on-error="uploadError"
-            accept="zip"
-        >
-            <el-button style="width: 100%">前端更新 v{{ version }}</el-button>
-        </el-upload>
-        <el-upload
-            class="singleButton"
-            action="/uploadServer"
-            :on-success="uploadSuccess"
-            :on-error="uploadError"
-            accept="js"
-        >
-            <el-button style="width: 100%">服务更新</el-button>
-        </el-upload>
+    <div class="flex-line" style="margin-bottom: 0">
+        <label>版本控制：</label>
+        <div style="display: flex">
+            <el-upload
+                class="singleButton"
+                action="/upload"
+                :on-success="uploadSuccess"
+                :on-error="uploadError"
+                accept="zip"
+            >
+                <el-button style="width: 100%">前端更新 v{{ version }}</el-button>
+            </el-upload>
+            <el-upload
+                class="singleButton"
+                action="/uploadServer"
+                :on-success="uploadSuccess"
+                :on-error="uploadError"
+                accept="js"
+            >
+                <el-button style="width: 100%">服务更新</el-button>
+            </el-upload>
+        </div>
         <!--                <el-button class="singleButton" @click="reStartServer">重启服务</el-button>-->
     </div>
 </template>
@@ -51,10 +54,11 @@ const uploadError = (response: any) => {
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
 .singleButton {
-    width: calc((100% - 10px) / 2);
+    margin-right: 10px;
+    //width: calc((100% - 10px) / 2);
     :deep{
         .el-upload{
-            width: 100%;
+            //width: 100%;
         }
     }
 }
