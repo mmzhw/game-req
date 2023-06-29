@@ -1,6 +1,6 @@
 <template>
     <div class="flex-line" style="margin-bottom: 0">
-        <label>版本控制：</label>
+        <label :style="{ width: labelWidth + 'px' }">版本：</label>
         <div style="display: flex">
             <el-upload
                 class="singleButton"
@@ -56,8 +56,8 @@ const uploadError = (response: any) => {
 .singleButton {
     margin-right: 10px;
     //width: calc((100% - 10px) / 2);
-    :deep{
-        .el-upload{
+    :deep {
+        .el-upload {
             //width: 100%;
         }
     }

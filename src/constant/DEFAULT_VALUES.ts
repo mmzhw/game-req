@@ -2,13 +2,21 @@ import gujianqitan from '@/constant/gujianqitan'
 import gulong from '@/constant/gulong'
 import menghuanjianghu from '@/constant/menghuanjianghu'
 
+const getPublicInitData = (type: string, options: { nameWord: string }) => {
+    const { nameWord } = options
+    return {
+        nameWord: window.localStorage.getItem(type + 'nameWord') || nameWord,
+        itemNum: window.localStorage.getItem(type + 'itemNumber') || '',
+        itemId: window.localStorage.getItem(type + 'itemId') || '',
+        reqType: window.localStorage.getItem(type + 'reqType') || 'mail',
+        filterName: window.localStorage.getItem(type + 'filterName') || '',
+        sendIntervalTime: Number(window.localStorage.getItem(type + 'IntervalTime')) || 1000,
+        realReqMethod: 'post'
+    }
+}
+
 const glqxz: ItemsGJQT = {
-    nameWord: window.localStorage.getItem('glqxz' + 'nameWord') || '桃花碧柔',
-    itemNum: window.localStorage.getItem('glqxz' + 'itemNumber') || '',
-    itemId: window.localStorage.getItem('glqxz' + 'itemId') || '',
-    reqType: window.localStorage.getItem('glqxz' + 'reqType') || 'mail',
-    filterName: window.localStorage.getItem('glqxz' + 'filterName') || '',
-    sendIntervalTime: Number(window.localStorage.getItem('glqxz' + 'IntervalTime')) || 1000,
+    ...getPublicInitData('glqxz', { nameWord: '桃花碧柔' }),
     mail: gulong.WUPIN,
     charge: gulong.CHARG_WUPIN,
     charge2: gulong.CHARG_2_WUPIN,
@@ -45,19 +53,13 @@ const glqxz: ItemsGJQT = {
         return params[type]
     },
     getReqParams: (type: string, nameWord: string, itemNum: string, id: string) => {
-        return {act: 'send', sid: 1001}
+        return { act: 'send', sid: 1001 }
     },
-    realReqUrl: 'http://106.74.21.2:81/jkgm/user/playerapi.php',
-    realReqMethod: 'post'
+    realReqUrl: 'http://106.74.21.2:81/jkgm/user/playerapi.php'
 }
 
 const gjqt: ItemsGJQT = {
-    nameWord: window.localStorage.getItem('gjqt' + 'nameWord') || '31505037001',
-    itemNum: window.localStorage.getItem('gjqt' + 'itemNumber') || '',
-    itemId: window.localStorage.getItem('gjqt' + 'itemId') || '',
-    reqType: window.localStorage.getItem('gjqt' + 'reqType') || 'mail',
-    filterName: window.localStorage.getItem('gjqt' + 'filterName') || '',
-    sendIntervalTime: Number(window.localStorage.getItem('gjqt' + 'IntervalTime')) || 1000,
+    ...getPublicInitData('gjqt', { nameWord: '31505037001' }),
     mail: gujianqitan.WUPIN,
     charge: gujianqitan.CHARG_WUPIN,
     charge2: [],
@@ -82,17 +84,11 @@ const gjqt: ItemsGJQT = {
     getReqParams: (type: string, nameWord: string, itemNum: string, id: string) => {
         return null
     },
-    realReqUrl: 'http://61.171.55.117:8090/ht/gm/query.php',
-    realReqMethod: 'post',
+    realReqUrl: 'http://61.171.55.117:8090/ht/gm/query.php'
 }
 
 const mhjh: ItemsGJQT = {
-    nameWord: window.localStorage.getItem('mhjh' + 'nameWord') || '灵儿',
-    itemNum: window.localStorage.getItem('mhjh' + 'itemNumber') || '',
-    itemId: window.localStorage.getItem('mhjh' + 'itemId') || '',
-    reqType: window.localStorage.getItem('mhjh' + 'reqType') || 'mail',
-    filterName: window.localStorage.getItem('mhjh' + 'filterName') || '',
-    sendIntervalTime: Number(window.localStorage.getItem('mhjh' + 'IntervalTime')) || 1000,
+    ...getPublicInitData('mhjh', { nameWord: '灵儿' }),
     mail: menghuanjianghu.WUPIN,
     charge: menghuanjianghu.CHARG_WUPIN,
     charge2: [],
@@ -117,10 +113,15 @@ const mhjh: ItemsGJQT = {
     getReqParams: (type: string, nameWord: string, itemNum: string, id: string) => {
         return null
     },
-    realReqUrl: 'http://api.zsl168.com:88/web/mhjh/user/playerapi.php',
-    realReqMethod: 'post'
+    realReqUrl: 'http://api.zsl168.com:88/web/mhjh/user/playerapi.php'
 }
 
-const defaultValues: any = {glqxz, gjqt, mhjh}
+const list: ItemsSingle[] = [
+    { name: '古龙群侠传', value: 'glqxz' },
+    { name: '古剑奇谭', value: 'gjqt' },
+    { name: '梦幻江湖', value: 'mhjh' }
+]
+
+const defaultValues: any = { glqxz, gjqt, mhjh, list }
 
 export default defaultValues
