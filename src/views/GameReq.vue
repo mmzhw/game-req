@@ -49,7 +49,7 @@
             </div>
             <radio-pagination
                 :data-list="itemsList"
-                :current-item="choosedItem"
+                v-model:currentItem="choosedItem"
                 :route-type="routeType"
             />
             <el-button class="marginBottomTen" style="width: 100%" type="primary" @click="reqFun"
