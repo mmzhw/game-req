@@ -1,7 +1,8 @@
 <template>
     <div class="flex-line" style="margin-bottom: 0">
-        <label :style="{ width: labelWidth + 'px' }">版本：</label>
+        <!--        <label :style="{ width: props.labelWidth + 'px' }">版本：</label>-->
         <div style="display: flex">
+            <el-button class="singleButton" @click="jumpMain">主页</el-button>
             <el-upload
                 class="singleButton"
                 action="/upload"
@@ -27,7 +28,9 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-// import axios from "axios";
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const props = defineProps<{
     labelWidth: String
@@ -40,6 +43,10 @@ const emit = defineEmits<{
 
 // @ts-ignore
 const version = ref(__Admin_VERSION__ as string)
+
+const jumpMain = () => {
+    router.push({ name: 'manage', params: { id: '1' } })
+}
 
 const uploadSuccess = (response: any) => {
     emit('uploadSuccess', response)
@@ -55,11 +62,5 @@ const uploadError = (response: any) => {
 <style scoped lang="scss">
 .singleButton {
     margin-right: 10px;
-    //width: calc((100% - 10px) / 2);
-    :deep {
-        .el-upload {
-            //width: 100%;
-        }
-    }
 }
 </style>

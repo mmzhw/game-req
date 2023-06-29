@@ -29,6 +29,11 @@ const router = createRouter({
             path: '/manage/:id',
             name: 'manage',
             component: () => import('../views/GameReq.vue')
+        },
+        {
+            path: '/version',
+            name: 'version',
+            component: () => import('../views/VersionControl.vue')
         }
         // {
         //     path: '/gjqt',
