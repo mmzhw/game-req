@@ -22,3 +22,9 @@ interface ItemsGJQT {
 interface idDefaultValues {
     [key: string]: any
 }
+
+interface PropsRadioPagination {
+    dataList: ItemsSingle[]
+    currentItem: string
+    routeType: string
+}

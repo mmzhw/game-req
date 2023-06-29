@@ -5,10 +5,7 @@
         v-model="realItem"
         @change="changeItemId"
     >
-        <el-radio-button
-            v-for="(item, index) in realList"
-            :key="index"
-            :label="item.value"
+        <el-radio-button v-for="(item, index) in realList" :key="index" :label="item.value"
         >{{ item.name }}
         </el-radio-button>
     </el-radio-group>
@@ -30,13 +27,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch} from 'vue';
 
-const props = defineProps<{
-    dataList: ItemsSingle[]
-    currentItem: string
-    routeType: string
-}>();
+const props = withDefaults(defineProps<PropsRadioPagination>(), {
+    dataList: ()=>[],
+    currentItem: '',
+    routeType: ''
+})
+
 const emit = defineEmits(['update:currentItem']);
 
 const size = ref(10);
@@ -47,14 +45,13 @@ const realItem = ref('');
 
 const isMobile = ref(/mobile/i.test(navigator.userAgent));
 
-
 let realList = computed(() => {
     return props.dataList?.slice(size.value * (current.value - 1), size.value * current.value);
 });
 watch(
     () => props.currentItem,
     (newVal: string, oldVal: string) => {
-        console.log(newVal,oldVal)
+        console.log(newVal, oldVal);
         if (newVal !== oldVal) {
             realItem.value = newVal;
         }
@@ -78,7 +75,7 @@ const pageSizeChange = (sizes: number) => {
 };
 
 const changeItemId = (item: string) => {
-    window.localStorage.setItem(props.routeType + 'itemId', item)
+    window.localStorage.setItem(props.routeType + 'itemId', item);
     emit('update:currentItem', item);
 };
 </script>

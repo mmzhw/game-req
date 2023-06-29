@@ -47,7 +47,11 @@
                     <el-input v-model="keyWord" placeholder="过滤" @input="changeWupin" />
                 </div>
             </div>
-            <radio-pagination :data-list="itemsList" :current-item="choosedItem" :routeType="routeType"/>
+            <radio-pagination
+                :data-list="itemsList"
+                :current-item="choosedItem"
+                :route-type="routeType"
+            />
             <el-button class="marginBottomTen" style="width: 100%" type="primary" @click="reqFun"
                 >发送
             </el-button>
@@ -87,7 +91,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 let routerParams = useRoute().params
 const router = useRouter()
-const routeType = ref(routerParams?.id || '')
+const routeType = ref((routerParams?.id || '') as string)
 const gameList = ref(defaultValues.list)
 const nameWord = ref('')
 const itemNum = ref('')
@@ -103,7 +107,7 @@ let logList: any = ref([])
 
 let hasPage = computed({
     get() {
-        return !!defaultValues[routeType.value as string]
+        return !!defaultValues[routeType.value]
     },
     set() {}
 })
@@ -136,7 +140,7 @@ const changeIntervalTime = (value: string) => {
 const changeReqType = (type: string) => {
     if (type) {
         reqType.value = type
-        itemsList.value = defaultValues[routeType.value as string][type]
+        itemsList.value = defaultValues[routeType.value][type]
         LSSaveValue('reqType', type)
     }
 }
@@ -148,13 +152,13 @@ const changeItemNumber = (value: string) => {
 const changeWupin = (value: string) => {
     LSSaveValue('filterName', value)
     if (value) {
-        itemsList.value = defaultValues[routeType.value as string]?.mail.filter(
+        itemsList.value = defaultValues[routeType.value]?.mail.filter(
             (i: ItemsSingle) => {
                 return value && i.name.includes(value)
             }
         )
     } else {
-        itemsList.value = defaultValues[routeType.value as string]?.mail
+        itemsList.value = defaultValues[routeType.value]?.mail
     }
 }
 const changeName = (value: string) => {
@@ -166,20 +170,20 @@ const reqFun = async () => {
         method: 'post',
         url: '/api',
         data: {
-            formData: defaultValues[routeType.value as string]?.getReqFormData(
+            formData: defaultValues[routeType.value]?.getReqFormData(
                 reqType.value,
                 nameWord.value,
                 itemNum.value,
                 choosedItem.value
             ),
-            params: defaultValues[routeType.value as string]?.getReqParams(
+            params: defaultValues[routeType.value]?.getReqParams(
                 reqType.value,
                 nameWord.value,
                 itemNum.value,
                 choosedItem.value
             ),
-            realReqUrl: defaultValues[routeType.value as string]?.realReqUrl,
-            realReqMethod: defaultValues[routeType.value as string]?.realReqMethod
+            realReqUrl: defaultValues[routeType.value]?.realReqUrl,
+            realReqMethod: defaultValues[routeType.value]?.realReqMethod
         }
     })
     addLogs(result?.data)
@@ -206,13 +210,13 @@ const initPage = (id: string) => {
     if (id) {
         routeType.value = id
     }
-    if (routeType.value && defaultValues[routeType.value as string]) {
-        nameWord.value = defaultValues[routeType.value as string]?.nameWord
-        itemNum.value = defaultValues[routeType.value as string]?.itemNum
-        choosedItem.value = defaultValues[routeType.value as string]?.itemId
-        keyWord.value = defaultValues[routeType.value as string]?.filterName
-        intervalObj.value.time = defaultValues[routeType.value as string]?.sendIntervalTime
-        changeReqType(defaultValues[routeType.value as string]?.reqType)
+    if (routeType.value && defaultValues[routeType.value]) {
+        nameWord.value = defaultValues[routeType.value]?.nameWord
+        itemNum.value = defaultValues[routeType.value]?.itemNum
+        choosedItem.value = defaultValues[routeType.value]?.itemId
+        keyWord.value = defaultValues[routeType.value]?.filterName
+        intervalObj.value.time = defaultValues[routeType.value]?.sendIntervalTime
+        changeReqType(defaultValues[routeType.value]?.reqType)
         if (reqType.value === 'mail') {
             changeWupin(keyWord.value)
         }
@@ -250,5 +254,4 @@ const initPage = (id: string) => {
         }
     }
 }
-
 </style>
