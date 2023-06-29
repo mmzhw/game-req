@@ -1,9 +1,9 @@
-import gujianqitan from '@/constant/gujianqitan';
-import gulong from '@/constant/gulong';
-import menghuanjianghu from '@/constant/menghuanjianghu';
+import gujianqitan from '@/constant/gujianqitan'
+import gulong from '@/constant/gulong'
+import menghuanjianghu from '@/constant/menghuanjianghu'
 
 const getPublicInitData = (type: string, options: { nameWord: string }) => {
-    const { nameWord } = options;
+    const { nameWord } = options
     return {
         nameWord: window.localStorage.getItem(type + 'nameWord') || nameWord,
         itemNum: window.localStorage.getItem(type + 'itemNumber') || '',
@@ -12,8 +12,8 @@ const getPublicInitData = (type: string, options: { nameWord: string }) => {
         filterName: window.localStorage.getItem(type + 'filterName') || '',
         sendIntervalTime: Number(window.localStorage.getItem(type + 'IntervalTime')) || 1000,
         realReqMethod: 'post'
-    };
-};
+    }
+}
 
 const glqxz: ItemsGJQT = {
     ...getPublicInitData('glqxz', { nameWord: '桃花碧柔' }),
@@ -49,14 +49,14 @@ const glqxz: ItemsGJQT = {
                 qu: 2,
                 charge: 3
             }
-        };
-        return params[type];
+        }
+        return params[type]
     },
     getReqParams: (type: string, nameWord: string, itemNum: string, id: string) => {
-        return { act: 'send', sid: 1001 };
+        return { act: 'send', sid: 1001 }
     },
     realReqUrl: 'http://106.74.21.2:81/jkgm/user/playerapi.php'
-};
+}
 
 const gjqt: ItemsGJQT = {
     ...getPublicInitData('gjqt', { nameWord: '31505037001' }),
@@ -78,14 +78,14 @@ const gjqt: ItemsGJQT = {
                 itemid: Number(id),
                 itemnum: Number(itemNum)
             }
-        };
-        return params[type];
+        }
+        return params[type]
     },
     getReqParams: (type: string, nameWord: string, itemNum: string, id: string) => {
-        return null;
+        return null
     },
     realReqUrl: 'http://61.171.55.117:8090/ht/gm/query.php'
-};
+}
 
 const mhjh: ItemsGJQT = {
     ...getPublicInitData('mhjh', { nameWord: '灵儿' }),
@@ -107,21 +107,21 @@ const mhjh: ItemsGJQT = {
                 num: Number(itemNum),
                 game_id: 1177
             }
-        };
-        return params[type];
+        }
+        return params[type]
     },
     getReqParams: (type: string, nameWord: string, itemNum: string, id: string) => {
-        return null;
+        return null
     },
     realReqUrl: 'http://api.zsl168.com:88/web/mhjh/user/playerapi.php'
-};
+}
 
 const list: ItemsSingle[] = [
     { name: '古龙群侠传', value: 'glqxz' },
     { name: '古剑奇谭', value: 'gjqt' },
     { name: '梦幻江湖', value: 'mhjh' }
-];
+]
 
-const defaultValues: any = { 'glqxz': glqxz, 'gjqt': gjqt, 'mhjh': mhjh, 'list': list };
+const defaultValues: any = { glqxz: glqxz, gjqt: gjqt, mhjh: mhjh, list: list }
 
-export default defaultValues;
+export default defaultValues

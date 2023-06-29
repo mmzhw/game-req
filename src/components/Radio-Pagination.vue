@@ -6,7 +6,7 @@
         @change="changeItemId"
     >
         <el-radio-button v-for="(item, index) in realList" :key="index" :label="item.value"
-        >{{ item.name }}
+            >{{ item.name }}
         </el-radio-button>
     </el-radio-group>
     <el-pagination
@@ -21,63 +21,67 @@
         @size-change="pageSizeChange"
     >
         <template #default
-        ><span>{{ current }}页 / {{ dataList?.length }}条</span></template
+            ><span>{{ current }}页 / {{ dataList?.length }}条</span></template
         >
     </el-pagination>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch} from 'vue';
+import { ref, computed, onMounted, watch } from 'vue'
 
+interface PropsRadioPagination {
+    dataList: ItemsSingle[]
+    currentItem: string
+    routeType: string
+}
 const props = withDefaults(defineProps<PropsRadioPagination>(), {
-    dataList: ()=>[],
+    dataList: () => [],
     currentItem: '',
     routeType: ''
 })
 
-const emit = defineEmits(['update:currentItem']);
+const emit = defineEmits(['update:currentItem'])
 
-const size = ref(10);
-const sizes = ref([10, 20, 50, 100, 1000, 5000]);
-const current = ref(1);
-const layout = ref('');
-const realItem = ref('');
+const size = ref(10)
+const sizes = ref([10, 20, 50, 100, 1000, 5000])
+const current = ref(1)
+const layout = ref('')
+const realItem = ref('')
 
-const isMobile = ref(/mobile/i.test(navigator.userAgent));
+const isMobile = ref(/mobile/i.test(navigator.userAgent))
 
 let realList = computed(() => {
-    return props.dataList?.slice(size.value * (current.value - 1), size.value * current.value);
-});
+    return props.dataList?.slice(size.value * (current.value - 1), size.value * current.value)
+})
 watch(
     () => props.currentItem,
     (newVal: string, oldVal: string) => {
-        console.log(newVal, oldVal);
         if (newVal !== oldVal) {
-            realItem.value = newVal;
+            realItem.value = newVal
         }
     }
-);
+)
 onMounted(() => {
     if (isMobile.value) {
-        layout.value = 'prev, next, sizes, ->, slot';
+        layout.value = 'prev, next, sizes, ->, slot'
     } else {
-        layout.value = 'prev, pager, next, jumper, sizes, ->, total';
+        layout.value = 'prev, pager, next, jumper, sizes, ->, total'
     }
-});
+})
 
 const pageCurrentChange = (size: number) => {
-    current.value = size;
-};
+    current.value = size
+}
 
 const pageSizeChange = (sizes: number) => {
-    size.value = sizes;
-    current.value = 1;
-};
+    size.value = sizes
+    current.value = 1
+}
 
 const changeItemId = (item: string) => {
-    window.localStorage.setItem(props.routeType + 'itemId', item);
-    emit('update:currentItem', item);
-};
+    window.localStorage.setItem(props.routeType + 'itemId', item)
+    emit('update:currentItem', item)
+}
 </script>
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">

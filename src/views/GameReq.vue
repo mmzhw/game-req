@@ -89,9 +89,9 @@ import TablePagination from '../components/Table-Pagination.vue'
 import RadioPagination from '../components/Radio-Pagination.vue'
 import { useRoute, useRouter } from 'vue-router'
 
-let routerParams = useRoute().params
 const router = useRouter()
-const routeType = ref((routerParams?.id || '') as string)
+const routeParams = useRoute().params as Record<string, string>
+const routeType = ref<string>(routeParams.id || '')
 const gameList = ref(defaultValues.list)
 const nameWord = ref('')
 const itemNum = ref('')
@@ -152,11 +152,9 @@ const changeItemNumber = (value: string) => {
 const changeWupin = (value: string) => {
     LSSaveValue('filterName', value)
     if (value) {
-        itemsList.value = defaultValues[routeType.value]?.mail.filter(
-            (i: ItemsSingle) => {
-                return value && i.name.includes(value)
-            }
-        )
+        itemsList.value = defaultValues[routeType.value]?.mail.filter((i: ItemsSingle) => {
+            return value && i.name.includes(value)
+        })
     } else {
         itemsList.value = defaultValues[routeType.value]?.mail
     }
