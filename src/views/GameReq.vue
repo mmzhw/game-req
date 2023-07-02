@@ -59,7 +59,6 @@
                 :route-type="routeType"
             />
             <el-button
-                :disabled="isSending"
                 class="marginBottomTen"
                 style="width: 100%"
                 type="primary"
@@ -71,7 +70,6 @@
                     style="flex: 1"
                     type="primary"
                     @click="reqFunInterval"
-                    :disabled="isSending"
                     >开启定时发送
                 </el-button>
                 <el-button
@@ -110,7 +108,6 @@ const itemNum = ref('')
 const choosedItem:any = ref([])
 const reqType = ref('')
 const keyWord = ref('')
-const isSending = ref(false)
 const intervalObj: any = ref({
     time: 1000
 })
@@ -187,8 +184,13 @@ const changeName = (value: string) => {
 }
 
 const reqFunBatch = async () => {
-    isSending.value = true
-    let sendNumber = 0
+    await reqFun(
+        choosedItem.value[0].value,
+        '',
+        '',
+        choosedItem.value[0].name
+    )
+    let sendNumber = 1
     let diguiSend = () => {
         return new Promise((resolve) => {
             if (sendNumber + 1 > choosedItem.value.length) {
@@ -208,13 +210,12 @@ const reqFunBatch = async () => {
         })
     }
     await diguiSend()
-    isSending.value = false
 }
 
 const reqFun = async (itemId: string, interval: number | string, url: string, name: string) => {
     let result = await axios({
         method: 'post',
-        url: url ? url : 'http://localhost:3000/api',
+        url: url ? url : '/api',
         data: {
             interval: interval,
             formData: defaultValues[routeType.value]?.getReqFormData(
@@ -240,7 +241,7 @@ const reqFunInterval = () => {
         reqFun(
             choosedItem.value[0].value,
             intervalObj.value.time,
-            'http://localhost:3000/apiInterval',
+            '/apiInterval',
             choosedItem.value[0].name
         )
     }
@@ -248,7 +249,7 @@ const reqFunInterval = () => {
 const reqFunIntervalClose = async () => {
     let result = await axios({
         method: 'post',
-        url: 'http://localhost:3000/closeinterval'
+        url: '/closeinterval'
     })
     addLogs(result?.data)
 }
