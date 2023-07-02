@@ -50,8 +50,7 @@ const reqFun = async (body) => {
         option.data = qs.stringify(body.formData)
     }
     let result = await axios(option)
-    console.log('请求参数:', option)
-    console.log('请求结果:', result?.data)
+    console.log('请求参数:', option, result?.data)
     return result?.data
 }
 
@@ -59,7 +58,7 @@ let intervalId = null
 
 router
     .post('/api', async (ctx) => {
-        ctx.body = await reqFun(ctx.request.body)
+        ctx.body = await reqFun(ctx.request.body.reqData)
     })
     .post('/apiInterval', async (ctx) => {
         if (ctx.request.body.interval) {
@@ -68,7 +67,7 @@ router
                 return
             }
             intervalId = setInterval(() => {
-                reqFun(ctx.request.body)
+                reqFun(ctx.request.body.reqData)
             }, ctx.request.body.interval)
         }
         ctx.body = '定时器id为' + intervalId

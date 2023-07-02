@@ -66,10 +66,7 @@
                 >发送
             </el-button>
             <div class="flex-space-between marginBottomTen">
-                <el-button
-                    style="flex: 1"
-                    type="primary"
-                    @click="reqFunInterval"
+                <el-button style="flex: 1" type="primary" @click="reqFunInterval"
                     >开启定时发送
                 </el-button>
                 <el-button
@@ -105,7 +102,7 @@ const routeType = ref<string>(routeParams.id || '')
 const gameList = ref(defaultValues.list)
 const nameWord = ref('')
 const itemNum = ref('')
-const choosedItem:any = ref([])
+const choosedItem: any = ref([])
 const reqType = ref('')
 const keyWord = ref('')
 const intervalObj: any = ref({
@@ -122,9 +119,9 @@ let hasPage = computed({
 })
 
 let appearContent = computed(() => {
-    if (choosedItem.value && choosedItem.value.length > 0){
-        let list =  choosedItem.value.map((i:any) =>{
-            return  i.name
+    if (choosedItem.value && choosedItem.value.length > 0) {
+        let list = choosedItem.value.map((i: any) => {
+            return i.name
         })
         return list.join('，')
     }
@@ -183,13 +180,34 @@ const changeName = (value: string) => {
     LSSaveValue('nameWord', value)
 }
 
+const reqFun = async (itemId: any, url: string) => {
+    let result = await axios({
+        method: 'post',
+        url: url ? url : '/api',
+        data: {
+            interval: intervalObj.value.time,
+            reqData: {
+                formData: defaultValues[routeType.value]?.getReqFormData(
+                    reqType.value,
+                    nameWord.value,
+                    itemNum.value,
+                    itemId.value
+                ),
+                params: defaultValues[routeType.value]?.getReqParams(
+                    reqType.value,
+                    nameWord.value,
+                    itemNum.value,
+                    itemId.value
+                ),
+                realReqUrl: defaultValues[routeType.value]?.realReqUrl,
+                realReqMethod: defaultValues[routeType.value]?.realReqMethod
+            }
+        }
+    })
+    addLogs(itemId.name + result?.data)
+}
 const reqFunBatch = async () => {
-    await reqFun(
-        choosedItem.value[0].value,
-        '',
-        '',
-        choosedItem.value[0].name
-    )
+    await reqFun(choosedItem.value[0], '')
     let sendNumber = 1
     let diguiSend = () => {
         return new Promise((resolve) => {
@@ -197,12 +215,7 @@ const reqFunBatch = async () => {
                 resolve('')
             }
             setTimeout(async () => {
-                await reqFun(
-                    choosedItem.value[sendNumber].value,
-                    '',
-                    '',
-                    choosedItem.value[sendNumber].name
-                )
+                await reqFun(choosedItem.value[sendNumber], '')
                 sendNumber++
                 await diguiSend()
                 resolve('')
@@ -211,39 +224,9 @@ const reqFunBatch = async () => {
     }
     await diguiSend()
 }
-
-const reqFun = async (itemId: string, interval: number | string, url: string, name: string) => {
-    let result = await axios({
-        method: 'post',
-        url: url ? url : '/api',
-        data: {
-            interval: interval,
-            formData: defaultValues[routeType.value]?.getReqFormData(
-                reqType.value,
-                nameWord.value,
-                itemNum.value,
-                itemId
-            ),
-            params: defaultValues[routeType.value]?.getReqParams(
-                reqType.value,
-                nameWord.value,
-                itemNum.value,
-                itemId
-            ),
-            realReqUrl: defaultValues[routeType.value]?.realReqUrl,
-            realReqMethod: defaultValues[routeType.value]?.realReqMethod
-        }
-    })
-    addLogs(name + result?.data)
-}
 const reqFunInterval = () => {
-    if (choosedItem.value && choosedItem.value.length > 0){
-        reqFun(
-            choosedItem.value[0].value,
-            intervalObj.value.time,
-            '/apiInterval',
-            choosedItem.value[0].name
-        )
+    if (choosedItem.value && choosedItem.value.length > 0) {
+        reqFun(choosedItem.value[0], '/apiInterval')
     }
 }
 const reqFunIntervalClose = async () => {

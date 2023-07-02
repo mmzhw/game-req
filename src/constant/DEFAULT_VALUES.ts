@@ -12,7 +12,6 @@ import menghuanjianghu from '@/constant/menghuanjianghu'
 // }
 // JSON.stringify(zzz)
 
-
 const getPublicInitData = (type: string, options: { nameWord: string }) => {
     const { nameWord } = options
     const ids = window.localStorage.getItem(type + 'itemId')
