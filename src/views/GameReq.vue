@@ -58,6 +58,7 @@
                 v-model:currentItem="choosedItem"
                 :route-type="routeType"
             />
+            <div class="flex-space-between marginBottomTen">
             <el-button
                 class="marginBottomTen"
                 style="width: 100%"
@@ -65,6 +66,13 @@
                 @click="reqFunBatch"
                 >发送
             </el-button>
+                <el-button
+                    style="width: 50px; margin-left: 10px"
+                    type="primary"
+                    @click="choosedItem=[]"
+                >清空
+                </el-button>
+            </div>
             <div class="flex-space-between marginBottomTen">
                 <el-button style="flex: 1" type="primary" @click="reqFunInterval"
                     >开启定时发送
