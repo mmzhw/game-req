@@ -55,9 +55,32 @@ const reqFun = async (body) => {
     return result?.data
 }
 
+let intervalId = null
+
 router
     .post('/api', async (ctx) => {
         ctx.body = await reqFun(ctx.request.body)
+    })
+    .post('/apiInterval', async (ctx) => {
+        if (ctx.request.body.interval) {
+            if (intervalId) {
+                ctx.body = '存在定时器id为' + intervalId
+                return
+            }
+            intervalId = setInterval(() => {
+                reqFun(ctx.request.body)
+            }, ctx.request.body.interval)
+        }
+        ctx.body = '定时器id为' + intervalId
+    })
+    .post('/closeinterval', async (ctx) => {
+        if (intervalId) {
+            clearInterval(intervalId)
+            intervalId = null
+            ctx.body = '关闭定时器成功'
+            return
+        }
+        ctx.body = '不存在定时器'
     })
     .post('/upload', async (ctx) => {
         // 获取上传文件

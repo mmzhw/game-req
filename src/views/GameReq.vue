@@ -41,26 +41,37 @@
                     <el-input v-model="itemNum" placeholder="数目" @change="changeItemNumber" />
                 </div>
             </div>
+            <div class="flex-line">
+                <label>已选：</label>
+                <div style="line-height: 32px">
+                    {{ appearContent }}
+                </div>
+            </div>
             <div class="flex-line" v-if="reqType === 'mail'">
                 <label>过滤：</label>
                 <div>
                     <el-input v-model="keyWord" placeholder="过滤" @input="changeWupin" />
                 </div>
             </div>
-            <radio-pagination
+            <checkbox-pagination
                 :data-list="itemsList"
                 v-model:currentItem="choosedItem"
                 :route-type="routeType"
             />
-            <el-button class="marginBottomTen" style="width: 100%" type="primary" @click="reqFun"
+            <el-button
+                :disabled="isSending"
+                class="marginBottomTen"
+                style="width: 100%"
+                type="primary"
+                @click="reqFunBatch"
                 >发送
             </el-button>
             <div class="flex-space-between marginBottomTen">
                 <el-button
-                    :disabled="intervalObj.id"
                     style="flex: 1"
                     type="primary"
                     @click="reqFunInterval"
+                    :disabled="isSending"
                     >开启定时发送
                 </el-button>
                 <el-button
@@ -86,7 +97,8 @@ import { ref, computed, onMounted } from 'vue'
 import defaultValues from '@/constant/DEFAULT_VALUES'
 import axios from 'axios'
 import TablePagination from '../components/Table-Pagination.vue'
-import RadioPagination from '../components/Radio-Pagination.vue'
+// import RadioPagination from '../components/Radio-Pagination.vue'
+import CheckboxPagination from '../components/Checkbox-Pagination.vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -95,11 +107,11 @@ const routeType = ref<string>(routeParams.id || '')
 const gameList = ref(defaultValues.list)
 const nameWord = ref('')
 const itemNum = ref('')
-const choosedItem = ref('')
+const choosedItem:any = ref([])
 const reqType = ref('')
 const keyWord = ref('')
+const isSending = ref(false)
 const intervalObj: any = ref({
-    id: null,
     time: 1000
 })
 let itemsList: any = ref([])
@@ -110,6 +122,16 @@ let hasPage = computed({
         return !!defaultValues[routeType.value]
     },
     set() {}
+})
+
+let appearContent = computed(() => {
+    if (choosedItem.value && choosedItem.value.length > 0){
+        let list =  choosedItem.value.map((i:any) =>{
+            return  i.name
+        })
+        return list.join('，')
+    }
+    return ''
 })
 
 onMounted(() => {
@@ -138,6 +160,7 @@ const changeIntervalTime = (value: string) => {
 
 //切换充值类型
 const changeReqType = (type: string) => {
+    choosedItem.value = []
     if (type) {
         reqType.value = type
         itemsList.value = defaultValues[routeType.value][type]
@@ -163,42 +186,71 @@ const changeName = (value: string) => {
     LSSaveValue('nameWord', value)
 }
 
-const reqFun = async () => {
+const reqFunBatch = async () => {
+    isSending.value = true
+    let sendNumber = 0
+    let diguiSend = () => {
+        return new Promise((resolve) => {
+            if (sendNumber + 1 > choosedItem.value.length) {
+                resolve('')
+            }
+            setTimeout(async () => {
+                await reqFun(
+                    choosedItem.value[sendNumber].value,
+                    '',
+                    '',
+                    choosedItem.value[sendNumber].name
+                )
+                sendNumber++
+                await diguiSend()
+                resolve('')
+            }, intervalObj.value.time)
+        })
+    }
+    await diguiSend()
+    isSending.value = false
+}
+
+const reqFun = async (itemId: string, interval: number | string, url: string, name: string) => {
     let result = await axios({
         method: 'post',
-        url: '/api',
+        url: url ? url : 'http://localhost:3000/api',
         data: {
+            interval: interval,
             formData: defaultValues[routeType.value]?.getReqFormData(
                 reqType.value,
                 nameWord.value,
                 itemNum.value,
-                choosedItem.value
+                itemId
             ),
             params: defaultValues[routeType.value]?.getReqParams(
                 reqType.value,
                 nameWord.value,
                 itemNum.value,
-                choosedItem.value
+                itemId
             ),
             realReqUrl: defaultValues[routeType.value]?.realReqUrl,
             realReqMethod: defaultValues[routeType.value]?.realReqMethod
         }
     })
-    addLogs(result?.data)
+    addLogs(name + result?.data)
 }
 const reqFunInterval = () => {
-    if (intervalObj.value.id) {
-        return
+    if (choosedItem.value && choosedItem.value.length > 0){
+        reqFun(
+            choosedItem.value[0].value,
+            intervalObj.value.time,
+            'http://localhost:3000/apiInterval',
+            choosedItem.value[0].name
+        )
     }
-    intervalObj.value.id = setInterval(() => {
-        reqFun()
-    }, intervalObj.value.time)
 }
-const reqFunIntervalClose = () => {
-    if (intervalObj.value.id) {
-        clearInterval(intervalObj.value.id)
-        intervalObj.value.id = null
-    }
+const reqFunIntervalClose = async () => {
+    let result = await axios({
+        method: 'post',
+        url: 'http://localhost:3000/closeinterval'
+    })
+    addLogs(result?.data)
 }
 const addLogs = (message: any) => {
     logList.value.unshift({ no: logList.value.length + 1, message: message })
@@ -211,10 +263,10 @@ const initPage = (id: string) => {
     if (routeType.value && defaultValues[routeType.value]) {
         nameWord.value = defaultValues[routeType.value]?.nameWord
         itemNum.value = defaultValues[routeType.value]?.itemNum
-        choosedItem.value = defaultValues[routeType.value]?.itemId
         keyWord.value = defaultValues[routeType.value]?.filterName
         intervalObj.value.time = defaultValues[routeType.value]?.sendIntervalTime
         changeReqType(defaultValues[routeType.value]?.reqType)
+        choosedItem.value = defaultValues[routeType.value]?.itemId
         if (reqType.value === 'mail') {
             changeWupin(keyWord.value)
         }

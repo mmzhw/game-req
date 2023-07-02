@@ -6,7 +6,8 @@ interface ItemsSingle {
 interface ItemsGJQT {
     nameWord: string
     itemNum: string
-    itemId: string
+    itemName: string
+    itemId: any
     reqType: string
     filterName: string
     sendIntervalTime: number

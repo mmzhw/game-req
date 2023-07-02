@@ -4,10 +4,12 @@ import menghuanjianghu from '@/constant/menghuanjianghu'
 
 const getPublicInitData = (type: string, options: { nameWord: string }) => {
     const { nameWord } = options
+    const ids = window.localStorage.getItem(type + 'itemId')
     return {
         nameWord: window.localStorage.getItem(type + 'nameWord') || nameWord,
         itemNum: window.localStorage.getItem(type + 'itemNumber') || '',
-        itemId: window.localStorage.getItem(type + 'itemId') || '',
+        itemName: window.localStorage.getItem(type + 'itemName') || '',
+        itemId: ids ? JSON.parse(ids) : [],
         reqType: window.localStorage.getItem(type + 'reqType') || 'mail',
         filterName: window.localStorage.getItem(type + 'filterName') || '',
         sendIntervalTime: Number(window.localStorage.getItem(type + 'IntervalTime')) || 1000,
@@ -88,7 +90,7 @@ const gjqt: ItemsGJQT = {
 }
 
 const mhjh: ItemsGJQT = {
-    ...getPublicInitData('mhjh', { nameWord: '灵儿' }),
+    ...getPublicInitData('mhjh', { nameWord: '梦儿' }),
     mail: menghuanjianghu.WUPIN,
     charge: menghuanjianghu.CHARG_WUPIN,
     charge2: [],
