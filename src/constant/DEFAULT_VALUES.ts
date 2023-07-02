@@ -2,6 +2,17 @@ import gujianqitan from '@/constant/gujianqitan'
 import gulong from '@/constant/gulong'
 import menghuanjianghu from '@/constant/menghuanjianghu'
 
+// const zzz = []
+//
+// for(let i=1;i<cz.options.length;i++){
+//     zzz.push({name:cz.options[i].text,value:cz.options[i].value})
+// }
+// for(let i=1;i<item.options.length;i++){
+//     zzz.push({name:item.options[i].text,value:item.options[i].value})
+// }
+// JSON.stringify(zzz)
+
+
 const getPublicInitData = (type: string, options: { nameWord: string }) => {
     const { nameWord } = options
     const ids = window.localStorage.getItem(type + 'itemId')
