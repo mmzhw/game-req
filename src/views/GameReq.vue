@@ -202,52 +202,34 @@ const choosedItemClearOne = (i: ItemsSingle) => {
     window.localStorage.setItem(routeType.value + 'itemId', JSON.stringify(choosedItem.value))
 }
 const reqFun = async (itemIds: any, url: string) => {
-    let reqData = {}
-    if (itemIds && itemIds.length) {
-        reqData = itemIds.map((i: ItemsSingle) => {
-            return {
-                name: i.name,
-                formData: defaultValues[routeType.value]?.getReqFormData(
-                    reqType.value,
-                    nameWord.value,
-                    itemNum.value,
-                    i.value
-                ),
-                params: defaultValues[routeType.value]?.getReqParams(
-                    reqType.value,
-                    nameWord.value,
-                    itemNum.value,
-                    i.value
-                ),
-                realReqUrl: defaultValues[routeType.value]?.realReqUrl,
-                realReqMethod: defaultValues[routeType.value]?.realReqMethod
-            }
-        })
-    } else {
-        reqData = [
-            {
-                name: itemIds.name,
-                formData: defaultValues[routeType.value]?.getReqFormData(
-                    reqType.value,
-                    nameWord.value,
-                    itemNum.value,
-                    itemIds.value
-                ),
-                params: defaultValues[routeType.value]?.getReqParams(
-                    reqType.value,
-                    nameWord.value,
-                    itemNum.value,
-                    itemIds.value
-                ),
-                realReqUrl: defaultValues[routeType.value]?.realReqUrl,
-                realReqMethod: defaultValues[routeType.value]?.realReqMethod
-            }
-        ]
+    if (itemIds && !itemIds.length) {
+        itemIds = [itemIds]
     }
     await axios({
         method: 'post',
         url: url,
-        data: { interval: intervalObj.value.time, reqData }
+        data: {
+            interval: intervalObj.value.time,
+            reqData: itemIds.map((i: ItemsSingle) => {
+                return {
+                    name: i.name,
+                    formData: defaultValues[routeType.value]?.getReqFormData(
+                        reqType.value,
+                        nameWord.value,
+                        itemNum.value,
+                        i.value
+                    ),
+                    params: defaultValues[routeType.value]?.getReqParams(
+                        reqType.value,
+                        nameWord.value,
+                        itemNum.value,
+                        i.value
+                    ),
+                    realReqUrl: defaultValues[routeType.value]?.realReqUrl,
+                    realReqMethod: defaultValues[routeType.value]?.realReqMethod
+                }
+            })
+        }
     })
 }
 const delayReqFun = async (itemIds: any, url: string) => {
@@ -301,7 +283,7 @@ const initPage = (id: string) => {
 }
 
 const initWs = () => {
-    ws = new WebSocket(import.meta.env.DEV ? 'ws://localhost:3000' : 'ws://' + window.location.host)
+    ws = new WebSocket(import.meta.env.DEV ? 'ws://localhost:3000' : 'wss://' + window.location.host)
     ws.onmessage = (response) => {
         addLogs(response.data)
     }
