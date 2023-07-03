@@ -1,6 +1,6 @@
 {
     "name": "vite-project",
-    "version": "2.15.8",
+    "version": "2.15.11",
     "private": true,
     "scripts": {
         "dev": "vite",
@@ -25,7 +25,8 @@
         "qs": "^6.11.2",
         "sass": "^1.63.3",
         "vue": "^3.3.2",
-        "vue-router": "^4.2.0"
+        "vue-router": "^4.2.0",
+        "ws": "^8.13.0"
     },
     "devDependencies": {
         "@rushstack/eslint-patch": "^1.2.0",

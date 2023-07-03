@@ -4,7 +4,7 @@
         <el-table-column prop="message" label="内容" />
     </el-table>
     <el-pagination
-        class="marginTopFive"
+        class="marginTopFive paddingBottomTen"
         :class="isMobile && 'pagePaginationMobile'"
         :layout="layout"
         :page-sizes="sizes"

@@ -1,13 +1,12 @@
 <template>
     <el-checkbox-group
-        class="marginTopFive"
-        :class="isMobile && 'mobileCheck'"
+        :class="['check-group-wrap', isMobile && 'mobileCheck']"
         v-model="realItem"
         @change="changeItemId"
     >
-        <el-checkbox-button v-for="(item, index) in realList" :key="index" :label="item">{{
-            item.name
-        }}</el-checkbox-button>
+        <el-checkbox-button v-for="(item, index) in realList" :key="index" :label="item"
+            >{{ item.name }}
+        </el-checkbox-button>
     </el-checkbox-group>
     <el-pagination
         class="marginBottomTen"
@@ -35,6 +34,7 @@ interface PropsRadioPagination {
     currentItem: any
     routeType: string
 }
+
 const props = withDefaults(defineProps<PropsRadioPagination>(), {
     dataList: () => [],
     currentItem: () => [],
@@ -85,6 +85,14 @@ const changeItemId = (item: []) => {
 </script>
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
+.check-group-wrap {
+    :deep {
+        .el-checkbox-button {
+            margin: 0 0 5px 0;
+        }
+    }
+}
+
 .mobileCheck {
     display: flex;
     justify-content: space-between;
@@ -93,7 +101,6 @@ const changeItemId = (item: []) => {
     :deep {
         .el-checkbox-button {
             width: calc((100% - 10px) / 2);
-            margin: 0 0 5px 0;
 
             .el-checkbox-button__inner {
                 width: 100%;

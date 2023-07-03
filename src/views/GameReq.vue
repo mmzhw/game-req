@@ -44,7 +44,14 @@
             <div class="flex-line">
                 <label>已选：</label>
                 <div style="line-height: 32px">
-                    {{ appearContent }}
+                    <el-tag
+                        class="marginRightFive"
+                        v-for="(i, index) in choosedItem"
+                        :key="'yixuan' + index"
+                        closable
+                        @close="choosedItemClearOne(i)"
+                        >{{ i.name }}
+                    </el-tag>
                 </div>
             </div>
             <div class="flex-line" v-if="reqType === 'mail'">
@@ -59,23 +66,30 @@
                 :route-type="routeType"
             />
             <div class="flex-space-between marginBottomTen">
-            <el-button
-                class="marginBottomTen"
-                style="width: 100%"
-                type="primary"
-                @click="reqFunBatch"
-                >发送
-            </el-button>
+                <el-button
+                    class="marginBottomTen"
+                    style="width: calc((100% - 70px) / 2)"
+                    type="primary"
+                    @click="reqFunBatch"
+                    >前端批量发送
+                </el-button>
+                <el-button
+                    class="marginBottomTen"
+                    style="width: calc((100% - 70px) / 2); margin-left: 10px"
+                    type="primary"
+                    @click="reqFunServerBatch"
+                    >服务端批量发送
+                </el-button>
                 <el-button
                     style="width: 50px; margin-left: 10px"
                     type="primary"
-                    @click="choosedItem=[]"
-                >清空
+                    @click="choosedItem = []"
+                    >清空
                 </el-button>
             </div>
             <div class="flex-space-between marginBottomTen">
                 <el-button style="flex: 1" type="primary" @click="reqFunInterval"
-                    >开启定时发送
+                    >开启定时发送选择的第一个
                 </el-button>
                 <el-button
                     style="width: 50px; margin-left: 10px"
@@ -119,6 +133,9 @@ const intervalObj: any = ref({
 let itemsList: any = ref([])
 let logList: any = ref([])
 
+let ws = null
+const reqPre = import.meta.env.DEV ? 'http://localhost:3000' : ''
+
 let hasPage = computed({
     get() {
         return !!defaultValues[routeType.value]
@@ -126,18 +143,9 @@ let hasPage = computed({
     set() {}
 })
 
-let appearContent = computed(() => {
-    if (choosedItem.value && choosedItem.value.length > 0) {
-        let list = choosedItem.value.map((i: any) => {
-            return i.name
-        })
-        return list.join('，')
-    }
-    return ''
-})
-
 onMounted(() => {
     initPage('')
+    initWs()
 })
 
 const LSSaveValue = (type: string, value: any) => {
@@ -187,60 +195,87 @@ const changeWupin = (value: string) => {
 const changeName = (value: string) => {
     LSSaveValue('nameWord', value)
 }
-
-const reqFun = async (itemId: any, url: string) => {
-    let result = await axios({
-        method: 'post',
-        url: url ? url : '/api',
-        data: {
-            interval: intervalObj.value.time,
-            reqData: {
+const choosedItemClearOne = (i: ItemsSingle) => {
+    choosedItem.value = choosedItem.value.filter((z: ItemsSingle) => {
+        return z.value !== i.value
+    })
+    window.localStorage.setItem(routeType.value + 'itemId', JSON.stringify(choosedItem.value))
+}
+const reqFun = async (itemIds: any, url: string) => {
+    let reqData = {}
+    if (itemIds && itemIds.length) {
+        reqData = itemIds.map((i: ItemsSingle) => {
+            return {
+                name: i.name,
                 formData: defaultValues[routeType.value]?.getReqFormData(
                     reqType.value,
                     nameWord.value,
                     itemNum.value,
-                    itemId.value
+                    i.value
                 ),
                 params: defaultValues[routeType.value]?.getReqParams(
                     reqType.value,
                     nameWord.value,
                     itemNum.value,
-                    itemId.value
+                    i.value
                 ),
                 realReqUrl: defaultValues[routeType.value]?.realReqUrl,
                 realReqMethod: defaultValues[routeType.value]?.realReqMethod
             }
-        }
+        })
+    } else {
+        reqData = [
+            {
+                name: itemIds.name,
+                formData: defaultValues[routeType.value]?.getReqFormData(
+                    reqType.value,
+                    nameWord.value,
+                    itemNum.value,
+                    itemIds.value
+                ),
+                params: defaultValues[routeType.value]?.getReqParams(
+                    reqType.value,
+                    nameWord.value,
+                    itemNum.value,
+                    itemIds.value
+                ),
+                realReqUrl: defaultValues[routeType.value]?.realReqUrl,
+                realReqMethod: defaultValues[routeType.value]?.realReqMethod
+            }
+        ]
+    }
+    await axios({
+        method: 'post',
+        url: url,
+        data: { interval: intervalObj.value.time, reqData }
     })
-    addLogs(itemId.name + result?.data)
+}
+const delayReqFun = async (itemIds: any, url: string) => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            reqFun(itemIds, url)
+            resolve('')
+        }, intervalObj.value.time)
+    })
+}
+const reqFunServerBatch = async () => {
+    await reqFun(choosedItem.value, reqPre + '/apibatch')
 }
 const reqFunBatch = async () => {
-    await reqFun(choosedItem.value[0], '')
-    let sendNumber = 1
-    let diguiSend = () => {
-        return new Promise((resolve) => {
-            if (sendNumber + 1 > choosedItem.value.length) {
-                resolve('')
-            }
-            setTimeout(async () => {
-                await reqFun(choosedItem.value[sendNumber], '')
-                sendNumber++
-                await diguiSend()
-                resolve('')
-            }, intervalObj.value.time)
-        })
+    await reqFun(choosedItem.value[0], reqPre + '/api')
+    for (let i = 1; i < choosedItem.value.length; i++) {
+        await delayReqFun(choosedItem.value[i], reqPre + '/api')
     }
-    await diguiSend()
 }
 const reqFunInterval = () => {
     if (choosedItem.value && choosedItem.value.length > 0) {
-        reqFun(choosedItem.value[0], '/apiInterval')
+        reqFun(choosedItem.value[0], reqPre + '/apiInterval')
     }
 }
 const reqFunIntervalClose = async () => {
     let result = await axios({
         method: 'post',
-        url: '/closeinterval'
+        url: reqPre + '/closeinterval'
     })
     addLogs(result?.data)
 }
@@ -262,6 +297,16 @@ const initPage = (id: string) => {
         if (reqType.value === 'mail') {
             changeWupin(keyWord.value)
         }
+    }
+}
+
+const initWs = () => {
+    ws = new WebSocket(import.meta.env.DEV ? 'ws://localhost:3000' : 'ws://' + window.location.host)
+    ws.onmessage = (response) => {
+        addLogs(response.data)
+    }
+    ws.onopen = () => {
+        // ws.send('123');
     }
 }
 </script>
@@ -295,5 +340,9 @@ const initPage = (id: string) => {
             margin-bottom: 5px;
         }
     }
+}
+
+.marginRightFive {
+    margin-right: 5px;
 }
 </style>
