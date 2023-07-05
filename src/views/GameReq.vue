@@ -288,7 +288,11 @@ const initWs = () => {
         addLogs(response.data)
     }
     ws.onopen = () => {
+        addLogs('ws连接成功')
         // ws.send('123');
+    }
+    ws.onclose = ws.onerror = () => {
+        addLogs('ws断连')
     }
 }
 </script>

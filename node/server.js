@@ -52,7 +52,7 @@ const reqFun = async (body) => {
         option.data = qs.stringify(body.formData);
     }
     let result = await axios(option);
-    singleWs.send(body.name + " " + result?.data);
+    singleWs && singleWs.send(body.name + " " + result?.data);
     return result?.data;
 };
 const delayReqFun = async (bodys, time) => {
@@ -158,10 +158,10 @@ wsServer.on("connection", (ws) => {
         console.log(`[WEBSOCKET SERVER] Received: ${message}`);
     });
     singleWs.on("error", (error) => {
-        singleWs = null;
+        console.log(`[WEBSOCKET SERVER] disconnect error`);
     });
     singleWs.on("close", (error) => {
-        singleWs = null;
+        console.log(`[WEBSOCKET SERVER] disconnect close`);
     });
 });
 
