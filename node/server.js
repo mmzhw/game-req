@@ -155,7 +155,11 @@ wsServer.on("connection", (ws) => {
     console.log(`[WEBSOCKET SERVER] connection()`);
     singleWs = ws;
     singleWs.on("message", (message) => {
-        console.log(`[WEBSOCKET SERVER] Received: ${message}`);
+        const result = String(message);
+        console.log(`[WEBSOCKET SERVER] Received: ${result}`);
+        if (result === "ping") {
+            singleWs && singleWs.send("pong");
+        }
     });
     singleWs.on("error", (error) => {
         console.log(`[WEBSOCKET SERVER] disconnect error`);
