@@ -1,7 +1,7 @@
 import gujianqitan from '@/constant/gujianqitan'
 import gulong from '@/constant/gulong'
 import menghuanjianghu from '@/constant/menghuanjianghu'
-import jianyumofa from '@/constant/jianyumofa'
+import jianxiaqingyuan from '@/constant/jianxiaqingyuan'
 
 // const zzz = []
 //
@@ -14,7 +14,7 @@ import jianyumofa from '@/constant/jianyumofa'
 // JSON.stringify(zzz)
 
 const getPublicInitData = (type: string, options: { nameWord: string }) => {
-    const { nameWord } = options
+    const {nameWord} = options
     const ids = window.localStorage.getItem(type + 'itemId')
     return {
         nameWord: window.localStorage.getItem(type + 'nameWord') || nameWord,
@@ -29,7 +29,7 @@ const getPublicInitData = (type: string, options: { nameWord: string }) => {
 }
 
 const glqxz: ItemsGJQT = {
-    ...getPublicInitData('glqxz', { nameWord: '桃花碧柔' }),
+    ...getPublicInitData('glqxz', {nameWord: '桃花碧柔'}),
     mail: gulong.WUPIN,
     charge: gulong.CHARG_WUPIN,
     charge2: gulong.CHARG_2_WUPIN,
@@ -66,13 +66,13 @@ const glqxz: ItemsGJQT = {
         return params[type]
     },
     getReqParams: (type: string, nameWord: string, itemNum: string, id: string) => {
-        return { act: 'send', sid: 1001 }
+        return {act: 'send', sid: 1001}
     },
     realReqUrl: 'http://106.74.21.2:81/jkgm/user/playerapi.php'
 }
 
 const gjqt: ItemsGJQT = {
-    ...getPublicInitData('gjqt', { nameWord: '31505037001' }),
+    ...getPublicInitData('gjqt', {nameWord: '31505037001'}),
     mail: gujianqitan.WUPIN,
     charge: gujianqitan.CHARG_WUPIN,
     charge2: [],
@@ -101,7 +101,7 @@ const gjqt: ItemsGJQT = {
 }
 
 const mhjh: ItemsGJQT = {
-    ...getPublicInitData('mhjh', { nameWord: '梦儿' }),
+    ...getPublicInitData('mhjh', {nameWord: '梦儿'}),
     mail: menghuanjianghu.WUPIN,
     charge: menghuanjianghu.CHARG_WUPIN,
     charge2: [],
@@ -129,35 +129,53 @@ const mhjh: ItemsGJQT = {
     realReqUrl: 'http://api.zsl168.com:88/web/mhjh/user/playerapi.php'
 }
 
-const jymf: ItemsGJQT = {
-    ...getPublicInitData('jymf', { nameWord: 'mmzhw55' }),
-    mail: [],
-    charge: jianyumofa.CHARG_WUPIN,
+const jxqy: ItemsGJQT = {
+    ...getPublicInitData('jxqy', {nameWord: '1050828'}),
+    mail: jianxiaqingyuan.WUPIN,
+    charge: [
+        {name:'元宝',value:'mail1'},
+        {name:'黎饰',value:'mail3'},
+        {name:'经验',value:'mail4'},
+        {name:'vip经验',value:'VipExp'},
+    ],
     charge2: [],
     getReqFormData: (type: string, nameWord: string, itemNum: string, id: string) => {
         const params: any = {
-            charge: {
-                type: 'charge',
-                uid: nameWord,
-                cz: Number(id),
-                game_id: 1076
+            mail: {
+                type: 'mail2',
+                name: nameWord,
+                itemid: id,
+                num: Number(itemNum),
+                gm: 123456,
+                qu: 10001
+            },
+            charge:{
+                type: id,
+                name: nameWord,
+                money: Number(itemNum),
+                gm: 123456,
+                qu: 10001,
             }
         }
         return params[type]
     },
     getReqParams: (type: string, nameWord: string, itemNum: string, id: string) => {
-        return null
+        return {
+            gameid: 658,
+            account: 'mmzhw55',
+            role: nameWord,
+        }
     },
-    realReqUrl: 'http://api.zsl168.com:88/web/xjymf/user/playerapi.php'
+    realReqUrl: 'http://175.178.73.50:81/gm01/gmfunction.php'
 }
 
 const list: ItemsSingle[] = [
-    { name: '古龙群侠传', value: 'glqxz' },
-    { name: '古剑奇谭', value: 'gjqt' },
-    { name: '梦幻江湖', value: 'mhjh' },
-    { name: '剑与魔法', value: 'jymf' },
+    {name: '古龙群侠传', value: 'glqxz'},
+    {name: '古剑奇谭', value: 'gjqt'},
+    {name: '梦幻江湖', value: 'mhjh'},
+    {name: '剑侠情缘', value: 'jxqy'},
 ]
 
-const defaultValues: any = { glqxz: glqxz, gjqt: gjqt, mhjh: mhjh, jymf: jymf, list: list }
+const defaultValues: any = {glqxz: glqxz, gjqt: gjqt, mhjh: mhjh, jxqy: jxqy, list: list}
 
 export default defaultValues
