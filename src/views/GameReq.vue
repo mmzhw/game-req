@@ -295,7 +295,7 @@ const initWs = () => {
     ws.onopen = () => {
         addLogs('ws连接成功')
         // ws.send('123');
-        setInterval(() => {
+        pingId = setInterval(() => {
             ws.send('ping')
         }, 10000)
     }
@@ -304,6 +304,7 @@ const initWs = () => {
         clearInterval(pingId)
         pingId = null
         ws = null
+        initWs()
     }
 }
 </script>

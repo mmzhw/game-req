@@ -1,6 +1,7 @@
 import gujianqitan from '@/constant/gujianqitan'
 import gulong from '@/constant/gulong'
 import menghuanjianghu from '@/constant/menghuanjianghu'
+import jianyumofa from '@/constant/jianyumofa'
 
 // const zzz = []
 //
@@ -128,12 +129,35 @@ const mhjh: ItemsGJQT = {
     realReqUrl: 'http://api.zsl168.com:88/web/mhjh/user/playerapi.php'
 }
 
+const jymf: ItemsGJQT = {
+    ...getPublicInitData('jymf', { nameWord: 'mmzhw55' }),
+    mail: [],
+    charge: jianyumofa.CHARG_WUPIN,
+    charge2: [],
+    getReqFormData: (type: string, nameWord: string, itemNum: string, id: string) => {
+        const params: any = {
+            charge: {
+                type: 'charge',
+                uid: nameWord,
+                cz: Number(id),
+                game_id: 1076
+            }
+        }
+        return params[type]
+    },
+    getReqParams: (type: string, nameWord: string, itemNum: string, id: string) => {
+        return null
+    },
+    realReqUrl: 'http://api.zsl168.com:88/web/xjymf/user/playerapi.php'
+}
+
 const list: ItemsSingle[] = [
     { name: '古龙群侠传', value: 'glqxz' },
     { name: '古剑奇谭', value: 'gjqt' },
-    { name: '梦幻江湖', value: 'mhjh' }
+    { name: '梦幻江湖', value: 'mhjh' },
+    { name: '剑与魔法', value: 'jymf' },
 ]
 
-const defaultValues: any = { glqxz: glqxz, gjqt: gjqt, mhjh: mhjh, list: list }
+const defaultValues: any = { glqxz: glqxz, gjqt: gjqt, mhjh: mhjh, jymf: jymf, list: list }
 
 export default defaultValues
