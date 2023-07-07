@@ -5,7 +5,7 @@
             <el-button class="singleButton" @click="jumpMain">主页</el-button>
             <el-upload
                 class="singleButton"
-                action="/upload"
+                :action="isDev ? 'http://localhost:3000/upload' : '/upload'"
                 :on-success="uploadSuccess"
                 :on-error="uploadError"
                 accept="zip"
@@ -14,7 +14,7 @@
             </el-upload>
             <el-upload
                 class="singleButton"
-                action="/uploadServer"
+                :action="isDev ? 'http://localhost:3000/uploadServer' : '/uploadServer'"
                 :on-success="uploadSuccess"
                 :on-error="uploadError"
                 accept="js"
@@ -31,6 +31,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const isDev = ref(import.meta.env.DEV)
 
 const props = defineProps<{
     labelWidth: String
