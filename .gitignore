@@ -27,4 +27,5 @@ coverage
 *.sln
 *.sw?
 
-node/dist.zip
+server/dist.zip
+server/server.js

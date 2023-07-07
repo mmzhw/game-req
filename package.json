@@ -1,16 +1,17 @@
 {
     "name": "vite-project",
-    "version": "2.16.10",
+    "version": "2.16.14",
     "private": true,
     "scripts": {
         "dev": "vite",
-        "node:dev": "cross-env NODE_ENV=dev nodemon ./node/server.js",
-        "build": "node ./node/version.js && run-p type-check build-only && node ./node/zip.js",
+        "node:dev": "cross-env NODE_ENV=dev nodemon --exec babel-node ./server/main.js",
+        "build": "node ./server/version.js && run-p type-check build-only && node ./server/zip.js && pnpm run node:babel",
+        "node:babel": "babel server/main.js --out-file server/server.js",
         "preview": "vite preview",
         "build-only": "vite build",
         "type-check": "vue-tsc --noEmit -p tsconfig.app.json --composite false",
         "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
-        "format": "prettier --write src/ && prettier --write node/"
+        "format": "prettier --write src/ && prettier --write server/"
     },
     "dependencies": {
         "axios": "^1.4.0",
@@ -30,6 +31,9 @@
         "ws": "^8.13.0"
     },
     "devDependencies": {
+        "@babel/core": "^7.22.8",
+        "@babel/node": "^7.22.6",
+        "@babel/preset-env": "^7.22.7",
         "@rushstack/eslint-patch": "^1.2.0",
         "@tsconfig/node18": "^2.0.1",
         "@types/axios": "^0.14.0",

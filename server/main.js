@@ -1,31 +1,31 @@
-const fs = require("fs");
-const path = require("path"); // 引入node内置的path模块
-const http = require("http"); // 引入node内置的http模块
-const Koa = require("koa"); // 引入Koa
-const axios = require("axios");
-const qs = require("qs");
-const Router = require("koa-router");
-const koaStatic = require("koa-static");
-// const bodyParser = require('koa-bodyparser')
-const { koaBody } = require("koa-body");
-const cors = require("koa2-cors");
-const compressing = require("compressing");
-const { exec } = require("child_process");
-const WebSocket = require("ws");
+import fs from 'fs'
+import path from 'path'
+import http from 'http'
+import Koa from 'koa'
+import axios from 'axios'
+import qs from 'qs'
+import Router from 'koa-router'
+import koaStatic from 'koa-static'
+import { koaBody } from 'koa-body'
+import cors from 'koa2-cors'
+import compressing from 'compressing'
+import { exec } from 'child_process'
+import WebSocket from 'ws'
+
 let singleWs = null;
-let isDev = process.env.NODE_ENV === "dev";
+// let isDev = process.env.NODE_ENV === 'dev';
 
 
 /* 创建Koa应用实例 */
 const app = new Koa();
 const router = new Router();
 
-const UPLOAD_DIR = path.resolve("./",'./uploads');
-const STATIC_DIST = path.resolve("./", "./dist");
-const HTTPS_KEY = path.resolve("./node", "./_.youxiang.com.key");
-const HTTPS_CRT = path.resolve("./node", "./_.youxiang.com.crt")
-const UNZIP_DIST_DIR = path.resolve("./")
-const NODE_SERVER_FILE = path.resolve("./node",'./server.js')
+const UPLOAD_DIR = path.resolve('./', './uploads');
+const STATIC_DIST = path.resolve('./', './dist');
+const HTTPS_KEY = path.resolve('./server', './_.youxiang.com.key');
+const HTTPS_CRT = path.resolve('./server', './_.youxiang.com.crt');
+const UNZIP_DIST_DIR = path.resolve('./');
+const NODE_SERVER_FILE = path.resolve('./server', './server.js');
 
 app
     .use(cors())
@@ -58,7 +58,7 @@ const reqFun = async (body) => {
         option.data = qs.stringify(body.formData);
     }
     let result = await axios(option);
-    let rData = "";
+    let rData = '';
     if (result && result.data) {
         try {
             rData = JSON.stringify(result.data);
@@ -66,120 +66,120 @@ const reqFun = async (body) => {
 
         }
     }
-    singleWs && singleWs.send(body.name + " " + rData);
+    singleWs && singleWs.send(body.name + ' ' + rData);
     return result?.data;
 };
 const delayReqFun = async (bodys, time) => {
     return new Promise((resolve) => {
         setTimeout(() => {
             reqFun(bodys);
-            resolve("");
+            resolve('');
         }, time);
     });
 };
 let intervalId = null;
 
 router
-    .post("/api", async (ctx) => {
+    .post('/api', async (ctx) => {
         if (!ctx.request.body?.reqData || !ctx.request.body?.reqData?.length) {
-            ctx.body = "数据异常";
+            ctx.body = '数据异常';
             return;
         }
         ctx.body = await reqFun(ctx.request.body.reqData[0]);
     })
-    .post("/apibatch", async (ctx) => {
+    .post('/apibatch', async (ctx) => {
         if (!ctx.request.body?.reqData || !ctx.request.body?.reqData?.length) {
-            ctx.body = "数据异常";
+            ctx.body = '数据异常';
             return;
         }
         await reqFun(ctx.request.body.reqData[0]);
         for (let i = 1; i < ctx.request.body.reqData.length; i++) {
             await delayReqFun(ctx.request.body.reqData[i], ctx.request.body.interval);
         }
-        ctx.body = "开始发送";
+        ctx.body = '开始发送';
     })
-    .post("/apiInterval", async (ctx) => {
+    .post('/apiInterval', async (ctx) => {
         if (!ctx.request.body?.reqData || !ctx.request.body?.reqData?.length) {
-            ctx.body = "数据异常";
+            ctx.body = '数据异常';
             return;
         }
         if (ctx.request.body.interval) {
             if (intervalId) {
-                ctx.body = "存在定时器id为" + intervalId;
+                ctx.body = '存在定时器id为' + intervalId;
                 return;
             }
             intervalId = setInterval(() => {
                 reqFun(ctx.request.body.reqData[0]);
             }, ctx.request.body.interval);
         }
-        ctx.body = "定时器id为" + intervalId;
+        ctx.body = '定时器id为' + intervalId;
     })
-    .post("/closeinterval", async (ctx) => {
+    .post('/closeinterval', async (ctx) => {
         if (intervalId) {
             clearInterval(intervalId);
             intervalId = null;
-            ctx.body = "关闭定时器成功";
+            ctx.body = '关闭定时器成功';
             return;
         }
-        ctx.body = "不存在定时器";
+        ctx.body = '不存在定时器';
     })
-    .post("/upload", async (ctx) => {
+    .post('/upload', async (ctx) => {
         // 获取上传文件
         const files = ctx.request.files;
-        console.log("接受到上传", files.file.filepath);
+        console.log('接受到上传', files.file.filepath);
         try {
             exec(`rm -rf ${STATIC_DIST}`);
             let res = await compressing.zip.uncompress(files.file.filepath, UNZIP_DIST_DIR);
             if (res) {
-                ctx.body = files.file.filepath + "上传解压成功";
+                ctx.body = files.file.filepath + '上传解压成功';
             } else {
                 ctx.body = files.file.filepath + res;
             }
         } catch (e) {
-            ctx.body = files.file.filepath + "解压失败";
+            ctx.body = files.file.filepath + '解压失败';
         }
     })
-    .post("/uploadServer", async (ctx) => {
+    .post('/uploadServer', async (ctx) => {
         const files = ctx.request.files;
-        exec("cp -f " + files.file.filepath + ' ' + NODE_SERVER_FILE);
-        axios({ method: "post", url: "http://localhost:3001/restart" });
-        ctx.body = files.file.filepath + "上传成功";
+        exec('cp -f ' + files.file.filepath + ' ' + NODE_SERVER_FILE);
+        axios({ method: 'post', url: 'http://localhost:3001/restart' });
+        ctx.body = files.file.filepath + '上传成功';
     })
-    .post("/controlsh", async (ctx) => {
+    .post('/controlsh', async (ctx) => {
         axios({
-            method: "post",
-            url: "http://localhost:3001/controlsh",
+            method: 'post',
+            url: 'http://localhost:3001/controlsh',
             data: { cmd: ctx.request.body.cmd }
         });
-        ctx.body = "已执行";
+        ctx.body = '已执行';
     });
 
 /* 创建挂载Koa应用程序的http服务 */
-const server = http.createServer({
+const main = http.createServer({
     key: fs.readFileSync(HTTPS_KEY),
     cert: fs.readFileSync(HTTPS_CRT)
 }, app.callback());
 
-const wsServer = new WebSocket.Server({ server });
-wsServer.on("connection", (ws) => {
-    console.log(`[WEBSOCKET SERVER] connection()`);
+const wsServer = new WebSocket.Server({ server: main });
+wsServer.on('connection', (ws) => {
+    console.log('[WEBSOCKET SERVER] connection()');
     singleWs = ws;
-    singleWs.on("message", (message) => {
+    singleWs.on('message', (message) => {
         const result = String(message);
         console.log(`[WEBSOCKET SERVER] Received: ${result}`);
-        if (result === "ping") {
-            singleWs && singleWs.send("pong");
+        if (result === 'ping') {
+            singleWs && singleWs.send('pong');
         }
     });
-    singleWs.on("error", (error) => {
-        console.log(`[WEBSOCKET SERVER] disconnect error`);
+    singleWs.on('error', (error) => {
+        console.log('[WEBSOCKET SERVER] disconnect error');
     });
-    singleWs.on("close", (error) => {
-        console.log(`[WEBSOCKET SERVER] disconnect close`);
+    singleWs.on('close', (error) => {
+        console.log('[WEBSOCKET SERVER] disconnect close');
     });
 });
 
 /* 开始监听/启动服务（指定3000端口与成功回调） */
-server.listen(3000, () => {
-    console.log("listening on port 3000 ...");
+main.listen(3000, () => {
+    console.log('listening on port 3000 ...');
 });

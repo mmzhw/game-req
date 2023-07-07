@@ -1,7 +1,7 @@
 const compressing = require('compressing')
 
 compressing.zip
-    .compressDir('dist', './node/dist.zip')
+    .compressDir('dist', './server/dist.zip')
     .then((res) => {
         console.log(res)
     })
