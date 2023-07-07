@@ -1,9 +1,8 @@
-const http = require('http') // 引入node内置的http模块
-const Koa = require('koa') // 引入Koa
-const Router = require('koa-router')
-const { exec } = require('child_process')
-const bodyParser = require('koa-bodyparser')
-const path = require('path')
+import http from 'http'
+import Koa from 'koa'
+import Router from 'koa-router'
+import { exec } from 'child_process'
+import bodyParser from 'koa-bodyparser'
 
 /* 创建Koa应用实例 */
 const app = new Koa()
@@ -13,13 +12,16 @@ app.use(bodyParser()).use(router.routes()).use(router.allowedMethods())
 
 router
     .post('/restart', async (ctx) => {
-        exec('pm2 restart 1')
+        exec('pm2 restart server')
     })
     .post('/controlsh', async (ctx) => {
         let sh = ctx.request.body?.cmd
         if (sh) {
             exec(sh)
+            ctx.body = '已执行';
+            return
         }
+        ctx.body = '数据异常';
     })
 
 /* 创建挂载Koa应用程序的http服务 */

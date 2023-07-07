@@ -13,7 +13,7 @@ import { exec } from 'child_process'
 import WebSocket from 'ws'
 
 let singleWs = null;
-// let isDev = process.env.NODE_ENV === 'dev';
+let isDev = process.env.NODE_ENV === 'dev';
 
 
 /* 创建Koa应用实例 */
@@ -22,10 +22,10 @@ const router = new Router();
 
 const UPLOAD_DIR = path.resolve('./', './uploads');
 const STATIC_DIST = path.resolve('./', './dist');
-const HTTPS_KEY = path.resolve('./server', './_.youxiang.com.key');
-const HTTPS_CRT = path.resolve('./server', './_.youxiang.com.crt');
+const HTTPS_KEY = path.resolve(isDev ? './server' : './dist', './_.youxiang.com.key');
+const HTTPS_CRT = path.resolve(isDev ? './server' : './dist', './_.youxiang.com.crt');
 const UNZIP_DIST_DIR = path.resolve('./');
-const NODE_SERVER_FILE = path.resolve('./server', './server.js');
+const NODE_SERVER_FILE = path.resolve('./dist', './server.js');
 
 app
     .use(cors())
@@ -130,6 +130,7 @@ router
         try {
             exec(`rm -rf ${STATIC_DIST}`);
             let res = await compressing.zip.uncompress(files.file.filepath, UNZIP_DIST_DIR);
+            axios({ method: 'post', url: 'http://localhost:3001/restart' });
             if (res) {
                 ctx.body = files.file.filepath + '上传解压成功';
             } else {
