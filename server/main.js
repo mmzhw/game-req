@@ -134,7 +134,7 @@ router
             if (res) {
                 ctx.body = files.file.filepath + '上传解压成功';
             } else {
-                ctx.body = files.file.filepath + res;
+                ctx.body = files.file.filepath;
             }
         } catch (e) {
             ctx.body = files.file.filepath + '解压失败';
