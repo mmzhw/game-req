@@ -133,7 +133,7 @@ const intervalObj: any = ref({
 let itemsList: any = ref([])
 let logList: any = ref([])
 
-let ws:any = null
+let ws: any = null
 const reqPre = import.meta.env.DEV ? 'http://localhost:3000' : ''
 
 let hasPage = computed({
@@ -283,12 +283,12 @@ const initPage = (id: string) => {
 }
 
 const initWs = () => {
-    let pingId:any = null
+    let pingId: any = null
     ws = new WebSocket(
         import.meta.env.DEV ? 'ws://localhost:3000' : 'wss://' + window.location.host
     )
-    ws.onmessage = (response:any) => {
-        if (response.data !== 'pong'){
+    ws.onmessage = (response: any) => {
+        if (response.data !== 'pong') {
             addLogs(response.data)
         }
     }

