@@ -142,24 +142,20 @@ const jxqy: ItemsGJQT = {
                 type: 'mail',
                 uid: nameWord,
                 item: id,
-                num: Number(itemNum),
+                num: itemNum,
                 game_id: 833
             },
             charge: {
                 type: id,
                 uid: nameWord,
-                chargenum: Number(itemNum),
+                chargenum: itemNum,
                 game_id: 833
             }
         }
         return params[type]
     },
     getReqParams: (type: string, nameWord: string, itemNum: string, id: string) => {
-        return {
-            gameid: 658,
-            account: 'mmzhw55',
-            role: nameWord
-        }
+        return null
     },
     realReqUrl: 'http://api.zsl168.com:88/web/jxqy/user/playerapi.php'
 }
