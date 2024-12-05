@@ -74,6 +74,7 @@ const clearSingleItem = (i: ItemsSingle) => {
 const getGoods = async () => {
     for (let i = 0; i < selectedItems.value.length; i++) {
         await getGood(selectedItems.value[i])
+        await new Promise(resolve => setTimeout(resolve, 1000))
     }
 }
 const getGood = async (i: ItemsSingle) => {
