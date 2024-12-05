@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import http from 'http'
+import https from 'https'
 import Koa from 'koa'
 import axios from 'axios'
 import qs from 'qs'
@@ -19,10 +20,11 @@ let isDev = process.env.NODE_ENV === 'dev'
 const app = new Koa()
 const router = new Router()
 
-const UPLOAD_DIR = path.resolve('./', './uploads')
+const UPLOAD_DIR = path.resolve(isDev ? './server' : './', './uploads')
 const STATIC_DIST = path.resolve('./', './dist')
-const HTTPS_KEY = path.resolve(isDev ? './server' : './dist', './_.youxiang.com.key')
-const HTTPS_CRT = path.resolve(isDev ? './server' : './dist', './_.youxiang.com.crt')
+const HTTPS_KEY = path.resolve(isDev ? './server' : './dist', './111.119.248.34.key')
+const HTTPS_CER = path.resolve(isDev ? './server' : './dist', './111.119.248.34_cer.crt')
+const HTTPS_CA = path.resolve(isDev ? './server' : './dist', './111.119.248.34_ca.crt')
 const UNZIP_DIST_DIR = path.resolve('./')
 const NODE_SERVER_FILE = path.resolve('./dist', './server.js')
 
@@ -126,11 +128,12 @@ router
     .post('/upload', async (ctx) => {
         // 获取上传文件
         const files = ctx.request.files
-        console.log('接受到上传', files.file.filepath)
         try {
             exec(`rm -rf ${STATIC_DIST}`)
+            console.log('已删除,解压',files.file.filepath, UNZIP_DIST_DIR)
             let res = await compressing.zip.uncompress(files.file.filepath, UNZIP_DIST_DIR)
-            axios({ method: 'post', url: 'http://localhost:3001/restart' })
+            console.log('已解压，开始重启服务')
+            await axios({ method: 'post', url: 'http://127.0.0.1:3001/restart' })
             if (res) {
                 ctx.body = files.file.filepath + '上传解压成功'
             } else {
@@ -138,6 +141,7 @@ router
             }
         } catch (e) {
             ctx.body = files.file.filepath + '解压失败'
+            console.error(e.message)
         }
     })
     .post('/uploadServer', async (ctx) => {
@@ -156,16 +160,12 @@ router
     })
 
 /* 创建挂载Koa应用程序的http服务 */
-const main = http.createServer(
-    {
-        key: fs.readFileSync(HTTPS_KEY),
-        cert: fs.readFileSync(HTTPS_CRT)
-    },
-    app.callback()
-)
+const mainServer = http.createServer({ }, app.callback())
+// const mainServer = https.createServer({ key: HTTPS_KEY, cert: HTTPS_CER, ca: HTTPS_CA }, app.callback());
 
-const wsServer = new WebSocket.Server({ server: main })
-wsServer.on('connection', (ws) => {
+
+const websocketServer = new WebSocket.Server({ server: mainServer })
+websocketServer.on('connection', (ws) => {
     console.log('[WEBSOCKET SERVER] connection()')
     singleWs = ws
     singleWs.on('message', (message) => {
@@ -184,6 +184,7 @@ wsServer.on('connection', (ws) => {
 })
 
 /* 开始监听/启动服务（指定3000端口与成功回调） */
-main.listen(3000, () => {
-    console.log('listening on port 3000 ...')
+mainServer.listen(3000, () => {
+    let port = mainServer.address().port
+    console.log('应用实例，访问地址为 http://localhost:' + port)
 })

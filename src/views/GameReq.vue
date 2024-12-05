@@ -4,12 +4,7 @@
             <label @click="jumpVersion">选择：</label>
             <div class="gameTypeWrap">
                 <el-radio-group v-model="routeType" @change="changeRouteType">
-                    <el-radio-button
-                        v-for="(item, index) in gameList"
-                        :key="'game' + index"
-                        :label="item.value"
-                        >{{ item.name }}
-                    </el-radio-button>
+                    <el-radio-button v-for="(item, index) in gameList" :key="'game' + index" :label="item.value">{{ item.name }} </el-radio-button>
                 </el-radio-group>
             </div>
         </div>
@@ -23,12 +18,7 @@
             <div class="flex-line">
                 <label>类型：</label>
                 <div>
-                    <el-select
-                        style="width: 100%"
-                        v-model="reqType"
-                        placeholder="Select"
-                        @change="changeReqType"
-                    >
+                    <el-select style="width: 100%" v-model="reqType" placeholder="Select" @change="changeReqType">
                         <el-option label="充值一" value="charge" />
                         <el-option label="充值二" value="charge2" />
                         <el-option label="邮件" value="mail" />
@@ -44,14 +34,7 @@
             <div class="flex-line">
                 <label>已选：</label>
                 <div style="line-height: 32px">
-                    <el-tag
-                        class="marginRightFive"
-                        v-for="(i, index) in choosedItem"
-                        :key="'yixuan' + index"
-                        closable
-                        @close="choosedItemClearOne(i)"
-                        >{{ i.name }}
-                    </el-tag>
+                    <el-tag class="marginRightFive" v-for="(i, index) in choosedItem" :key="'yixuan' + index" closable @close="choosedItemClearOne(i)">{{ i.name }} </el-tag>
                 </div>
             </div>
             <div class="flex-line" v-if="reqType === 'mail'">
@@ -60,49 +43,16 @@
                     <el-input v-model="keyWord" placeholder="过滤" @input="changeWupin" />
                 </div>
             </div>
-            <checkbox-pagination
-                :data-list="itemsList"
-                v-model:currentItem="choosedItem"
-                :route-type="routeType"
-            />
-            <div class="flex-space-between marginBottomTen">
-                <el-button
-                    class="marginBottomTen"
-                    style="width: calc((100% - 70px) / 2)"
-                    type="primary"
-                    @click="reqFunBatch"
-                    >前端批量发送
-                </el-button>
-                <el-button
-                    class="marginBottomTen"
-                    style="width: calc((100% - 70px) / 2); margin-left: 10px"
-                    type="primary"
-                    @click="reqFunServerBatch"
-                    >服务端批量发送
-                </el-button>
-                <el-button
-                    style="width: 50px; margin-left: 10px"
-                    type="primary"
-                    @click="choosedItem = []"
-                    >清空
-                </el-button>
+            <checkbox-pagination :data-list="itemsList" v-model:currentItem="choosedItem" :route-type="routeType" />
+            <div class="flex-space-around marginBottomTen">
+                <el-button class="marginBottomTen" style="width: calc((100% - 70px) / 2)" type="primary" @click="reqFunBatch">前端批量发送 </el-button>
+                <el-button class="marginBottomTen" style="width: calc((100% - 70px) / 2); margin-left: 10px" type="primary" @click="reqFunServerBatch">服务端批量发送 </el-button>
+                <el-button style="width: 50px; margin-left: 10px" type="primary" @click="choosedItem = []">清空 </el-button>
             </div>
-            <div class="flex-space-between marginBottomTen">
-                <el-button style="flex: 1" type="primary" @click="reqFunInterval"
-                    >开启定时发送选择的第一个
-                </el-button>
-                <el-button
-                    style="width: 50px; margin-left: 10px"
-                    type="primary"
-                    @click="reqFunIntervalClose"
-                    >停止
-                </el-button>
-                <el-input
-                    style="width: 50px; margin-left: 10px"
-                    size="small"
-                    v-model="intervalObj.time"
-                    @input="changeIntervalTime"
-                />
+            <div class="flex-space-around marginBottomTen">
+                <el-button style="flex: 1" type="primary" @click="reqFunInterval">开启定时发送选择的第一个 </el-button>
+                <el-button style="width: 50px; margin-left: 10px" type="primary" @click="reqFunIntervalClose">停止 </el-button>
+                <el-input style="width: 50px; margin-left: 10px" size="small" v-model="intervalObj.time" @input="changeIntervalTime" />
             </div>
             <table-pagination :dataList="logList" />
         </div>
@@ -110,7 +60,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import defaultValues from '@/constant/DEFAULT_VALUES'
 import axios from 'axios'
 import TablePagination from '../components/Table-Pagination.vue'
@@ -159,8 +109,12 @@ const jumpVersion = () => {
 
 //切换页面
 const changeRouteType = (value: string) => {
-    router.push({ name: 'manage', params: { id: value } })
-    initPage(value)
+    if (gameList.value.find((i: ItemsSingle) => i.value === value)?.isPath) {
+        router.push({ name: value })
+    } else {
+        router.push({ name: 'manage', params: { id: value } })
+        initPage(value)
+    }
 }
 
 //修改了定时器间隔
@@ -209,22 +163,11 @@ const reqFun = async (itemIds: any, url: string) => {
         method: 'post',
         url: url,
         data: {
-            interval: intervalObj.value.time,
             reqData: itemIds.map((i: ItemsSingle) => {
                 return {
                     name: i.name,
-                    formData: defaultValues[routeType.value]?.getReqFormData(
-                        reqType.value,
-                        nameWord.value,
-                        itemNum.value,
-                        i.value
-                    ),
-                    params: defaultValues[routeType.value]?.getReqParams(
-                        reqType.value,
-                        nameWord.value,
-                        itemNum.value,
-                        i.value
-                    ),
+                    formData: defaultValues[routeType.value]?.getReqFormData(reqType.value, nameWord.value, itemNum.value, i.value),
+                    params: defaultValues[routeType.value]?.getReqParams(reqType.value, nameWord.value, itemNum.value, i.value),
                     realReqUrl: defaultValues[routeType.value]?.realReqUrl,
                     realReqMethod: defaultValues[routeType.value]?.realReqMethod
                 }
@@ -284,9 +227,7 @@ const initPage = (id: string) => {
 
 const initWs = () => {
     let pingId: any = null
-    ws = new WebSocket(
-        import.meta.env.DEV ? 'ws://localhost:3000' : 'wss://' + window.location.host
-    )
+    ws = new WebSocket(import.meta.env.DEV ? 'ws://localhost:3000' : 'ws://' + window.location.host)
     ws.onmessage = (response: any) => {
         if (response.data !== 'pong') {
             addLogs(response.data)
@@ -294,7 +235,6 @@ const initWs = () => {
     }
     ws.onopen = () => {
         addLogs('ws连接成功')
-        // ws.send('123');
         pingId = setInterval(() => {
             ws.send('ping')
         }, 10000)
@@ -304,7 +244,9 @@ const initWs = () => {
         clearInterval(pingId)
         pingId = null
         ws = null
-        initWs()
+        setTimeout(() => {
+            initWs()
+        }, 3000)
     }
 }
 </script>

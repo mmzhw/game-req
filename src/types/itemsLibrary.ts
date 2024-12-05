@@ -2,6 +2,11 @@ interface ItemsSingle {
     name: string
     value: string
 }
+interface ItemsSingleMenu {
+    name: string
+    value: string
+    isPath: boolean
+}
 
 interface ItemsGJQT {
     nameWord: string

@@ -160,11 +160,12 @@ const jxqy: ItemsGJQT = {
     realReqUrl: 'http://api.zsl168.com:88/web/jxqy/user/playerapi.php'
 }
 
-const list: ItemsSingle[] = [
-    { name: '古龙群侠传', value: 'glqxz' },
-    { name: '古剑奇谭', value: 'gjqt' },
-    { name: '梦幻江湖', value: 'mhjh' },
-    { name: '剑侠情缘', value: 'jxqy' }
+const list: ItemsSingleMenu[] = [
+    { name: '古龙群侠传', value: 'glqxz', isPath: false },
+    { name: '古剑奇谭', value: 'gjqt', isPath: false },
+    { name: '梦幻江湖', value: 'mhjh', isPath: false },
+    { name: '剑侠情缘', value: 'jxqy' , isPath: false},
+    { name: '这城有良田', value: 'zcylt', isPath: true }
 ]
 
 const defaultValues: any = { glqxz: glqxz, gjqt: gjqt, mhjh: mhjh, jxqy: jxqy, list: list }

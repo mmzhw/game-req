@@ -13,6 +13,7 @@ app.use(bodyParser()).use(router.routes()).use(router.allowedMethods())
 router
     .post('/restart', async (ctx) => {
         exec('pm2 restart server')
+        ctx.body = '已执行'
     })
     .post('/controlsh', async (ctx) => {
         let sh = ctx.request.body?.cmd

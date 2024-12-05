@@ -1,12 +1,15 @@
 <template>
     <el-checkbox-group
-        :class="['check-group-wrap', isMobile && 'mobileCheck']"
+        :class="['check-group-wrap', isMobile && 'mobileCheck', props.checkboxType !== 'button' && 'boxLine']"
         v-model="realItem"
         @change="changeItemId"
     >
-        <el-checkbox-button v-for="(item, index) in realList" :key="index" :label="item"
-            >{{ item.name }}
-        </el-checkbox-button>
+        <template v-if="props.checkboxType === 'button'">
+            <el-checkbox-button v-for="(item, index) in realList" :key="index" :label="item">{{ item.name }}</el-checkbox-button>
+        </template>
+        <template v-else>
+            <el-checkbox v-for="(item, index) in realList" :key="index" :label="item">{{ item.name }}</el-checkbox>
+        </template>
     </el-checkbox-group>
     <el-pagination
         class="marginBottomTen"
@@ -19,31 +22,32 @@
         @current-change="pageCurrentChange"
         @size-change="pageSizeChange"
     >
-        <template #default
-            ><span>{{ current }}页 / {{ dataList?.length }}条</span></template
-        >
+        <template #default><span>{{ current }}页 / {{ dataList?.length }}条</span></template>
     </el-pagination>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import _ from 'lodash'
+import { computed, onMounted, ref, watch } from 'vue'
 
 interface PropsRadioPagination {
     dataList: ItemsSingle[]
     currentItem: any
     routeType: string
+    checkboxType: string
+    pageSize: number
 }
 
 const props = withDefaults(defineProps<PropsRadioPagination>(), {
     dataList: () => [],
     currentItem: () => [],
-    routeType: ''
+    routeType: '',
+    checkboxType: 'button',
+    pageSize: 10,
 })
 
 const emit = defineEmits(['update:currentItem'])
 
-const size = ref(10)
+const size = ref(props.pageSize)
 const sizes = ref([10, 20, 50, 100, 1000, 5000])
 const current = ref(1)
 const layout = ref('')
@@ -69,8 +73,8 @@ onMounted(() => {
     }
 })
 
-const pageCurrentChange = (size: number) => {
-    current.value = size
+const pageCurrentChange = (s: number) => {
+    current.value = s
 }
 
 const pageSizeChange = (sizes: number) => {
@@ -110,6 +114,11 @@ const changeItemId = (item: []) => {
             }
         }
     }
+}
+.boxLine{
+    border: 1px solid #cccccc;
+    padding: 0 10px;
+    margin-bottom: 10px;
 }
 
 .pagePaginationMobile {

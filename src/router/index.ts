@@ -26,6 +26,11 @@ const router = createRouter({
             }
         },
         {
+            path: '/zcylt',
+            name: 'zcylt',
+            component: () => import('../views/GameReqZcylt.vue')
+        },
+        {
             path: '/manage/:id',
             name: 'manage',
             component: () => import('../views/GameReq.vue')
@@ -34,7 +39,7 @@ const router = createRouter({
             path: '/version',
             name: 'version',
             component: () => import('../views/VersionControl.vue')
-        }
+        },
         // {
         //     path: '/gjqt',
         //     name: 'gjqt',
