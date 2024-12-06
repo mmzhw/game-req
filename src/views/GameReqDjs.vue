@@ -30,7 +30,6 @@
                 <el-button type="primary" @click="getGoods">发送</el-button>
                 <el-button type="primary" @click="selectedItems = []">清空</el-button>
             </div>
-            <table-pagination :dataList="logList" />
         </div>
     </div>
 </template>
@@ -38,9 +37,8 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import CheckboxPagination from '../components/Checkbox-Pagination.vue'
-import itemListing from '@/constant/zcylt'
+import itemListing from '@/constant/djs'
 import axios from 'axios'
-import TablePagination from '@/components/Table-Pagination.vue'
 
 const reqPre = import.meta.env.DEV ? 'http://localhost:3000' : ''
 
@@ -48,15 +46,14 @@ interface PropsRadioPagination {
     routeType: string
 }
 const props = withDefaults(defineProps<PropsRadioPagination>(), {
-    routeType: 'zcylt',
+    routeType: 'djs',
 })
 
-let logList: any = ref([])
 const goodsList: any = ref(itemListing.WUPIN)
 const selectedItems: any = ref([])
 const keyWord: any = ref('')
 const baseForm: any = ref([
-    { label: '账号', value: window.localStorage.getItem(props.routeType + '账号') || 'mmzhw51' },
+    { label: '角色', value: window.localStorage.getItem(props.routeType + '角色') || '慕灵' },
     { label: '数量', value: window.localStorage.getItem(props.routeType + '数量') || '1' }
 ])
 
@@ -65,38 +62,25 @@ const LSSaveValue = (type: string, value: any) => {
 }
 const changeWupin = (value: string) => {
     if (value) {
-        goodsList.value = itemListing.WUPIN.filter((i: ItemsSingle) => {
+        goodsList.value = itemListing.WUPIN.filter((i: ItemsDjsSingle) => {
             return value && i.name.includes(value)
         })
     } else {
         goodsList.value = itemListing.WUPIN
     }
 }
-const clearSingleItem = (i: ItemsSingle) => {
-    selectedItems.value = selectedItems.value.filter((z: ItemsSingle) => {
+const clearSingleItem = (i: ItemsDjsSingle) => {
+    selectedItems.value = selectedItems.value.filter((z: ItemsDjsSingle) => {
         return z.value !== i.value
     })
 }
 const getGoods = async () => {
     for (let i = 0; i < selectedItems.value.length; i++) {
         await getGood(selectedItems.value[i])
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
     }
 }
-const getGood = async (i: ItemsSingle) => {
-    // let formData = new FormData()
-    // formData.append('type', 'mail')
-    // formData.append('checknum', '123123')
-    // formData.append('uid', 'mmzhw51')
-    // formData.append('item', item.value)
-    // formData.append('num', '1')
-    // formData.append('qu', '1')
-    // let result = await axios.post('http://101.33.236.73:8081/gm/user/gmquery.php', formData, {
-    //     headers: {
-    //         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-    //     }
-    // })
-
+const getGood = async (i: ItemsDjsSingle) => {
     await axios({
         method: 'post',
         url: reqPre + '/api',
@@ -105,20 +89,19 @@ const getGood = async (i: ItemsSingle) => {
                 {
                     name: i.name,
                     formData: {
-                        type: 'mail',
-                        checknum: '123123',
-                        uid: baseForm.value.find((j:any) => j.label === '账号')?.value,
-                        item: i.value,
-                        num: baseForm.value.find((j:any) => j.label === '数量')?.value,
-                        qu: '1'
+                        code: i.value + ' ' + baseForm.value.find((j: any) => j.label === '数量')?.value,
+                        request_type: i.type,
+                        name: baseForm.value.find((j: any) => j.label === '角色')?.value,
+                        cde: 'rssls'
                     },
-                    realReqUrl: 'http://101.33.236.73:8081/gm/user/gmquery.php',
+                    realReqUrl: 'http://kp.a5o.cn/gm/gmPay.php',
                     realReqMethod: 'post'
                 }
             ]
         }
     })
 }
+
 
 </script>
 

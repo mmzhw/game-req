@@ -46,7 +46,7 @@ const emit = defineEmits<{
 const version = ref(__Admin_VERSION__ as string)
 
 const jumpMain = () => {
-    router.push({ name: 'manage', params: { id: '1' } })
+    router.push({ path:'/' })
 }
 
 const uploadSuccess = (response: any) => {

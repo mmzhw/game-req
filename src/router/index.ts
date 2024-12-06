@@ -19,11 +19,13 @@ const router = createRouter({
         // },
         {
             path: '/',
-            redirect: () => {
-                // 方法接收目标路由作为参数
-                // return 重定向的字符串路径/路径对象
-                return { name: 'manage', params: { id: '1' } }
-            }
+            name: 'main',
+            component: () => import('../views/GameMain.vue')
+            // redirect: () => {
+            //     // 方法接收目标路由作为参数
+            //     // return 重定向的字符串路径/路径对象
+            //     return { name: 'manage', params: { id: '1' } }
+            // }
         },
         {
             path: '/zcylt',

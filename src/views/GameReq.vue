@@ -1,13 +1,5 @@
 <template>
     <div class="flex-column">
-        <div class="flex-line marginBottomFive">
-            <label @click="jumpVersion">选择：</label>
-            <div class="gameTypeWrap">
-                <el-radio-group v-model="routeType" @change="changeRouteType">
-                    <el-radio-button v-for="(item, index) in gameList" :key="'game' + index" :label="item.value">{{ item.name }} </el-radio-button>
-                </el-radio-group>
-            </div>
-        </div>
         <div class="flex-column" v-show="hasPage">
             <div class="flex-line">
                 <label>姓名：</label>
@@ -34,7 +26,7 @@
             <div class="flex-line">
                 <label>已选：</label>
                 <div style="line-height: 32px">
-                    <el-tag class="marginRightFive" v-for="(i, index) in choosedItem" :key="'yixuan' + index" closable @close="choosedItemClearOne(i)">{{ i.name }} </el-tag>
+                    <el-tag class="marginRightFive" v-for="(i, index) in selectedItems" :key="'yixuan' + index" closable @close="selectedItemsClearOne(i)">{{ i.name }}</el-tag>
                 </div>
             </div>
             <div class="flex-line" v-if="reqType === 'mail'">
@@ -43,78 +35,67 @@
                     <el-input v-model="keyWord" placeholder="过滤" @input="changeWupin" />
                 </div>
             </div>
-            <checkbox-pagination :data-list="itemsList" v-model:currentItem="choosedItem" :route-type="routeType" />
-            <div class="flex-space-around marginBottomTen">
-                <el-button class="marginBottomTen" style="width: calc((100% - 70px) / 2)" type="primary" @click="reqFunBatch">前端批量发送 </el-button>
-                <el-button class="marginBottomTen" style="width: calc((100% - 70px) / 2); margin-left: 10px" type="primary" @click="reqFunServerBatch">服务端批量发送 </el-button>
-                <el-button style="width: 50px; margin-left: 10px" type="primary" @click="choosedItem = []">清空 </el-button>
+            <div class="flex-line" v-if="reqType === 'mail'">
+                <label>过滤：</label>
+                <div>
+                    <checkbox-pagination :data-list="itemsList" v-model:currentItem="selectedItems" :route-type="props.routeType" :pageSize="10" checkboxType="button" />
+                </div>
             </div>
-            <div class="flex-space-around marginBottomTen">
-                <el-button style="flex: 1" type="primary" @click="reqFunInterval">开启定时发送选择的第一个 </el-button>
-                <el-button style="width: 50px; margin-left: 10px" type="primary" @click="reqFunIntervalClose">停止 </el-button>
-                <el-input style="width: 50px; margin-left: 10px" size="small" v-model="intervalObj.time" @input="changeIntervalTime" />
+            <div class="marginBottomTen">
+                <el-button type="primary" @click="reqFunBatch">前端批量发送</el-button>
+                <el-button @click="reqFunServerBatch">服务端批量发送</el-button>
+                <el-button type="primary" @click="selectedItems = []">清空</el-button>
             </div>
-            <table-pagination :dataList="logList" />
+            <div class="marginBottomTen">
+                <el-button type="primary" @click="reqFunInterval">开启定时发送选择的第一个</el-button>
+                <el-button type="primary" @click="reqFunIntervalClose">停止</el-button>
+                <el-input style="width: 100px; margin-left: 10px;height: 32px" size="small" v-model="intervalObj.time" @input="changeIntervalTime" />
+            </div>
         </div>
     </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import defaultValues from '@/constant/DEFAULT_VALUES'
 import axios from 'axios'
-import TablePagination from '../components/Table-Pagination.vue'
-// import RadioPagination from '../components/Radio-Pagination.vue'
 import CheckboxPagination from '../components/Checkbox-Pagination.vue'
-import { useRoute, useRouter } from 'vue-router'
 
-const router = useRouter()
-const routeParams = useRoute().params as Record<string, string>
-const routeType = ref<string>(routeParams.id || '')
-const gameList = ref(defaultValues.list)
+interface PropsRadioPagination {
+    routeType: string
+}
+
+const props = withDefaults(defineProps<PropsRadioPagination>(), {
+    routeType: ''
+})
+
 const nameWord = ref('')
 const itemNum = ref('')
-const choosedItem: any = ref([])
+const selectedItems: any = ref([])
 const reqType = ref('')
 const keyWord = ref('')
 const intervalObj: any = ref({
     time: 1000
 })
 let itemsList: any = ref([])
-let logList: any = ref([])
 
-let ws: any = null
 const reqPre = import.meta.env.DEV ? 'http://localhost:3000' : ''
 
 let hasPage = computed({
     get() {
-        return !!defaultValues[routeType.value]
+        return !!defaultValues[props.routeType]
     },
     set() {}
 })
 
+watch(() => props.routeType, () => initPage())
+
 onMounted(() => {
-    initPage('')
-    initWs()
+    initPage()
 })
 
 const LSSaveValue = (type: string, value: any) => {
-    window.localStorage.setItem(routeType.value + type, String(value))
-}
-
-//跳转到版本控制
-const jumpVersion = () => {
-    router.push({ name: 'version' })
-}
-
-//切换页面
-const changeRouteType = (value: string) => {
-    if (gameList.value.find((i: ItemsSingle) => i.value === value)?.isPath) {
-        router.push({ name: value })
-    } else {
-        router.push({ name: 'manage', params: { id: value } })
-        initPage(value)
-    }
+    window.localStorage.setItem(props.routeType + type, String(value))
 }
 
 //修改了定时器间隔
@@ -124,10 +105,10 @@ const changeIntervalTime = (value: string) => {
 
 //切换充值类型
 const changeReqType = (type: string) => {
-    choosedItem.value = []
+    selectedItems.value = []
     if (type) {
         reqType.value = type
-        itemsList.value = defaultValues[routeType.value][type]
+        itemsList.value = defaultValues[props.routeType][type]
         LSSaveValue('reqType', type)
     }
 }
@@ -139,21 +120,21 @@ const changeItemNumber = (value: string) => {
 const changeWupin = (value: string) => {
     LSSaveValue('filterName', value)
     if (value) {
-        itemsList.value = defaultValues[routeType.value]?.mail.filter((i: ItemsSingle) => {
+        itemsList.value = defaultValues[props.routeType]?.mail.filter((i: ItemsSingle) => {
             return value && i.name.includes(value)
         })
     } else {
-        itemsList.value = defaultValues[routeType.value]?.mail
+        itemsList.value = defaultValues[props.routeType]?.mail
     }
 }
 const changeName = (value: string) => {
     LSSaveValue('nameWord', value)
 }
-const choosedItemClearOne = (i: ItemsSingle) => {
-    choosedItem.value = choosedItem.value.filter((z: ItemsSingle) => {
+const selectedItemsClearOne = (i: ItemsSingle) => {
+    selectedItems.value = selectedItems.value.filter((z: ItemsSingle) => {
         return z.value !== i.value
     })
-    window.localStorage.setItem(routeType.value + 'itemId', JSON.stringify(choosedItem.value))
+    window.localStorage.setItem(props.routeType + 'itemId', JSON.stringify(selectedItems.value))
 }
 const reqFun = async (itemIds: any, url: string) => {
     if (itemIds && !itemIds.length) {
@@ -166,10 +147,10 @@ const reqFun = async (itemIds: any, url: string) => {
             reqData: itemIds.map((i: ItemsSingle) => {
                 return {
                     name: i.name,
-                    formData: defaultValues[routeType.value]?.getReqFormData(reqType.value, nameWord.value, itemNum.value, i.value),
-                    params: defaultValues[routeType.value]?.getReqParams(reqType.value, nameWord.value, itemNum.value, i.value),
-                    realReqUrl: defaultValues[routeType.value]?.realReqUrl,
-                    realReqMethod: defaultValues[routeType.value]?.realReqMethod
+                    formData: defaultValues[props.routeType]?.getReqFormData(reqType.value, nameWord.value, itemNum.value, i.value),
+                    params: defaultValues[props.routeType]?.getReqParams(reqType.value, nameWord.value, itemNum.value, i.value),
+                    realReqUrl: defaultValues[props.routeType]?.realReqUrl,
+                    realReqMethod: defaultValues[props.routeType]?.realReqMethod
                 }
             })
         }
@@ -184,69 +165,37 @@ const delayReqFun = async (itemIds: any, url: string) => {
     })
 }
 const reqFunServerBatch = async () => {
-    await reqFun(choosedItem.value, reqPre + '/apibatch')
+    await reqFun(selectedItems.value, reqPre + '/apibatch')
 }
 const reqFunBatch = async () => {
-    await reqFun(choosedItem.value[0], reqPre + '/api')
-    for (let i = 1; i < choosedItem.value.length; i++) {
-        await delayReqFun(choosedItem.value[i], reqPre + '/api')
+    await reqFun(selectedItems.value[0], reqPre + '/api')
+    for (let i = 1; i < selectedItems.value.length; i++) {
+        await delayReqFun(selectedItems.value[i], reqPre + '/api')
     }
 }
 const reqFunInterval = () => {
-    if (choosedItem.value && choosedItem.value.length > 0) {
-        reqFun(choosedItem.value[0], reqPre + '/apiInterval')
+    if (selectedItems.value && selectedItems.value.length > 0) {
+        reqFun(selectedItems.value[0], reqPre + '/apiInterval')
     }
 }
 const reqFunIntervalClose = async () => {
-    let result = await axios({
+    await axios({
         method: 'post',
         url: reqPre + '/closeinterval'
     })
-    addLogs(result?.data)
-}
-const addLogs = (message: any) => {
-    logList.value.unshift({ no: logList.value.length + 1, message: message })
 }
 
-const initPage = (id: string) => {
-    if (id) {
-        routeType.value = id
-    }
-    if (routeType.value && defaultValues[routeType.value]) {
-        nameWord.value = defaultValues[routeType.value]?.nameWord
-        itemNum.value = defaultValues[routeType.value]?.itemNum
-        keyWord.value = defaultValues[routeType.value]?.filterName
-        intervalObj.value.time = defaultValues[routeType.value]?.sendIntervalTime
-        changeReqType(defaultValues[routeType.value]?.reqType)
-        choosedItem.value = defaultValues[routeType.value]?.itemId
+const initPage = () => {
+    if (props.routeType && defaultValues[props.routeType]) {
+        nameWord.value = defaultValues[props.routeType]?.nameWord
+        itemNum.value = defaultValues[props.routeType]?.itemNum
+        keyWord.value = defaultValues[props.routeType]?.filterName
+        intervalObj.value.time = defaultValues[props.routeType]?.sendIntervalTime
+        changeReqType(defaultValues[props.routeType]?.reqType)
+        selectedItems.value = defaultValues[props.routeType]?.itemId
         if (reqType.value === 'mail') {
             changeWupin(keyWord.value)
         }
-    }
-}
-
-const initWs = () => {
-    let pingId: any = null
-    ws = new WebSocket(import.meta.env.DEV ? 'ws://localhost:3000' : 'ws://' + window.location.host)
-    ws.onmessage = (response: any) => {
-        if (response.data !== 'pong') {
-            addLogs(response.data)
-        }
-    }
-    ws.onopen = () => {
-        addLogs('ws连接成功')
-        pingId = setInterval(() => {
-            ws.send('ping')
-        }, 10000)
-    }
-    ws.onclose = ws.onerror = () => {
-        addLogs('ws断连')
-        clearInterval(pingId)
-        pingId = null
-        ws = null
-        setTimeout(() => {
-            initWs()
-        }, 3000)
     }
 }
 </script>
@@ -254,7 +203,7 @@ const initWs = () => {
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
 .flex-line > label {
-    width: 55px;
+    width: 60px;
 }
 
 :deep {
