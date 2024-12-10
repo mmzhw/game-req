@@ -30,7 +30,6 @@
                 <el-button type="primary" @click="getGoods">发送</el-button>
                 <el-button type="primary" @click="selectedItems = []">清空</el-button>
             </div>
-            <table-pagination :dataList="logList" />
         </div>
     </div>
 </template>
@@ -51,7 +50,6 @@ const props = withDefaults(defineProps<PropsRadioPagination>(), {
     routeType: 'zcylt',
 })
 
-let logList: any = ref([])
 const goodsList: any = ref(itemListing.WUPIN)
 const selectedItems: any = ref([])
 const keyWord: any = ref('')
