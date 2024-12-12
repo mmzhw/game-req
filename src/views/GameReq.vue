@@ -202,10 +202,6 @@ const initPage = () => {
 
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
-.flex-line > label {
-    width: 60px;
-}
-
 :deep {
     .el-radio-button {
         margin-right: 5px;

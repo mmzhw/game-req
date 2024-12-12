@@ -203,8 +203,3 @@ onMounted(() => {
 </script>
 
 <style scoped src="../assets/game-req.scss"></style>
-<style scoped lang="scss">
-.flex-line > label {
-    width: 98px;
-}
-</style>

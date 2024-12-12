@@ -81,6 +81,29 @@ const getGoods = async () => {
     }
 }
 const getGood = async (i: ItemsDjsSingle) => {
+    // let formData = new FormData()
+    // formData.append('title', 'GM')
+    // formData.append('text', 'GM')
+    // formData.append('server_select', '1')
+    // formData.append('accname', baseForm.value.find((j:any) => j.label === '角色id')?.value)
+    // formData.append('reward1_1', i.type)
+    // formData.append('reward1_2', i.value)
+    // formData.append('reward1_3', baseForm.value.find((j:any) => j.label === '数量')?.value)
+    // formData.append('reward2_1', '0')
+    // formData.append('reward2_3', '')
+    // formData.append('reward3_1', '0')
+    // formData.append('reward3_3', '')
+    //
+    // let result = await axios.post('http://111.119.248.34:82/manage/mail_one/', formData, {
+    //     headers: {
+    //         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+    //     }
+    // })
+    //
+    // console.log(result)
+
+
+
     await axios({
         method: 'post',
         url: reqPre + '/api',
@@ -89,7 +112,6 @@ const getGood = async (i: ItemsDjsSingle) => {
                 {
                     name: i.name,
                     formData: {
-                        csrfmiddlewaretoken:'RS8owW4cpKOc5WQZ11J5XneuHsvKmzL0',
                         title: 'GM',
                         text: 'GM',
                         server_select: '1',
@@ -97,6 +119,10 @@ const getGood = async (i: ItemsDjsSingle) => {
                         reward1_1: i.type,
                         reward1_2: i.value,
                         reward1_3: baseForm.value.find((j:any) => j.label === '数量')?.value,
+                        reward2_1:'0',
+                        reward2_3:'',
+                        reward3_1:'0',
+                        reward3_3:'',
                     },
                     realReqUrl: 'http://111.119.248.34:82/manage/mail_one/',
                     realReqMethod: 'post'
@@ -110,10 +136,6 @@ const getGood = async (i: ItemsDjsSingle) => {
 
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
-.flex-line > label {
-    width: 60px;
-}
-
 :deep {
     .el-radio-button {
         margin-right: 5px;
