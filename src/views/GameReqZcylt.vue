@@ -104,7 +104,7 @@ const getGood = async (i: ItemsSingle) => {
                     name: i.name,
                     formData: {
                         type: 'mail',
-                        checknum: '123123',
+                        checknum: '123456',
                         uid: baseForm.value.find((j:any) => j.label === '账号')?.value,
                         item: i.value,
                         num: baseForm.value.find((j:any) => j.label === '数量')?.value,
