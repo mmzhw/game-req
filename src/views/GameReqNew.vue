@@ -74,6 +74,9 @@ const initOptions = () => {
     originReqMethod = gameOptions?.ORIGIN_REQ_METHOD || ''
     originReqFormData = gameOptions?.ORIGIN_REQ_FORM_DATA || (()=>{})
 
+    selectedItems.value = []
+    keyWord.value = ''
+
     baseForm.forEach((item: any) => {
         if (item.key === 'account') {
             item.value = window.localStorage.getItem(props.routeType + 'account') || gameOptions?.ORIGIN_ACCOUNT
