@@ -49,7 +49,7 @@ const props = withDefaults(defineProps<PropsRadioPagination>(), {
     routeType: 'djs',
 })
 
-const goodsList: any = ref(itemListing.WUPIN)
+const goodsList: any = ref(itemListing)
 const selectedItems: any = ref([])
 const keyWord: any = ref('')
 const baseForm: any = ref([
@@ -62,11 +62,11 @@ const LSSaveValue = (type: string, value: any) => {
 }
 const changeWupin = (value: string) => {
     if (value) {
-        goodsList.value = itemListing.WUPIN.filter((i: ItemsDjsSingle) => {
+        goodsList.value = itemListing.filter((i: ItemsDjsSingle) => {
             return value && i.name.includes(value)
         })
     } else {
-        goodsList.value = itemListing.WUPIN
+        goodsList.value = itemListing
     }
 }
 const clearSingleItem = (i: ItemsDjsSingle) => {
