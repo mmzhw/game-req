@@ -104,13 +104,13 @@ const getGood = async (i: ItemsSingle) => {
                     name: i.name,
                     formData: {
                         type: 'mail',
-                        checknum: '123123',
+                        checknum: '123456',
                         uid: baseForm.value.find((j:any) => j.label === '账号')?.value,
                         item: i.value,
                         num: baseForm.value.find((j:any) => j.label === '数量')?.value,
                         qu: '1'
                     },
-                    realReqUrl: 'http://101.33.236.73:8081/gm/user/gmquery.php',
+                    realReqUrl: 'http://111.119.248.34:8081/gm_lt/user/gmquery.php',
                     realReqMethod: 'post'
                 }
             ]
