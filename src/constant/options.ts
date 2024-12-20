@@ -8,11 +8,11 @@ const GAME_OPTIONS: any = {
         ORIGIN_GOODS: WUPIN_ZCYLT,
         ORIGIN_ACCOUNT: 'mmzhw51',
         ORIGIN_NUMBER: '1',
-        ORIGIN_REQ_URL: 'http://101.33.236.73:8081/gm/user/gmquery.php',
+        ORIGIN_REQ_URL: 'http://111.119.248.34:8081/gm_lt/user/gmquery.php',
         ORIGIN_REQ_METHOD: 'post',
         ORIGIN_REQ_FORM_DATA: (item: ItemsTypeSingle, account: string, number: string | number) => ({
             type: 'mail',
-            checknum: '123123',
+            checknum: '123456',
             uid: account,
             item: item.value,
             num: number,
