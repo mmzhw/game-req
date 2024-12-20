@@ -62,15 +62,15 @@ const LSSaveValue = (type: string, value: any) => {
 }
 const changeWupin = (value: string) => {
     if (value) {
-        goodsList.value = itemListing.filter((i: ItemsDjsSingle) => {
+        goodsList.value = itemListing.filter((i: ItemsTypeSingle) => {
             return value && i.name.includes(value)
         })
     } else {
         goodsList.value = itemListing
     }
 }
-const clearSingleItem = (i: ItemsDjsSingle) => {
-    selectedItems.value = selectedItems.value.filter((z: ItemsDjsSingle) => {
+const clearSingleItem = (i: ItemsTypeSingle) => {
+    selectedItems.value = selectedItems.value.filter((z: ItemsTypeSingle) => {
         return z.value !== i.value
     })
 }
@@ -80,7 +80,7 @@ const getGoods = async () => {
         await new Promise((resolve) => setTimeout(resolve, 1000))
     }
 }
-const getGood = async (i: ItemsDjsSingle) => {
+const getGood = async (i: ItemsTypeSingle) => {
     await axios({
         method: 'post',
         url: reqPre + '/api',

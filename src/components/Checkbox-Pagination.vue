@@ -36,7 +36,7 @@ const props = withDefaults(defineProps<PropsRadioPagination>(), {
     routeType: '',
     checkboxType: 'button',
     pageSize: 10,
-    maxHeight: 0
+    maxHeight: ''
 })
 
 const emit = defineEmits(['update:currentItem'])
