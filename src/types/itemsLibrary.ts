@@ -7,7 +7,7 @@ interface ItemsSingleMenu {
     value: string
     isPath: boolean
 }
-interface ItemsDjsSingle {
+interface ItemsTypeSingle {
     name: string
     value: string
     type: string

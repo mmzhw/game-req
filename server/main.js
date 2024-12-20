@@ -14,6 +14,7 @@ import { exec } from 'child_process'
 import WebSocket from 'ws'
 
 let singleWs = null
+console.log('process.env.NODE_ENV',process.env.NODE_ENV)
 let isDev = process.env.NODE_ENV === 'dev'
 
 /* 创建Koa应用实例 */

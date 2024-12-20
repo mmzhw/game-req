@@ -1,4 +1,4 @@
-const WUPIN: ItemsDjsSingle[] = [
+export const WUPIN_XZN: ItemsTypeSingle[] = [
     { name: '金币', value: '1', type: '1' },
     { name: '钻石', value: '2', type: '1' },
     { name: '经验', value: '4', type: '1' },
@@ -660,5 +660,4 @@ const WUPIN: ItemsDjsSingle[] = [
     },
     { name: '110030704.S级饲养证', value: '110030704', type: '2' }
 ]
-
-export default { WUPIN }
+export default WUPIN_XZN

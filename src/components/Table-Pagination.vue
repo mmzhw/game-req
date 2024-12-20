@@ -1,7 +1,7 @@
 <template>
     <el-table :data="realList" style="width: 100%" border>
         <el-table-column prop="no" label="序号" width="80" />
-        <el-table-column prop="message" label="内容" />
+        <el-table-column prop="message" label="内容" :show-overflow-tooltip="true"/>
     </el-table>
     <el-pagination
         class="marginTopFive paddingBottomTen"
@@ -13,6 +13,7 @@
         :current-page="current"
         @current-change="pageCurrentChange"
         @size-change="pageSizeChange"
+        background
     >
         <template #default
             ><span>{{ current }}页 / {{ dataList?.length }}条</span></template

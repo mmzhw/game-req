@@ -1,28 +1,20 @@
 <template>
     <el-checkbox-group
-        :class="['check-group-wrap', isMobile && 'mobileCheck', props.checkboxType !== 'button' && 'boxLine']"
+        :class="['check-group-wrap', isMobile && 'mobileCheck', props.checkboxType !== 'button' && 'boxLine', props.maxHeight && 'maxHeight']"
         v-model="realItem"
         @change="changeItemId"
     >
         <template v-if="props.checkboxType === 'button'">
-            <el-checkbox-button v-for="(item, index) in realList" :key="index" :label="item">{{ item.name }}</el-checkbox-button>
+            <el-checkbox-button v-for="(item, index) in realList" :key="index" :value="item">{{ item.name }}</el-checkbox-button>
         </template>
         <template v-else>
-            <el-checkbox v-for="(item, index) in realList" :key="index" :label="item">{{ item.name }}</el-checkbox>
+            <el-checkbox v-for="(item, index) in realList" :key="index" :value="item">{{ item.name }}</el-checkbox>
         </template>
     </el-checkbox-group>
-    <el-pagination
-        class="marginBottomTen"
-        :class="isMobile && 'pagePaginationMobile'"
-        :layout="layout"
-        :page-sizes="sizes"
-        :total="dataList?.length"
-        :page-size="size"
-        :current-page="current"
-        @current-change="pageCurrentChange"
-        @size-change="pageSizeChange"
-    >
-        <template #default><span>{{ current }}页 / {{ dataList?.length }}条</span></template>
+    <el-pagination class="marginBottomTen" background :class="isMobile && 'pagePaginationMobile'" :layout="layout" :page-sizes="sizes" :total="dataList?.length" :page-size="size" :current-page="current" @current-change="pageCurrentChange" @size-change="pageSizeChange">
+        <template #default
+            ><span>{{ current }}页 / {{ dataList?.length }}条</span></template
+        >
     </el-pagination>
 </template>
 
@@ -35,6 +27,7 @@ interface PropsRadioPagination {
     routeType: string
     checkboxType: string
     pageSize: number
+    maxHeight: string
 }
 
 const props = withDefaults(defineProps<PropsRadioPagination>(), {
@@ -43,6 +36,7 @@ const props = withDefaults(defineProps<PropsRadioPagination>(), {
     routeType: '',
     checkboxType: 'button',
     pageSize: 10,
+    maxHeight: 0
 })
 
 const emit = defineEmits(['update:currentItem'])
@@ -115,7 +109,8 @@ const changeItemId = (item: []) => {
         }
     }
 }
-.boxLine{
+
+.boxLine {
     border: 1px solid #cccccc;
     padding: 0 10px;
     margin-bottom: 10px;
@@ -125,7 +120,18 @@ const changeItemId = (item: []) => {
     :deep {
         .el-pagination__sizes {
             margin-left: 5px;
+            .el-select{
+                width: 100px;
+            }
+            .el-select__wrapper{
+                padding: 4px 6px;
+            }
         }
     }
+}
+
+.maxHeight{
+    max-height: 50vh;
+    overflow: auto;
 }
 </style>
