@@ -1,7 +1,7 @@
 <template>
     <div class="flex-column">
         <div class="flex-column">
-            <div class="flex-line">
+            <div class="flex-line" v-if="routeType === 'mjdx'">
                 <label>自用：</label>
                 <div style="line-height: 32px;max-height: 8vh;overflow: auto;">清路尘,倚香雪,4555786550362769000,4555786550362768745</div>
             </div>
