@@ -1,6 +1,7 @@
 import WUPIN_ZCYLT from '@/constant/zcylt'
 import WUPIN_DJS from '@/constant/djs'
 import WUPIN_XZN from '@/constant/xzn'
+import WUPIN_MJDX from '@/constant/mjdx'
 import _ from 'lodash'
 
 const GAME_OPTIONS: any = {
@@ -51,7 +52,23 @@ const GAME_OPTIONS: any = {
             reward3_1: '0',
             reward3_3: ''
         })
-    }
+    },
+    mjdx: {
+        ORIGIN_GOODS: WUPIN_MJDX,
+        ORIGIN_ACCOUNT: '清路尘,倚香雪',
+        ORIGIN_NUMBER: '1',
+        ORIGIN_REQ_URL: 'http://202.140.143.190:88/user/gmquery.php',
+        ORIGIN_REQ_METHOD: 'post',
+        ORIGIN_REQ_FORM_DATA: (item: ItemsTypeSingle, account: string, number: string | number) => ({
+            type: item.type,
+            uid: account,
+            qu: '10001',
+            checknum: '123456',
+            item: item.value,
+            charge: item.value,
+            num: number,
+        })
+    },
 }
 export default function getGameOptions(key: string) {
     return _.cloneDeep(GAME_OPTIONS[key])

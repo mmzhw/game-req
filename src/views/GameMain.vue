@@ -27,7 +27,8 @@ const routeType = ref<string>(routeParams.id || '')
 const gameList = ref([
     { name: '这城有良田', value: 'zcylt', pageType: '2' },
     { name: '打僵尸', value: 'djs', pageType: '3' },
-    { name: 'x战娘', value: 'xzn', pageType: '4' }
+    { name: 'x战娘', value: 'xzn', pageType: '4' },
+    { name: '墨迹大侠', value: 'mjdx', pageType: '5' }
 ])
 
 let routeOption = computed(() => {
