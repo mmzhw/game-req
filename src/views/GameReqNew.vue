@@ -3,7 +3,9 @@
         <div class="flex-column">
             <div class="flex-line" v-if="routeType === 'mjdx'">
                 <label>自用：</label>
-                <div style="line-height: 32px;max-height: 8vh;overflow: auto;">清路尘,倚香雪,4555786550362769000,4555786550362768745</div>
+                <div style="line-height: 32px;max-height: 8vh;overflow: auto;">
+                    清路尘,倚香雪,4555786550362769000,4555786550362768745
+                </div>
             </div>
             <div class="flex-line" v-for="(item, index) in baseForm" :key="'base-form' + index">
                 <label>{{ item.label }}：</label>
@@ -13,9 +15,7 @@
                 <label>已选({{ selectedItems.length }})：</label>
                 <div style="line-height: 32px;max-height: 8vh;overflow: auto;">
                     <template v-if="selectedItems?.length">
-                        <el-tag class="marginRightFive" v-for="(i, index) in selectedItems"
-                                :key="'selected-good' + index" closable
-                                @close="clearSingleItem(i)">{{ i.name }}
+                        <el-tag class="marginRightFive" v-for="(i, index) in selectedItems" :key="'selected-good' + index" closable @close="clearSingleItem(i)">{{ i.name }}
                         </el-tag>
                     </template>
                     <span v-else>暂未选择</span>
@@ -30,14 +30,13 @@
             <div class="flex-line">
                 <label>物品：</label>
                 <div>
-                    <checkbox-pagination :data-list="goodsList" v-model:currentItem="selectedItems"
-                                         :routeType="routeType"
-                                         :pageSize="50" maxHeight="50vh" checkboxType="default"/>
+                    <checkbox-pagination :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="50" maxHeight="50vh" checkboxType="default"/>
                 </div>
             </div>
             <div style="display: flex; padding-bottom: 10px">
                 <el-button type="primary" @click="getGoods($event, false)">直接发送</el-button>
                 <el-button type="primary" @click="getGoods($event, true)">后台转发</el-button>
+                <el-button v-if="routeType === 'mjdx'" type="primary" @click="delGoods">删除物品</el-button>
                 <el-button type="primary" @click="selectedItems = []">清空选择</el-button>
             </div>
         </div>
@@ -115,17 +114,20 @@ const clearSingleItem = (i: ItemsSingle) => {
 const getGoods = async ($event: any, transmit: boolean) => {
     for (let i = 0; i < selectedItems.value.length; i++) {
         if (transmit) {
-            await getTransmitGood(selectedItems.value[i])
+            await getTransmitGood(selectedItems.value[i]) //后台发送
         } else {
-            await getGood(selectedItems.value[i])
+            await getGood(selectedItems.value[i]) //前台发送
         }
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+    }
+}
+const delGoods = async () => {
+    for (let i = 0; i < selectedItems.value.length; i++) {
+        await delTransmitGood(selectedItems.value[i]) //后台发送
     }
 }
 const getGood = async (i: ItemsSingle) => {
     let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
     realTimeAccount = realTimeAccount.split(',')
-    console.log(realTimeAccount,'realTimeAccount', i)
     for (let z = 0; z < realTimeAccount.length; z++) {
         let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
         let formDataJson = originReqFormData(i, realTimeAccount[z], realTimeNumber)
@@ -143,13 +145,10 @@ const getGood = async (i: ItemsSingle) => {
             emit('addLogs', response.data?.data || response.data)
         }
     }
-
-
 }
 const getTransmitGood = async (i: ItemsSingle) => {
     let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
     realTimeAccount = realTimeAccount.split(',')
-    console.log(realTimeAccount,'realTimeAccount', i)
     for (let z = 0; z < realTimeAccount.length; z++) {
         let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
         let formData = originReqFormData(i, realTimeAccount[z], realTimeNumber)
@@ -160,6 +159,7 @@ const getTransmitGood = async (i: ItemsSingle) => {
                 reqData: [
                     {
                         name: i.name,
+                        account: realTimeAccount[z],
                         formData,
                         realReqUrl: originReqUrl,
                         realReqMethod: originReqMethod
@@ -168,7 +168,29 @@ const getTransmitGood = async (i: ItemsSingle) => {
             }
         })
     }
-
+}
+const delTransmitGood = async (i: ItemsSingle) => {
+    let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
+    realTimeAccount = realTimeAccount.split(',')
+    for (let z = 0; z < realTimeAccount.length; z++) {
+        let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
+        let formData = originReqFormData(i, realTimeAccount[z], realTimeNumber)
+        await axios({
+            method: 'post',
+            url: reqPre + '/api',
+            data: {
+                reqData: [
+                    {
+                        name: i.name,
+                        account: realTimeAccount[z],
+                        formData: {...formData, type: 'kitem', item: formData.item.replace('additem', 'subitem')},
+                        realReqUrl: originReqUrl,
+                        realReqMethod: originReqMethod
+                    }
+                ]
+            }
+        })
+    }
 }
 
 watch(

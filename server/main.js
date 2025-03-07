@@ -69,7 +69,7 @@ const reqFun = async (body) => {
             rData = JSON.stringify(result.data)
         } catch (e) {}
     }
-    singleWs && singleWs.send(body.name + ' ' + rData)
+    singleWs && singleWs.send(body.account + ' ' + body.name + ' ' + rData)
     return result?.data
 }
 const delayReqFun = async (bodys, time) => {
