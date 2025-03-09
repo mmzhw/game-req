@@ -114,18 +114,18 @@ const clearSingleItem = (i: ItemsSingle) => {
 const getGoods = async ($event: any, transmit: boolean) => {
     for (let i = 0; i < selectedItems.value.length; i++) {
         if (transmit) {
-            await getTransmitGood(selectedItems.value[i]) //后台发送
+            await getGoodFromServer(selectedItems.value[i]) //后台发送
         } else {
-            await getGood(selectedItems.value[i]) //前台发送
+            await getGoodFromLocal(selectedItems.value[i]) //前台发送
         }
     }
 }
 const delGoods = async () => {
     for (let i = 0; i < selectedItems.value.length; i++) {
-        await delTransmitGood(selectedItems.value[i]) //后台发送
+        await delGoodFromServer(selectedItems.value[i]) //后台发送
     }
 }
-const getGood = async (i: ItemsSingle) => {
+const getGoodFromLocal = async (i: ItemsSingle) => {
     let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
     realTimeAccount = realTimeAccount.split(',')
     for (let z = 0; z < realTimeAccount.length; z++) {
@@ -136,22 +136,32 @@ const getGood = async (i: ItemsSingle) => {
         Object.keys(formDataJson).forEach((key) => {
             formData.append(key, formDataJson[key])
         })
-        let response = await axios.post(originReqUrl, formData, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-            }
-        })
-        if (response) {
-            emit('addLogs', response.data?.data || response.data)
+        try {
+            let response = await axios.post(originReqUrl, formData, {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                }
+            })
+            emit('addLogs', `${realTimeAccount[z]} ${i.name} ${response.data?.data || response.data}`)
+
+        } catch (err) {
+            emit('addLogs', `${realTimeAccount[z]} ${i.name} 发送失败`)
         }
+
     }
 }
-const getTransmitGood = async (i: ItemsSingle) => {
+const getGoodFromServer = async (i: ItemsSingle) => {
     let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
     realTimeAccount = realTimeAccount.split(',')
     for (let z = 0; z < realTimeAccount.length; z++) {
         let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
         let formData = originReqFormData(i, realTimeAccount[z], realTimeNumber)
+
+        if (props.routeType === 'wl'){
+            delete formData.item
+            formData.num = i.value
+        }
+
         await axios({
             method: 'post',
             url: reqPre + '/api',
@@ -169,7 +179,7 @@ const getTransmitGood = async (i: ItemsSingle) => {
         })
     }
 }
-const delTransmitGood = async (i: ItemsSingle) => {
+const delGoodFromServer = async (i: ItemsSingle) => {
     let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
     realTimeAccount = realTimeAccount.split(',')
     for (let z = 0; z < realTimeAccount.length; z++) {

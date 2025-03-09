@@ -2,6 +2,7 @@ import WUPIN_ZCYLT from '@/constant/zcylt'
 import WUPIN_DJS from '@/constant/djs'
 import WUPIN_XZN from '@/constant/xzn'
 import WUPIN_MJDX from '@/constant/mjdx'
+import WUPIN_WL from '@/constant/wl'
 import _ from 'lodash'
 
 const GAME_OPTIONS: any = {
@@ -67,6 +68,23 @@ const GAME_OPTIONS: any = {
             item: item.value,
             charge: item.value,
             num: number,
+        })
+    },
+    wl: {
+        ORIGIN_GOODS: WUPIN_WL,
+        ORIGIN_ACCOUNT: '闻人若萱,浩星昊文,车非芙雪,西宫少主',
+        ORIGIN_NUMBER: '1',
+        ORIGIN_REQ_URL: 'http://183.131.85.198:86/gm/user/query.php',
+        ORIGIN_REQ_METHOD: 'post',
+        ORIGIN_REQ_FORM_DATA: (item: ItemsTypeSingle, account: string, number: string | number) => ({
+            type: item.type,
+            uid: account,
+            item: item.value,
+            num: number,
+            qu: '1',
+            pwd: '112233',
+            title:'GM邮件',
+            content:'亲爱的玩家，请查收您的邮件!',
         })
     },
 }

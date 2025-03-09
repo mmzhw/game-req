@@ -47,7 +47,7 @@ const current = ref(1)
 const layout = ref('')
 const realItem = ref([])
 
-const isMobile = ref(/mobile/i.test(navigator.userAgent))
+const isMobile = ref(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
 
 let realList = computed(() => {
     return props.dataList?.slice(size.value * (current.value - 1), size.value * current.value)
@@ -88,6 +88,9 @@ const changeItemId = (item: []) => {
         .el-checkbox-button {
             margin: 0 0 5px 0;
         }
+        .el-checkbox{
+            width: 20%;
+        }
     }
 }
 
@@ -106,6 +109,9 @@ const changeItemId = (item: []) => {
                 border-radius: 4px !important;
                 border: 1px solid #dcdfe6 !important;
             }
+        }
+        .el-checkbox{
+            width: 100%;
         }
     }
 }

@@ -9,13 +9,13 @@
             </div>
         </div>
         <game-req-new :routeType="routeOption.value" @addLogs="addLogs"/>
-        <table-pagination :dataList="logList" />
+        <table-pagination :dataList="logList"/>
     </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import {computed, onMounted, ref} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 import GameReqNew from '@/views/GameReqNew.vue'
 import TablePagination from '@/components/Table-Pagination.vue'
 
@@ -25,10 +25,11 @@ const router = useRouter()
 const routeParams = useRoute().params as Record<string, string>
 const routeType = ref<string>(routeParams.id || '')
 const gameList = ref([
-    { name: '这城有良田', value: 'zcylt', pageType: '2' },
-    { name: '打僵尸', value: 'djs', pageType: '3' },
-    { name: 'x战娘', value: 'xzn', pageType: '4' },
-    { name: '墨迹大侠', value: 'mjdx', pageType: '5' }
+    {name: '这城有良田', value: 'zcylt', pageType: '2'},
+    {name: '打僵尸', value: 'djs', pageType: '3'},
+    {name: 'x战娘', value: 'xzn', pageType: '4'},
+    {name: '墨迹大侠', value: 'mjdx', pageType: '5'},
+    {name: '万灵', value: 'wl', pageType: '6'},
 ])
 
 let routeOption = computed(() => {
@@ -41,15 +42,15 @@ onMounted(() => {
 })
 //跳转到版本控制
 const jumpVersion = () => {
-    router.push({ name: 'version' })
+    router.push({name: 'version'})
 }
 
 const changeRouteType = () => {
-    router.push({ name: 'manage', params: { id: routeType.value } })
+    router.push({name: 'manage', params: {id: routeType.value}})
 }
 
 const addLogs = (message: any) => {
-    logList.value.unshift({ no: logList.value.length + 1, message: message })
+    logList.value.unshift({no: logList.value.length + 1, message: message})
 }
 const initWs = () => {
     let ws: any = null
@@ -71,6 +72,9 @@ const initWs = () => {
         clearInterval(pingId)
         pingId = null
         ws = null
+        setTimeout(() => {
+            initWs()
+        }, 1000)
     }
 }
 </script>
