@@ -5,21 +5,23 @@
         @change="changeItemId"
     >
         <template v-if="props.checkboxType === 'button'">
-            <el-checkbox-button v-for="(item, index) in realList" :key="index" :value="item">{{ item.name }}</el-checkbox-button>
+            <el-checkbox-button v-for="(item, index) in realList" :key="index" :value="item" :title="item.name">{{ item.name }}</el-checkbox-button>
         </template>
         <template v-else>
-            <el-checkbox v-for="(item, index) in realList" :key="index" :value="item">{{ item.name }}</el-checkbox>
+            <el-checkbox v-for="(item, index) in realList" :key="index" :value="item" :title="item.name">{{ item.name }}</el-checkbox>
         </template>
     </el-checkbox-group>
-    <el-pagination class="marginBottomTen" background :class="isMobile && 'pagePaginationMobile'" :layout="layout" :page-sizes="sizes" :total="dataList?.length" :page-size="size" :current-page="current" @current-change="pageCurrentChange" @size-change="pageSizeChange">
-        <template #default
-            ><span>{{ current }}页 / {{ dataList?.length }}条</span></template
-        >
-    </el-pagination>
+    <div style="display: flex;align-items: center;">
+        <el-button type="text" @click="clickAll" style="margin-bottom: 10px;margin-right: 10px">全选</el-button>
+        <el-pagination class="marginBottomTen" background :class="isMobile && 'pagePaginationMobile'" :layout="layout" :page-sizes="sizes" :total="dataList?.length" :page-size="size" :current-page="current" @current-change="pageCurrentChange" @size-change="pageSizeChange">
+            <template #default><span>{{ current }}页 / {{ dataList?.length }}条</span></template>
+        </el-pagination>
+    </div>
+
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import {computed, onMounted, ref, watch} from 'vue'
 
 interface PropsRadioPagination {
     dataList: ItemsSingle[]
@@ -57,7 +59,7 @@ watch(
     (newVal: any, oldVal: any) => {
         realItem.value = newVal
     },
-    { deep: true }
+    {deep: true}
 )
 onMounted(() => {
     if (isMobile.value) {
@@ -80,6 +82,20 @@ const changeItemId = (item: []) => {
     window.localStorage.setItem(props.routeType + 'itemId', JSON.stringify(item))
     emit('update:currentItem', item)
 }
+
+const clickAll = () => {
+    let list = JSON.parse(JSON.stringify(realItem.value))
+
+    realList.value.forEach((i: ItemsSingle) => {
+        let match: any = list.find((z: ItemsSingle) => z.name === i.name)
+        if (!match) {
+            list.push(i)
+        }
+    })
+    window.localStorage.setItem(props.routeType + 'itemId', JSON.stringify(list))
+    emit('update:currentItem', list)
+
+}
 </script>
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
@@ -88,8 +104,21 @@ const changeItemId = (item: []) => {
         .el-checkbox-button {
             margin: 0 0 5px 0;
         }
-        .el-checkbox{
-            width: 20%;
+
+        .el-checkbox {
+            width: 22%;
+            display: inline-flex;
+
+            span:nth-child(1) {
+                display: block;
+            }
+
+            span:nth-child(2) {
+                display: block;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
         }
     }
 }
@@ -110,7 +139,8 @@ const changeItemId = (item: []) => {
                 border: 1px solid #dcdfe6 !important;
             }
         }
-        .el-checkbox{
+
+        .el-checkbox {
             width: 100%;
         }
     }
@@ -126,17 +156,19 @@ const changeItemId = (item: []) => {
     :deep {
         .el-pagination__sizes {
             margin-left: 5px;
-            .el-select{
+
+            .el-select {
                 width: 100px;
             }
-            .el-select__wrapper{
+
+            .el-select__wrapper {
                 padding: 4px 6px;
             }
         }
     }
 }
 
-.maxHeight{
+.maxHeight {
     max-height: 50vh;
     overflow: auto;
 }

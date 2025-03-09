@@ -150,14 +150,14 @@ const getGoodFromLocal = async (i: ItemsSingle) => {
 
     }
 }
-const getGoodFromServer = async (i: ItemsSingle) => {
+const getGoodFromServer = async (i: ItemsTypeSingle) => {
     let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
     realTimeAccount = realTimeAccount.split(',')
     for (let z = 0; z < realTimeAccount.length; z++) {
         let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
         let formData = originReqFormData(i, realTimeAccount[z], realTimeNumber)
 
-        if (props.routeType === 'wl'){
+        if (props.routeType === 'wl' && i.type === 'charge2'){
             delete formData.item
             formData.num = i.value
         }
