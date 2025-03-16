@@ -28,9 +28,15 @@
                 </div>
             </div>
             <div class="flex-line">
+                <label>定位：</label>
+                <div>
+                    <el-input v-model="keyWordLocation" placeholder="定位" @input="locationGoods"/>
+                </div>
+            </div>
+            <div class="flex-line">
                 <label>物品：</label>
                 <div>
-                    <checkbox-pagination :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="50" maxHeight="50vh" checkboxType="default"/>
+                    <checkbox-pagination ref="checkboxPaginationRef" :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="pageSize" maxHeight="50vh" checkboxType="default"/>
                 </div>
             </div>
             <div style="display: flex; padding-bottom: 10px">
@@ -57,18 +63,24 @@ const reqPre = import.meta.env.DEV ? 'http://localhost:3000' : ''
 interface PropsRadioPagination {
     routeType: string
 }
+interface CheckboxPaginationInstance {
+    updateSize(page: number): void;
+}
 
 const props = withDefaults(defineProps<PropsRadioPagination>(), {
     routeType: ''
 })
 
+let pageSize = ref(50)
 let goodsList: any = ref([])
 let selectedItems: any = ref([])
 let keyWord: any = ref('')
+let keyWordLocation: any = ref('')
 let baseForm: any = reactive([
     {label: '账号 | 角色', key: 'account', value: ''},
     {label: '数量', key: 'number', value: '1'}
 ])
+const checkboxPaginationRef = ref<CheckboxPaginationInstance | null>(null)
 
 let originGoods: any = []
 let originReqUrl: any = ''
@@ -99,11 +111,23 @@ const LSSaveValue = (key: string, value: any) => {
 }
 const changeGoods = (value: string) => {
     if (value) {
+        keyWordLocation.value = ''
         goodsList.value = _.cloneDeep(originGoods).filter((i: ItemsSingle) => {
             return value && i.name.includes(value)
         })
     } else {
         goodsList.value = _.cloneDeep(originGoods)
+    }
+}
+const locationGoods = (value: string) => {
+    if (value) {
+        keyWord.value = ''
+        const index = _.cloneDeep(originGoods).findIndex((i: ItemsSingle) => {
+            return value && i.name.includes(value)
+        })
+        if (index > 0 && checkboxPaginationRef.value) {
+            checkboxPaginationRef.value?.updateSize(Math.floor(index / pageSize.value) + 1)
+        }
     }
 }
 const clearSingleItem = (i: ItemsSingle) => {

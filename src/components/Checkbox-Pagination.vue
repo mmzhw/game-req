@@ -96,6 +96,12 @@ const clickAll = () => {
     emit('update:currentItem', list)
 
 }
+
+defineExpose({
+    updateSize: (currentPage: number) => {
+        current.value = currentPage
+    }
+})
 </script>
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
