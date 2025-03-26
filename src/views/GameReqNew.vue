@@ -15,8 +15,7 @@
                 <label>已选({{ selectedItems.length }})：</label>
                 <div style="line-height: 32px;max-height: 8vh;overflow: auto;">
                     <template v-if="selectedItems?.length">
-                        <el-tag class="marginRightFive" v-for="(i, index) in selectedItems" :key="'selected-good' + index" closable @close="clearSingleItem(i)">{{ i.name }}
-                        </el-tag>
+                        <el-tag class="marginRightFive" v-for="(i, index) in selectedItems" :key="'selected-good' + index" closable @close="clearSingleItem(i)">{{ i.name }}</el-tag>
                     </template>
                     <span v-else>暂未选择</span>
                 </div>
@@ -29,8 +28,9 @@
             </div>
             <div class="flex-line">
                 <label>定位：</label>
-                <div>
-                    <el-input v-model="keyWordLocation" placeholder="定位" @input="locationGoods"/>
+                <div style="display: flex">
+                    <el-input v-model="keyWordLocation" placeholder="定位" @input="locationGoods()"/>
+                    <el-button style="width: 100px;margin-left: 10px" @click="locationGoods()">下一个</el-button>
                 </div>
             </div>
             <div class="flex-line">
@@ -76,6 +76,8 @@ let goodsList: any = ref([])
 let selectedItems: any = ref([])
 let keyWord: any = ref('')
 let keyWordLocation: any = ref('')
+let keyWordLocationCurrent: any = ref('')
+let keyWordLocationMatchIndex: any = ref('')
 let baseForm: any = reactive([
     {label: '账号 | 角色', key: 'account', value: ''},
     {label: '数量', key: 'number', value: '1'}
@@ -119,14 +121,29 @@ const changeGoods = (value: string) => {
         goodsList.value = _.cloneDeep(originGoods)
     }
 }
-const locationGoods = (value: string) => {
+const locationGoods = () => {
+    let value = keyWordLocation.value
     if (value) {
         keyWord.value = ''
-        const index = _.cloneDeep(originGoods).findIndex((i: ItemsSingle) => {
-            return value && i.name.includes(value)
-        })
-        if (index > 0 && checkboxPaginationRef.value) {
-            checkboxPaginationRef.value?.updateSize(Math.floor(index / pageSize.value) + 1)
+
+        const indices:any = [];
+        _.cloneDeep(originGoods).forEach((i: ItemsSingle, index: number) => {
+            if (i.name.includes(value)) {
+                indices.push(index);
+            }
+        });
+
+        if (value === keyWordLocationCurrent.value){
+            keyWordLocationMatchIndex.value += 1
+        } else {
+            keyWordLocationMatchIndex.value = 0
+            keyWordLocationCurrent.value = value
+        }
+
+        let matchIndex = indices[keyWordLocationMatchIndex.value]
+
+        if (matchIndex > 0 && checkboxPaginationRef.value) {
+            checkboxPaginationRef.value?.updateSize(Math.floor(matchIndex / pageSize.value) + 1)
         }
     }
 }
