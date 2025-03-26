@@ -3,17 +3,15 @@
         <div class="flex-column">
             <div class="flex-line" v-if="routeType === 'mjdx'">
                 <label>自用：</label>
-                <div style="line-height: 32px;max-height: 8vh;overflow: auto;">
-                    清路尘,倚香雪,4555786550362769000,4555786550362768745
-                </div>
+                <div style="line-height: 32px; max-height: 8vh; overflow: auto">清路尘,倚香雪,4555786550362769000,4555786550362768745</div>
             </div>
             <div class="flex-line" v-for="(item, index) in baseForm" :key="'base-form' + index">
                 <label>{{ item.label }}：</label>
-                <el-input v-model="item.value" @input="(value:string) => LSSaveValue(item.key, value)"/>
+                <el-input v-model="item.value" @input="(value:string) => LSSaveValue(item.key, value)" />
             </div>
             <div class="flex-line">
                 <label>已选({{ selectedItems.length }})：</label>
-                <div style="line-height: 32px;max-height: 8vh;overflow: auto;">
+                <div style="line-height: 32px; max-height: 8vh; overflow: auto">
                     <template v-if="selectedItems?.length">
                         <el-tag class="marginRightFive" v-for="(i, index) in selectedItems" :key="'selected-good' + index" closable @close="clearSingleItem(i)">{{ i.name }}</el-tag>
                     </template>
@@ -22,23 +20,26 @@
             </div>
             <div class="flex-line">
                 <label>过滤：</label>
-                <div>
-                    <el-input v-model="keyWord" placeholder="过滤" @input="changeGoods"/>
-                </div>
-            </div>
-            <div class="flex-line">
-                <label>定位：</label>
                 <div style="display: flex">
-                    <el-input v-model="keyWordLocation" placeholder="定位" @input="locationGoods()"/>
-                    <el-button style="width: 100px;margin-left: 10px" @click="locationGoods()">下一个</el-button>
+                    <el-input v-model="keyWord" placeholder="过滤" @input="changeGoods" />
+                    <el-input style="margin-left: 10px" v-model="keyWordLocation" placeholder="定位" @input="locationGoods()" />
+                    <el-button style="width: 100px; margin-left: 10px" @click="locationGoods()">下一个</el-button>
                 </div>
             </div>
-            <div class="flex-line">
+            <!--            <div class="flex-line" v-if="!isMobile">-->
+            <!--                <label>定位：</label>-->
+            <!--                <div style="display: flex">-->
+            <!--                    <el-input v-model="keyWordLocation" placeholder="定位" @input="locationGoods()"/>-->
+            <!--                    <el-button style="width: 100px;margin-left: 10px" @click="locationGoods()">下一个</el-button>-->
+            <!--                </div>-->
+            <!--            </div>-->
+            <div class="flex-line" v-if="!isMobile">
                 <label>物品：</label>
                 <div>
-                    <checkbox-pagination ref="checkboxPaginationRef" :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="pageSize" maxHeight="50vh" checkboxType="default"/>
+                    <checkbox-pagination ref="checkboxPaginationRef" :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="pageSize" maxHeight="50vh" checkboxType="default" />
                 </div>
             </div>
+            <checkbox-pagination v-if="isMobile" ref="checkboxPaginationRef" :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="pageSize" maxHeight="50vh" checkboxType="default" />
             <div style="display: flex; padding-bottom: 10px">
                 <el-button type="primary" @click="getGoods($event, false)">直接发送</el-button>
                 <el-button type="primary" @click="getGoods($event, true)">后台转发</el-button>
@@ -50,7 +51,7 @@
 </template>
 
 <script lang="ts" setup>
-import {defineEmits, reactive, ref, watch} from 'vue'
+import { defineEmits, reactive, ref, watch } from 'vue'
 import CheckboxPagination from '../components/Checkbox-Pagination.vue'
 import axios from 'axios'
 import getGameOptions from '@/constant/options'
@@ -63,8 +64,9 @@ const reqPre = import.meta.env.DEV ? 'http://localhost:3000' : ''
 interface PropsRadioPagination {
     routeType: string
 }
+
 interface CheckboxPaginationInstance {
-    updateSize(page: number): void;
+    updateSize(page: number): void
 }
 
 const props = withDefaults(defineProps<PropsRadioPagination>(), {
@@ -79,8 +81,8 @@ let keyWordLocation: any = ref('')
 let keyWordLocationCurrent: any = ref('')
 let keyWordLocationMatchIndex: any = ref('')
 let baseForm: any = reactive([
-    {label: '账号 | 角色', key: 'account', value: ''},
-    {label: '数量', key: 'number', value: '1'}
+    { label: '角色', key: 'account', value: '' },
+    { label: '数量', key: 'number', value: '1' }
 ])
 const checkboxPaginationRef = ref<CheckboxPaginationInstance | null>(null)
 
@@ -89,13 +91,14 @@ let originReqUrl: any = ''
 let originReqMethod: any = ''
 let originReqFormData: any = null
 
+const isMobile = ref(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+
 const initOptions = () => {
     let gameOptions = getGameOptions(props.routeType)
     goodsList.value = originGoods = gameOptions?.ORIGIN_GOODS || []
     originReqUrl = gameOptions?.ORIGIN_REQ_URL || ''
     originReqMethod = gameOptions?.ORIGIN_REQ_METHOD || ''
-    originReqFormData = gameOptions?.ORIGIN_REQ_FORM_DATA || (() => {
-    })
+    originReqFormData = gameOptions?.ORIGIN_REQ_FORM_DATA || (() => {})
 
     selectedItems.value = []
     keyWord.value = ''
@@ -126,14 +129,14 @@ const locationGoods = () => {
     if (value) {
         keyWord.value = ''
 
-        const indices:any = [];
+        const indices: any = []
         _.cloneDeep(originGoods).forEach((i: ItemsSingle, index: number) => {
             if (i.name.includes(value)) {
-                indices.push(index);
+                indices.push(index)
             }
-        });
+        })
 
-        if (value === keyWordLocationCurrent.value){
+        if (value === keyWordLocationCurrent.value) {
             keyWordLocationMatchIndex.value += 1
         } else {
             keyWordLocationMatchIndex.value = 0
@@ -184,11 +187,9 @@ const getGoodFromLocal = async (i: ItemsSingle) => {
                 }
             })
             emit('addLogs', `${realTimeAccount[z]} ${i.name} ${response.data?.data || response.data}`)
-
         } catch (err) {
             emit('addLogs', `${realTimeAccount[z]} ${i.name} 发送失败`)
         }
-
     }
 }
 const getGoodFromServer = async (i: ItemsTypeSingle) => {
@@ -198,7 +199,7 @@ const getGoodFromServer = async (i: ItemsTypeSingle) => {
         let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
         let formData = originReqFormData(i, realTimeAccount[z], realTimeNumber)
 
-        if (props.routeType === 'wl' && i.type === 'charge2'){
+        if (props.routeType === 'wl' && i.type === 'charge2') {
             delete formData.item
             formData.num = i.value
         }
@@ -234,7 +235,7 @@ const delGoodFromServer = async (i: ItemsSingle) => {
                     {
                         name: i.name,
                         account: realTimeAccount[z],
-                        formData: {...formData, type: 'kitem', item: formData.item.replace('additem', 'subitem')},
+                        formData: { ...formData, type: 'kitem', item: formData.item.replace('additem', 'subitem') },
                         realReqUrl: originReqUrl,
                         realReqMethod: originReqMethod
                     }
@@ -249,7 +250,7 @@ watch(
     () => {
         initOptions()
     },
-    {immediate: true}
+    { immediate: true }
 )
 </script>
 
@@ -283,5 +284,4 @@ watch(
 .marginRightFive {
     margin-right: 5px;
 }
-
 </style>
