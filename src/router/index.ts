@@ -1,15 +1,21 @@
-import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
     history: createWebHashHistory(),
     routes: [
         {
             path: '/',
-            name: 'main',
+            name: '/',
             redirect: () => {
                 // 方法接收目标路由作为参数
                 // return 重定向的字符串路径/路径对象
+                return { name: 'dj' }
+            }
+        },
+        {
+            path: '/minewy',
+            name: 'minewy',
+            redirect: () => {
                 return { name: 'manage', params: { id: 'zcylt' } }
             }
         },
@@ -23,7 +29,11 @@ const router = createRouter({
             name: 'version',
             component: () => import('../views/VersionControl.vue')
         },
-
+        {
+            path: '/dj',
+            name: 'dj',
+            component: () => import('../views/SaveFileEdit.vue')
+        }
     ]
 })
 

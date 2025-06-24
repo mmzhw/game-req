@@ -27,6 +27,9 @@ export default defineConfig(({ command, mode }) => {
         // vite 配置
         define: {
             __Admin_VERSION__: JSON.stringify(process.env.npm_package_version)
+        },
+        server: {
+            port: 5174,
         }
     };
 });

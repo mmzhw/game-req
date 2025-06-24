@@ -8,6 +8,7 @@ body {
     height: 100vh;
     padding: 10px;
     box-sizing: border-box;
+    overflow-x: hidden;
 }
 /*滚动条 start*/
 ::-webkit-scrollbar {
