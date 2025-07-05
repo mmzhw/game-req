@@ -24,6 +24,13 @@
                 <div class="label">武功名称:</div>
                 <div class="value">{{ item.SChinese }}</div>
             </div>
+            <div class="item">
+                <div class="label">武功性质:</div>
+                <div class="value">
+                    <el-input v-model="item.InterForceType" />
+                    <p class="warn-text">0：调和；1：阳性；2：阴性</p>
+                </div>
+            </div>
             <div class="item" v-if="item.ActiveInternalBuffs?.length">
                 <div class="label">内功BUFF:</div>
                 <div class="value">
@@ -112,6 +119,7 @@ const operationFile = (fileStr) => {
         let item = { UName: i.UName, SChinese: i.SChinese, matchName: i.UName.replace('ItemName_', '') }
         list.forEach((j) => {
             if (j['__type'] === 'GameData.KungfuData,ModShare.Runtime' && j.UName.match(item.matchName)) {
+                item.InterForceType = j.InterForceType //
                 item.ActiveInternalBuffs = j.ActiveInternalBuffs //内功
                 item.CastBuffs = j.CastBuffs //武功
                 item.CharacterPropNeed = j.CharacterPropNeed.map((i) => JSON.stringify(i))
@@ -132,6 +140,7 @@ const save = () => {
         list.forEach((i) => {
             originObj.Data.value.storedDatas.forEach((j) => {
                 if (j['__type'] === 'GameData.KungfuData,ModShare.Runtime' && j.UName.match(i.matchName)) {
+                    j.InterForceType = i.InterForceType
                     j.ActiveInternalBuffs = i.ActiveInternalBuffs
                     j.CastBuffs = i.CastBuffs
                     j.CharacterPropNeed = i.CharacterPropNeed.map((m) => JSON.parse(m))
