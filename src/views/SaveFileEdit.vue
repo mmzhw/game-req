@@ -28,7 +28,7 @@
                 <div class="label">武功性质:</div>
                 <div class="value">
                     <el-input v-model="item.InterForceType" />
-                    <p class="warn-text">0：调和；1：阳性；2：阴性</p>
+                    <p class="warn-text">0：阴性；1：阳性；2：调和</p>
                 </div>
             </div>
             <div class="item" v-if="item.ActiveInternalBuffs?.length">
@@ -140,7 +140,7 @@ const save = () => {
         list.forEach((i) => {
             originObj.Data.value.storedDatas.forEach((j) => {
                 if (j['__type'] === 'GameData.KungfuData,ModShare.Runtime' && j.UName.match(i.matchName)) {
-                    j.InterForceType = i.InterForceType
+                    j.InterForceType = Number(i.InterForceType)
                     j.ActiveInternalBuffs = i.ActiveInternalBuffs
                     j.CastBuffs = i.CastBuffs
                     j.CharacterPropNeed = i.CharacterPropNeed.map((m) => JSON.parse(m))
