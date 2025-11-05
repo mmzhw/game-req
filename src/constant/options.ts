@@ -3,6 +3,7 @@ import WUPIN_DJS from '@/constant/djs'
 import WUPIN_XZN from '@/constant/xzn'
 import WUPIN_MJDX from '@/constant/mjdx'
 import WUPIN_WL from '@/constant/wl'
+import WUPIN_SGM from '@/constant/sgm'
 import _ from 'lodash'
 
 const GAME_OPTIONS: any = {
@@ -87,6 +88,22 @@ const GAME_OPTIONS: any = {
             content:'亲爱的玩家，请查收您的邮件!',
         })
     },
+    sgm: {
+        ORIGIN_GOODS: WUPIN_SGM,
+        ORIGIN_ACCOUNT: 'mmzhw51',
+        ORIGIN_NUMBER: '1',
+        ORIGIN_REQ_URL: 'http://115.231.220.33:81/gm/user/gmquery.php',
+        ORIGIN_REQ_METHOD: 'post',
+        ORIGIN_REQ_FORM_DATA: (item: ItemsTypeSingle, account: string, number: string | number) => ({
+            type: 'mail',
+            checknum: 'ltzy.vip',
+            uid: account,
+            item: item.value,
+            num: number,
+            qu: '2',
+        })
+    },
+
 }
 export default function getGameOptions(key: string) {
     return _.cloneDeep(GAME_OPTIONS[key])

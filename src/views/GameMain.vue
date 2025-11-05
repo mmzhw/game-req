@@ -30,6 +30,7 @@ const gameList = ref([
     {name: 'x战娘', value: 'xzn', pageType: '4'},
     {name: '墨迹大侠', value: 'mjdx', pageType: '5'},
     {name: '万灵', value: 'wl', pageType: '6'},
+    {name: '三国猫', value: 'sgm', pageType: '7'},
 ])
 
 let routeOption = computed(() => {

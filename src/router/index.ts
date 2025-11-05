@@ -9,7 +9,7 @@ const router = createRouter({
             redirect: () => {
                 // 方法接收目标路由作为参数
                 // return 重定向的字符串路径/路径对象
-                return { name: 'dj' }
+                return { name: 'manage' }
             }
         },
         {
