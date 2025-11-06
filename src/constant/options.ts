@@ -5,6 +5,7 @@ import WUPIN_MJDX from '@/constant/mjdx'
 import WUPIN_WL from '@/constant/wl'
 import WUPIN_SGM from '@/constant/sgm'
 import _ from 'lodash'
+import WUPIN_SNHZ from '@/constant/snhz'
 
 const GAME_OPTIONS: any = {
     zcylt: {
@@ -68,7 +69,7 @@ const GAME_OPTIONS: any = {
             checknum: '123456',
             item: item.value,
             charge: item.value,
-            num: number,
+            num: number
         })
     },
     wl: {
@@ -84,8 +85,8 @@ const GAME_OPTIONS: any = {
             num: number,
             qu: '1',
             pwd: '112233',
-            title:'GM邮件',
-            content:'亲爱的玩家，请查收您的邮件!',
+            title: 'GM邮件',
+            content: '亲爱的玩家，请查收您的邮件!'
         })
     },
     sgm: {
@@ -100,10 +101,24 @@ const GAME_OPTIONS: any = {
             uid: account,
             item: item.value,
             num: number,
-            qu: '2',
+            qu: '2'
         })
     },
-
+    snhz: {
+        ORIGIN_GOODS: WUPIN_SNHZ,
+        ORIGIN_ACCOUNT: 'mmzhw51',
+        ORIGIN_NUMBER: '1',
+        ORIGIN_REQ_URL: 'http://111.170.152.157:81/gm/gmquery.php',
+        ORIGIN_REQ_METHOD: 'post',
+        ORIGIN_REQ_FORM_DATA: (item: ItemsTypeSingle, account: string, number: string | number) => ({
+            action: 'senditem',
+            qid: '1',
+            uid: account,
+            gmcode: 'ltzy.vip',
+            itemid: item.value,
+            itemnum: number
+        })
+    }
 }
 export default function getGameOptions(key: string) {
     return _.cloneDeep(GAME_OPTIONS[key])
