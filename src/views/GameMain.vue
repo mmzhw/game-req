@@ -32,6 +32,7 @@ const gameList = ref([
     {name: '万灵', value: 'wl', pageType: '6'},
     {name: '三国猫', value: 'sgm', pageType: '7'},
     {name: '少女回战', value: 'snhz', pageType: '8'},
+    {name: '炼仙传说', value: 'lxcs', pageType: '9'},
 ])
 
 let routeOption = computed(() => {

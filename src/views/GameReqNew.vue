@@ -96,7 +96,6 @@ const isMobile = ref(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
 const initOptions = () => {
     let gameOptions = getGameOptions(props.routeType)
     goodsList.value = originGoods = gameOptions?.ORIGIN_GOODS || []
-    console.log('!!!!!!!!!!!!!!',goodsList.value)
     originReqUrl = gameOptions?.ORIGIN_REQ_URL || ''
     originReqMethod = gameOptions?.ORIGIN_REQ_METHOD || ''
     originReqFormData = gameOptions?.ORIGIN_REQ_FORM_DATA || (() => {})

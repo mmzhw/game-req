@@ -1,11 +1,13 @@
+import _ from 'lodash'
+
 import WUPIN_ZCYLT from '@/constant/zcylt'
 import WUPIN_DJS from '@/constant/djs'
 import WUPIN_XZN from '@/constant/xzn'
 import WUPIN_MJDX from '@/constant/mjdx'
 import WUPIN_WL from '@/constant/wl'
 import WUPIN_SGM from '@/constant/sgm'
-import _ from 'lodash'
 import WUPIN_SNHZ from '@/constant/snhz'
+import WUPIN_LXCS from '@/constant/lxcs'
 
 const GAME_OPTIONS: any = {
     zcylt: {
@@ -109,6 +111,21 @@ const GAME_OPTIONS: any = {
         ORIGIN_ACCOUNT: 'mmzhw51',
         ORIGIN_NUMBER: '1',
         ORIGIN_REQ_URL: 'http://111.170.152.157:81/gm/gmquery.php',
+        ORIGIN_REQ_METHOD: 'post',
+        ORIGIN_REQ_FORM_DATA: (item: ItemsTypeSingle, account: string, number: string | number) => ({
+            action: 'senditem',
+            qid: '1',
+            uid: account,
+            gmcode: 'ltzy.vip',
+            itemid: item.value,
+            itemnum: number
+        })
+    },
+    lxcs: {
+        ORIGIN_GOODS: WUPIN_LXCS,
+        ORIGIN_ACCOUNT: 'mmzhw51',
+        ORIGIN_NUMBER: '1',
+        ORIGIN_REQ_URL: 'http://115.231.220.245:88/gm/gmquery.php',
         ORIGIN_REQ_METHOD: 'post',
         ORIGIN_REQ_FORM_DATA: (item: ItemsTypeSingle, account: string, number: string | number) => ({
             action: 'senditem',
