@@ -1,208 +1,262 @@
 <template>
     <div class="flex-column">
-        <div class="flex-column" v-show="hasPage">
+        <div class="flex-column">
+            <div class="flex-line" v-if="routeType === 'mjdx'">
+                <label>自用：</label>
+                <div style="line-height: 32px; max-height: 8vh; overflow: auto">清路尘,倚香雪,4555786550362769000,4555786550362768745</div>
+            </div>
+            <div class="flex-line" v-for="(item, index) in baseForm" :key="'base-form' + index">
+                <label>{{ item.label }}：</label>
+                <el-input v-model="item.value" @input="(value:string) => LSSaveValue(item.key, value)" />
+            </div>
             <div class="flex-line">
-                <label>姓名：</label>
-                <div>
-                    <el-input v-model="nameWord" @input="changeName" />
+                <label>已选({{ selectedItems.length }})：</label>
+                <div style="line-height: 32px; max-height: 8vh; overflow: auto">
+                    <template v-if="selectedItems?.length">
+                        <el-tag class="marginRightFive" v-for="(i, index) in selectedItems" :key="'selected-good' + index" closable @close="clearSingleItem(i)">{{ i.name }}</el-tag>
+                    </template>
+                    <span v-else>暂未选择</span>
                 </div>
             </div>
             <div class="flex-line">
-                <label>类型：</label>
-                <div>
-                    <el-select style="width: 100%" v-model="reqType" placeholder="Select" @change="changeReqType">
-                        <el-option label="充值一" value="charge" />
-                        <el-option label="充值二" value="charge2" />
-                        <el-option label="邮件" value="mail" />
-                    </el-select>
-                </div>
-            </div>
-            <div class="flex-line">
-                <label>数目：</label>
-                <div>
-                    <el-input v-model="itemNum" placeholder="数目" @change="changeItemNumber" />
-                </div>
-            </div>
-            <div class="flex-line">
-                <label>已选：</label>
-                <div style="line-height: 32px">
-                    <el-tag class="marginRightFive" v-for="(i, index) in selectedItems" :key="'yixuan' + index" closable @close="selectedItemsClearOne(i)">{{ i.name }}</el-tag>
-                </div>
-            </div>
-            <div class="flex-line" v-if="reqType === 'mail'">
                 <label>过滤：</label>
-                <div>
-                    <el-input v-model="keyWord" placeholder="过滤" @input="changeWupin" />
+                <div style="display: flex">
+                    <el-input v-model="keyWord" placeholder="过滤" @input="changeGoods" />
+                    <el-input style="margin-left: 10px" v-model="keyWordLocation" placeholder="定位" @input="locationGoods()" />
+                    <el-button style="width: 100px; margin-left: 10px" @click="locationGoods()">下一个</el-button>
                 </div>
             </div>
-            <div class="flex-line" v-if="reqType === 'mail'">
-                <label>过滤：</label>
+            <!--            <div class="flex-line" v-if="!isMobile">-->
+            <!--                <label>定位：</label>-->
+            <!--                <div style="display: flex">-->
+            <!--                    <el-input v-model="keyWordLocation" placeholder="定位" @input="locationGoods()"/>-->
+            <!--                    <el-button style="width: 100px;margin-left: 10px" @click="locationGoods()">下一个</el-button>-->
+            <!--                </div>-->
+            <!--            </div>-->
+            <div class="flex-line" v-if="!isMobile">
+                <label>物品：</label>
                 <div>
-                    <checkbox-pagination :data-list="itemsList" v-model:currentItem="selectedItems" :route-type="props.routeType" :pageSize="10" checkboxType="button" />
+                    <checkbox-pagination ref="checkboxPaginationRef" :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="pageSize" maxHeight="50vh" checkboxType="default" />
                 </div>
             </div>
-            <div class="marginBottomTen">
-                <el-button type="primary" @click="reqFunBatch">前端批量发送</el-button>
-                <el-button @click="reqFunServerBatch">服务端批量发送</el-button>
-                <el-button type="primary" @click="selectedItems = []">清空</el-button>
-            </div>
-            <div class="marginBottomTen">
-                <el-button type="primary" @click="reqFunInterval">开启定时发送选择的第一个</el-button>
-                <el-button type="primary" @click="reqFunIntervalClose">停止</el-button>
-                <el-input style="width: 100px; margin-left: 10px;height: 32px" size="small" v-model="intervalObj.time" @input="changeIntervalTime" />
+            <checkbox-pagination v-if="isMobile" ref="checkboxPaginationRef" :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="pageSize" maxHeight="50vh" checkboxType="default" />
+            <div style="display: flex; padding-bottom: 10px">
+                <el-button type="primary" @click="getGoods($event, false)">直接发送</el-button>
+                <el-button type="primary" @click="getGoods($event, true)">后台转发</el-button>
+                <el-button v-if="routeType === 'mjdx'" type="primary" @click="delGoods">删除物品</el-button>
+                <el-button type="primary" @click="selectedItems = []">清空选择</el-button>
             </div>
         </div>
     </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import defaultValues from '@/constant/DEFAULT_VALUES'
-import axios from 'axios'
+import { defineEmits, reactive, ref, watch } from 'vue'
 import CheckboxPagination from '../components/Checkbox-Pagination.vue'
+import axios from 'axios'
+import getGameOptions from '@/constant/options'
+import _ from 'lodash'
+
+const emit = defineEmits(['addLogs'])
+
+const reqPre = import.meta.env.DEV ? 'http://localhost:3000' : ''
 
 interface PropsRadioPagination {
     routeType: string
+}
+
+interface CheckboxPaginationInstance {
+    updateSize(page: number): void
 }
 
 const props = withDefaults(defineProps<PropsRadioPagination>(), {
     routeType: ''
 })
 
-const nameWord = ref('')
-const itemNum = ref('')
-const selectedItems: any = ref([])
-const reqType = ref('')
-const keyWord = ref('')
-const intervalObj: any = ref({
-    time: 1000
-})
-let itemsList: any = ref([])
+let pageSize = ref(50)
+let goodsList: any = ref([])
+let selectedItems: any = ref([])
+let keyWord: any = ref('')
+let keyWordLocation: any = ref('')
+let keyWordLocationCurrent: any = ref('')
+let keyWordLocationMatchIndex: any = ref('')
+let baseForm: any = reactive([
+    { label: '角色', key: 'account', value: '' },
+    { label: '数量', key: 'number', value: '1' }
+])
+const checkboxPaginationRef = ref<CheckboxPaginationInstance | null>(null)
 
-const reqPre = import.meta.env.DEV ? 'http://localhost:3000' : ''
+let originGoods: any = []
+let originReqUrl: any = ''
+let originReqMethod: any = ''
+let originReqFormData: any = null
 
-let hasPage = computed({
-    get() {
-        return !!defaultValues[props.routeType]
-    },
-    set() {}
-})
+const isMobile = ref(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
 
-watch(() => props.routeType, () => initPage())
+const initOptions = async () => {
+    let gameOptions = await getGameOptions(props.routeType)
+    goodsList.value = originGoods = gameOptions?.ORIGIN_GOODS || []
+    originReqUrl = gameOptions?.ORIGIN_REQ_URL || ''
+    originReqMethod = gameOptions?.ORIGIN_REQ_METHOD || ''
+    originReqFormData = gameOptions?.ORIGIN_REQ_FORM_DATA || (() => {})
 
-onMounted(() => {
-    initPage()
-})
-
-const LSSaveValue = (type: string, value: any) => {
-    window.localStorage.setItem(props.routeType + type, String(value))
-}
-
-//修改了定时器间隔
-const changeIntervalTime = (value: string) => {
-    LSSaveValue('IntervalTime', String(value))
-}
-
-//切换充值类型
-const changeReqType = (type: string) => {
     selectedItems.value = []
-    if (type) {
-        reqType.value = type
-        itemsList.value = defaultValues[props.routeType][type]
-        LSSaveValue('reqType', type)
-    }
+    keyWord.value = ''
+
+    baseForm.forEach((item: any) => {
+        if (item.key === 'account') {
+            item.value = window.localStorage.getItem(props.routeType + 'account') || gameOptions?.ORIGIN_ACCOUNT
+        } else if (item.key === 'number') {
+            item.value = window.localStorage.getItem(props.routeType + 'number') || gameOptions?.ORIGIN_NUMBER
+        }
+    })
 }
-//修改发送数目
-const changeItemNumber = (value: string) => {
-    LSSaveValue('itemNumber', value)
+const LSSaveValue = (key: string, value: any) => {
+    window.localStorage.setItem(props.routeType + key, String(value))
 }
-//过滤物品
-const changeWupin = (value: string) => {
-    LSSaveValue('filterName', value)
+const changeGoods = (value: string) => {
     if (value) {
-        itemsList.value = defaultValues[props.routeType]?.mail.filter((i: ItemsSingle) => {
+        keyWordLocation.value = ''
+        goodsList.value = _.cloneDeep(originGoods).filter((i: ItemsSingle) => {
             return value && i.name.includes(value)
         })
     } else {
-        itemsList.value = defaultValues[props.routeType]?.mail
+        goodsList.value = _.cloneDeep(originGoods)
     }
 }
-const changeName = (value: string) => {
-    LSSaveValue('nameWord', value)
+const locationGoods = () => {
+    let value = keyWordLocation.value
+    if (value) {
+        keyWord.value = ''
+
+        const indices: any = []
+        _.cloneDeep(originGoods).forEach((i: ItemsSingle, index: number) => {
+            if (i.name.includes(value)) {
+                indices.push(index)
+            }
+        })
+
+        if (value === keyWordLocationCurrent.value) {
+            keyWordLocationMatchIndex.value += 1
+        } else {
+            keyWordLocationMatchIndex.value = 0
+            keyWordLocationCurrent.value = value
+        }
+
+        let matchIndex = indices[keyWordLocationMatchIndex.value]
+
+        if (matchIndex > 0 && checkboxPaginationRef.value) {
+            checkboxPaginationRef.value?.updateSize(Math.floor(matchIndex / pageSize.value) + 1)
+        }
+    }
 }
-const selectedItemsClearOne = (i: ItemsSingle) => {
+const clearSingleItem = (i: ItemsSingle) => {
     selectedItems.value = selectedItems.value.filter((z: ItemsSingle) => {
         return z.value !== i.value
     })
-    window.localStorage.setItem(props.routeType + 'itemId', JSON.stringify(selectedItems.value))
 }
-const reqFun = async (itemIds: any, url: string) => {
-    if (itemIds && !itemIds.length) {
-        itemIds = [itemIds]
+const getGoods = async ($event: any, transmit: boolean) => {
+    for (let i = 0; i < selectedItems.value.length; i++) {
+        if (transmit) {
+            await getGoodFromServer(selectedItems.value[i]) //后台发送
+        } else {
+            await getGoodFromLocal(selectedItems.value[i]) //前台发送
+        }
     }
-    await axios({
-        method: 'post',
-        url: url,
-        data: {
-            reqData: itemIds.map((i: ItemsSingle) => {
-                return {
-                    name: i.name,
-                    formData: defaultValues[props.routeType]?.getReqFormData(reqType.value, nameWord.value, itemNum.value, i.value),
-                    params: defaultValues[props.routeType]?.getReqParams(reqType.value, nameWord.value, itemNum.value, i.value),
-                    realReqUrl: defaultValues[props.routeType]?.realReqUrl,
-                    realReqMethod: defaultValues[props.routeType]?.realReqMethod
+}
+const delGoods = async () => {
+    for (let i = 0; i < selectedItems.value.length; i++) {
+        await delGoodFromServer(selectedItems.value[i]) //后台发送
+    }
+}
+const getGoodFromLocal = async (i: ItemsSingle) => {
+    let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
+    realTimeAccount = realTimeAccount.split(',')
+    for (let z = 0; z < realTimeAccount.length; z++) {
+        let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
+        let formDataJson = originReqFormData(i, realTimeAccount[z], realTimeNumber)
+
+        let formData = new FormData()
+        Object.keys(formDataJson).forEach((key) => {
+            formData.append(key, formDataJson[key])
+        })
+        try {
+            let response = await axios.post(originReqUrl, formData, {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
                 }
             })
+            emit('addLogs', `${realTimeAccount[z]} ${i.name} ${response.data?.data || response.data}`)
+        } catch (err) {
+            emit('addLogs', `${realTimeAccount[z]} ${i.name} 发送失败`)
         }
-    })
-}
-const delayReqFun = async (itemIds: any, url: string) => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            reqFun(itemIds, url)
-            resolve('')
-        }, intervalObj.value.time)
-    })
-}
-const reqFunServerBatch = async () => {
-    await reqFun(selectedItems.value, reqPre + '/apibatch')
-}
-const reqFunBatch = async () => {
-    await reqFun(selectedItems.value[0], reqPre + '/api')
-    for (let i = 1; i < selectedItems.value.length; i++) {
-        await delayReqFun(selectedItems.value[i], reqPre + '/api')
     }
 }
-const reqFunInterval = () => {
-    if (selectedItems.value && selectedItems.value.length > 0) {
-        reqFun(selectedItems.value[0], reqPre + '/apiInterval')
+const getGoodFromServer = async (i: ItemsTypeSingle) => {
+    let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
+    realTimeAccount = realTimeAccount.split(',')
+    for (let z = 0; z < realTimeAccount.length; z++) {
+        let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
+        let formData = originReqFormData(i, realTimeAccount[z], realTimeNumber)
+
+        if (props.routeType === 'wl' && i.type === 'charge2') {
+            delete formData.item
+            formData.num = i.value
+        }
+
+        await axios({
+            method: 'post',
+            url: reqPre + '/api',
+            data: {
+                reqData: [
+                    {
+                        name: i.name,
+                        account: realTimeAccount[z],
+                        formData,
+                        realReqUrl: originReqUrl,
+                        realReqMethod: originReqMethod
+                    }
+                ]
+            }
+        })
     }
 }
-const reqFunIntervalClose = async () => {
-    await axios({
-        method: 'post',
-        url: reqPre + '/closeinterval'
-    })
+const delGoodFromServer = async (i: ItemsSingle) => {
+    let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
+    realTimeAccount = realTimeAccount.split(',')
+    for (let z = 0; z < realTimeAccount.length; z++) {
+        let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
+        let formData = originReqFormData(i, realTimeAccount[z], realTimeNumber)
+        await axios({
+            method: 'post',
+            url: reqPre + '/api',
+            data: {
+                reqData: [
+                    {
+                        name: i.name,
+                        account: realTimeAccount[z],
+                        formData: { ...formData, type: 'kitem', item: formData.item.replace('additem', 'subitem') },
+                        realReqUrl: originReqUrl,
+                        realReqMethod: originReqMethod
+                    }
+                ]
+            }
+        })
+    }
 }
 
-const initPage = () => {
-    if (props.routeType && defaultValues[props.routeType]) {
-        nameWord.value = defaultValues[props.routeType]?.nameWord
-        itemNum.value = defaultValues[props.routeType]?.itemNum
-        keyWord.value = defaultValues[props.routeType]?.filterName
-        intervalObj.value.time = defaultValues[props.routeType]?.sendIntervalTime
-        changeReqType(defaultValues[props.routeType]?.reqType)
-        selectedItems.value = defaultValues[props.routeType]?.itemId
-        if (reqType.value === 'mail') {
-            changeWupin(keyWord.value)
-        }
-    }
-}
+watch(
+    () => props.routeType,
+    () => {
+        initOptions()
+    },
+    { immediate: true }
+)
 </script>
 
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
-:deep {
+:deep() {
     .el-radio-button {
         margin-right: 5px;
 
@@ -216,7 +270,7 @@ const initPage = () => {
 }
 
 .gameTypeWrap {
-    :deep {
+    :deep() {
         .el-radio-button__inner {
             margin-bottom: 0;
         }

@@ -90,7 +90,7 @@ const changeItemId = (item: string) => {
     justify-content: space-between;
     flex-wrap: wrap;
 
-    :deep {
+    :deep() {
         .el-radio-button {
             width: calc((100% - 10px) / 2);
             margin: 0;
@@ -105,7 +105,7 @@ const changeItemId = (item: string) => {
 }
 
 .pagePaginationMobile {
-    :deep {
+    :deep() {
         .el-pagination__sizes {
             margin-left: 5px;
         }

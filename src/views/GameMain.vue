@@ -16,28 +16,19 @@
 <script lang="ts" setup>
 import {computed, onMounted, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-import GameReqNew from '@/views/GameReqNew.vue'
+import GameReqNew from '@/views/GameReq.vue'
 import TablePagination from '@/components/Table-Pagination.vue'
+import { GAME_OPTIONS } from '@/constant/options'
 
 let logList: any = ref([])
 
 const router = useRouter()
 const routeParams = useRoute().params as Record<string, string>
 const routeType = ref<string>(routeParams.id || '')
-const gameList = ref([
-    {name: '这城有良田', value: 'zcylt', pageType: '2'},
-    {name: '打僵尸', value: 'djs', pageType: '3'},
-    {name: 'x战娘', value: 'xzn', pageType: '4'},
-    {name: '墨迹大侠', value: 'mjdx', pageType: '5'},
-    {name: '万灵', value: 'wl', pageType: '6'},
-    {name: '三国猫', value: 'sgm', pageType: '7'},
-    {name: '少女回战', value: 'snhz', pageType: '8'},
-    {name: '炼仙传说', value: 'lxcs', pageType: '9'},
-])
+const gameList = ref(GAME_OPTIONS)
 
 let routeOption = computed(() => {
-    let option: any = gameList.value.find((item) => item.value === routeType.value) || {}
-    return option
+    return gameList.value.find((item:any) => item.value === routeType.value) || {}
 })
 
 onMounted(() => {
@@ -84,7 +75,7 @@ const initWs = () => {
 
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
-:deep {
+:deep() {
     .el-radio-button {
         margin-right: 5px;
 
@@ -98,7 +89,7 @@ const initWs = () => {
 }
 
 .gameTypeWrap {
-    :deep {
+    :deep() {
         .el-radio-button__inner {
             margin-bottom: 0;
         }

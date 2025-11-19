@@ -118,7 +118,7 @@ defineExpose({
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
 .check-group-wrap {
-    :deep {
+    :deep() {
         .el-checkbox-button {
             margin: 0 0 5px 0;
         }
@@ -147,7 +147,7 @@ defineExpose({
     justify-content: space-between;
     flex-wrap: wrap;
 
-    :deep {
+    :deep() {
         .el-checkbox-button {
             width: calc((100% - 10px) / 2);
 
@@ -172,7 +172,7 @@ defineExpose({
 }
 
 .pagePaginationWrap {
-    :deep {
+    :deep() {
         .el-pagination__jump{
             margin-left: 2px;
         }
@@ -180,7 +180,7 @@ defineExpose({
 }
 
 .pagePaginationMobile {
-    :deep {
+    :deep() {
         .el-pagination__sizes {
             margin-left: 5px;
 

@@ -51,7 +51,7 @@
         overflow-x: auto;
     }
 
-    :deep {
+    :deep() {
         .el-radio-group {
             display: flex;
         }

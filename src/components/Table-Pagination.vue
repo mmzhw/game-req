@@ -59,7 +59,7 @@ const pageSizeChange = (sizes: number) => {
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
 .pagePaginationMobile {
-    :deep {
+    :deep() {
         .el-pagination__sizes {
             margin-left: 5px;
         }
