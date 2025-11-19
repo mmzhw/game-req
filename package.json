@@ -1,13 +1,13 @@
 {
     "name": "vite-project",
-    "version": "3.0.5",
+    "version": "3.0.13",
     "private": true,
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "node:dev": "cross-env NODE_ENV=dev nodemon --exec babel-node ./server/main.js",
-        "build": "node ./server/version.js && run-p type-check build-only && pnpm run node:babel && pnpm run node:babel:watch && node ./server/zip.js",
-        "node:babel": "babel server/main.js --out-file dist/server.js",
+        "node:dev": "cross-env NODE_ENV=dev nodemon --exec babel-node server/server.js",
+        "build": "node ./server/version.js && run-p type-check build-only && node ./server/zip.js",
+        "node:babel": "babel server/server.js --out-file dist/server.js",
         "node:babel:watch": "babel server/watch.js --out-file dist/watch.js",
         "preview": "vite preview",
         "build-only": "vite build",

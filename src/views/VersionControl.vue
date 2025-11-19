@@ -3,7 +3,7 @@
         @uploadSuccess="addLogs"
         @uploadError="addLogs"
         label-width="55"
-    ></control-server>
+    />
 
     <!--        <el-button @click="addLogs('sdfd')"></el-button>-->
     <table-pagination :dataList="logList" />
