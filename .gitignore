@@ -28,5 +28,4 @@ coverage
 *.sw?
 
 server/dist.zip
-server/server.js
 uploads
