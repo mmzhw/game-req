@@ -43,7 +43,7 @@
             <div style="display: flex; padding-bottom: 10px">
                 <el-button type="primary" @click="getGoods($event, false)">直接发送</el-button>
                 <el-button type="primary" @click="getGoods($event, true)">后台转发</el-button>
-                <el-button v-if="routeType === 'mjdx'" type="primary" @click="delGoods">删除物品</el-button>
+                <el-button v-if="GAME_OPTIONS?.deleteType" type="primary" @click="delGoods">删除物品</el-button>
                 <el-button type="primary" @click="selectedItems = []">清空选择</el-button>
             </div>
         </div>
@@ -87,18 +87,16 @@ let baseForm: any = reactive([
 const checkboxPaginationRef = ref<CheckboxPaginationInstance | null>(null)
 
 let originGoods: any = []
-let originReqUrl: any = ''
-let originReqMethod: any = ''
-let originReqFormData: any = null
+
+const GAME_OPTIONS = ref<any>({})
 
 const isMobile = ref(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
 
 const initOptions = async () => {
     let gameOptions = await getGameOptions(props.routeType)
+    GAME_OPTIONS.value = _.cloneDeep(gameOptions)
+
     goodsList.value = originGoods = gameOptions?.ORIGIN_GOODS || []
-    originReqUrl = gameOptions?.ORIGIN_REQ_URL || ''
-    originReqMethod = gameOptions?.ORIGIN_REQ_METHOD || ''
-    originReqFormData = gameOptions?.ORIGIN_REQ_FORM_DATA || (() => {})
 
     selectedItems.value = []
     keyWord.value = ''
@@ -174,14 +172,14 @@ const getGoodFromLocal = async (i: ItemsSingle) => {
     realTimeAccount = realTimeAccount.split(',')
     for (let z = 0; z < realTimeAccount.length; z++) {
         let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
-        let formDataJson = originReqFormData(i, realTimeAccount[z], realTimeNumber)
+        let formDataJson = GAME_OPTIONS.value.ORIGIN_REQ_FORM_DATA(i, realTimeAccount[z], realTimeNumber)
 
         let formData = new FormData()
         Object.keys(formDataJson).forEach((key) => {
             formData.append(key, formDataJson[key])
         })
         try {
-            let response = await axios.post(originReqUrl, formData, {
+            let response = await axios.post(GAME_OPTIONS.value.ORIGIN_REQ_URL, formData, {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
                 }
@@ -197,7 +195,7 @@ const getGoodFromServer = async (i: ItemsTypeSingle) => {
     realTimeAccount = realTimeAccount.split(',')
     for (let z = 0; z < realTimeAccount.length; z++) {
         let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
-        let formData = originReqFormData(i, realTimeAccount[z], realTimeNumber)
+        let formData = GAME_OPTIONS.value.ORIGIN_REQ_FORM_DATA(i, realTimeAccount[z], realTimeNumber)
 
         if (props.routeType === 'wl' && i.type === 'charge2') {
             delete formData.item
@@ -213,8 +211,8 @@ const getGoodFromServer = async (i: ItemsTypeSingle) => {
                         name: i.name,
                         account: realTimeAccount[z],
                         formData,
-                        realReqUrl: originReqUrl,
-                        realReqMethod: originReqMethod
+                        realReqUrl: GAME_OPTIONS.value.ORIGIN_REQ_URL,
+                        realReqMethod: GAME_OPTIONS.value.ORIGIN_REQ_METHOD
                     }
                 ]
             }
@@ -226,7 +224,13 @@ const delGoodFromServer = async (i: ItemsSingle) => {
     realTimeAccount = realTimeAccount.split(',')
     for (let z = 0; z < realTimeAccount.length; z++) {
         let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
-        let formData = originReqFormData(i, realTimeAccount[z], realTimeNumber)
+        let formData = GAME_OPTIONS.value.ORIGIN_REQ_FORM_DATA(i, realTimeAccount[z], realTimeNumber)
+
+        if (props.routeType === 'mjdx'){
+            formData.item = formData.item.replace('additem', 'subitem')
+        }
+        formData.type = GAME_OPTIONS.value.deleteType
+
         await axios({
             method: 'post',
             url: reqPre + '/api',
@@ -235,9 +239,9 @@ const delGoodFromServer = async (i: ItemsSingle) => {
                     {
                         name: i.name,
                         account: realTimeAccount[z],
-                        formData: { ...formData, type: 'kitem', item: formData.item.replace('additem', 'subitem') },
-                        realReqUrl: originReqUrl,
-                        realReqMethod: originReqMethod
+                        formData,
+                        realReqUrl: GAME_OPTIONS.value.ORIGIN_REQ_URL,
+                        realReqMethod: GAME_OPTIONS.value.ORIGIN_REQ_METHOD
                     }
                 ]
             }

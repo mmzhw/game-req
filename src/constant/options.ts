@@ -83,7 +83,8 @@ export const GAME_OPTIONS: any = [
                 item: item.value,
                 charge: item.value,
                 num: number
-            })
+            }),
+            deleteType: 'kitem'
         }
     },
     {
@@ -165,7 +166,8 @@ export const GAME_OPTIONS: any = [
                 gmcode: 'ltzy.vip',
                 itemid: item.value,
                 itemnum: number
-            })
+            }),
+            deleteType: 'senddelitem'
         }
     }
 ]
