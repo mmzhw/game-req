@@ -84,7 +84,15 @@ export const GAME_OPTIONS: any = [
                 charge: item.value,
                 num: number
             }),
-            deleteType: 'kitem'
+            ORIGIN_REQ_DEL_FORM_DATA: (item: ItemsTypeSingle, account: string, number: string | number) => ({
+                type: 'kitem',
+                uid: account,
+                qu: '10001',
+                checknum: '123456',
+                item: item.value,
+                charge: item.value,
+                num: number
+            }),
         }
     },
     {
@@ -167,7 +175,14 @@ export const GAME_OPTIONS: any = [
                 itemid: item.value,
                 itemnum: number
             }),
-            deleteType: 'senddelitem'
+            ORIGIN_REQ_DEL_FORM_DATA: (item: ItemsTypeSingle, account: string, number: string | number) => ({
+                action: 'senddelitem',
+                qid: '1',
+                uid: account,
+                gmcode: 'ltzy.vip',
+                itemid: item.value,
+                itemnum: number
+            }),
         }
     }
 ]

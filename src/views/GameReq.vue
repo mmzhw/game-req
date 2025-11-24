@@ -43,7 +43,7 @@
             <div style="display: flex; padding-bottom: 10px">
                 <el-button type="primary" @click="getGoods($event, false)">直接发送</el-button>
                 <el-button type="primary" @click="getGoods($event, true)">后台转发</el-button>
-                <el-button v-if="GAME_OPTIONS?.deleteType" type="primary" @click="delGoods">删除物品</el-button>
+                <el-button v-if="GAME_OPTIONS?.ORIGIN_REQ_DEL_FORM_DATA" type="primary" @click="delGoods">删除物品</el-button>
                 <el-button type="primary" @click="selectedItems = []">清空选择</el-button>
             </div>
         </div>
@@ -224,12 +224,11 @@ const delGoodFromServer = async (i: ItemsSingle) => {
     realTimeAccount = realTimeAccount.split(',')
     for (let z = 0; z < realTimeAccount.length; z++) {
         let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
-        let formData = GAME_OPTIONS.value.ORIGIN_REQ_FORM_DATA(i, realTimeAccount[z], realTimeNumber)
+        let formData = GAME_OPTIONS.value.ORIGIN_REQ_DEL_FORM_DATA(i, realTimeAccount[z], realTimeNumber)
 
         if (props.routeType === 'mjdx'){
             formData.item = formData.item.replace('additem', 'subitem')
         }
-        formData.type = GAME_OPTIONS.value.deleteType
 
         await axios({
             method: 'post',
