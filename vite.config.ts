@@ -21,15 +21,15 @@ export default defineConfig(({ command, mode }) => {
             }
         },
         base: './',
-        // build:{
-        //   outDir:'./server/dist'
-        // }
+        build: {
+            outDir: './server/dist'
+        },
         // vite 配置
         define: {
             __Admin_VERSION__: JSON.stringify(process.env.npm_package_version)
         },
         server: {
-            port: 5174,
+            port: 5174
         }
     }
 })
