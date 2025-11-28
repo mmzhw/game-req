@@ -40,6 +40,7 @@
                 </div>
             </div>
             <checkbox-pagination v-if="isMobile" ref="checkboxPaginationRef" :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="pageSize" maxHeight="50vh" checkboxType="default" />
+            <el-input style="padding-bottom: 10px" v-model="intervalTime" placeholder="间隔发送"></el-input>
             <div style="display: flex; padding-bottom: 10px">
                 <el-button type="primary" @click="getGoods($event, false)">直接发送</el-button>
                 <el-button type="primary" @click="getGoods($event, true)">后台转发</el-button>
@@ -73,6 +74,7 @@ const props = withDefaults(defineProps<PropsRadioPagination>(), {
     routeType: ''
 })
 
+let intervalTime = ref('')
 let pageSize = ref(50)
 let goodsList: any = ref([])
 let selectedItems: any = ref([])
@@ -91,6 +93,10 @@ let originGoods: any = []
 const GAME_OPTIONS = ref<any>({})
 
 const isMobile = ref(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+
+const sleep = async (ms:any) => {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+};
 
 const initOptions = async () => {
     let gameOptions = await getGameOptions(props.routeType)
@@ -160,6 +166,9 @@ const getGoods = async ($event: any, transmit: boolean) => {
         } else {
             await getGoodFromLocal(selectedItems.value[i]) //前台发送
         }
+        if (intervalTime.value){
+            await sleep(Number(intervalTime.value))
+        }
     }
 }
 const delGoods = async () => {
@@ -187,6 +196,9 @@ const getGoodFromLocal = async (i: ItemsSingle) => {
             emit('addLogs', `${realTimeAccount[z]} ${i.name} ${response.data?.data || response.data}`)
         } catch (err) {
             emit('addLogs', `${realTimeAccount[z]} ${i.name} 发送失败`)
+        }
+        if (intervalTime.value){
+            await sleep(Number(intervalTime.value))
         }
     }
 }
@@ -217,6 +229,9 @@ const getGoodFromServer = async (i: ItemsTypeSingle) => {
                 ]
             }
         })
+        if (intervalTime.value){
+            await sleep(Number(intervalTime.value))
+        }
     }
 }
 const delGoodFromServer = async (i: ItemsSingle) => {
