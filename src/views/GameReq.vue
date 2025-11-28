@@ -35,9 +35,12 @@
             <checkbox-pagination v-if="isMobile" ref="checkboxPaginationRef" :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="pageSize" maxHeight="50vh" checkboxType="default" />
             <el-input style="padding-bottom: 10px" v-model="intervalTime" placeholder="间隔发送"></el-input>
             <div style="display: flex; padding-bottom: 10px">
-                <el-button type="primary" @click="getGoods($event, false)">直接发送</el-button>
-                <el-button type="primary" @click="getGoods($event, true)">后台转发</el-button>
-                <el-button v-if="GAME_OPTIONS?.ORIGIN_REQ_DEL_FORM_DATA" type="primary" @click="delGoods">删除物品</el-button>
+                <!--                <el-button type="primary" @click="getGoods($event, false)">直接发送</el-button>-->
+                <!--                <el-button type="primary" @click="getGoods($event, true)">后台转发</el-button>-->
+                <!--                <el-button v-if="GAME_OPTIONS?.ORIGIN_REQ_DEL_FORM_DATA" type="primary" @click="delGoods">删除物品</el-button>-->
+                <template v-for="(operation, oIndex) in GAME_OPTIONS.OPERATION" :key="oIndex">
+                    <el-button type="primary" @click="operationSend(operation)">{{ operation.NAME }}</el-button>
+                </template>
                 <el-button type="primary" @click="selectedItems = []">清空选择</el-button>
             </div>
         </div>
@@ -152,79 +155,72 @@ const clearSingleItem = (i: ItemsSingle) => {
         return z.value !== i.value
     })
 }
-const getGoods = async ($event: any, transmit: boolean) => {
-    if (transmit) {
-        let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value.split(',')
-        let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
-
-        let reqData: any = []
-        realTimeAccount.forEach((account: string) => {
-            selectedItems.value.forEach((item: ItemsSingle) => {
-                reqData.push({
-                    name: item.name,
-                    account: account,
-                    formData: GAME_OPTIONS.value.ORIGIN_REQ_FORM_DATA(item, account, realTimeNumber),
-                    realReqUrl: GAME_OPTIONS.value.ORIGIN_REQ_URL,
-                    realReqMethod: GAME_OPTIONS.value.ORIGIN_REQ_METHOD,
-                    intervalTime: intervalTime.value
-                })
-            })
-        })
-        await axios({ method: 'post', url: reqPre + '/api', data: { reqData: reqData } })
-        return
-    }
-    for (let i = 0; i < selectedItems.value.length; i++) {
-        await getGoodFromLocal(selectedItems.value[i]) //前台发送
-        if (intervalTime.value) {
-            await sleep(Number(intervalTime.value))
-        }
-    }
-}
-const delGoods = async () => {
+const operationSend = async (operation: any) => {
     let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value.split(',')
     let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
 
     let reqData: any = []
     realTimeAccount.forEach((account: string) => {
-        selectedItems.value.forEach((item: ItemsSingle) => {
+        if (selectedItems?.value?.length){
+            selectedItems.value.forEach((item: ItemsSingle) => {
+                reqData.push({
+                    name: item.name,
+                    account: account,
+                    formData: operation.GETDATA(item, account, realTimeNumber),
+                    realReqUrl: operation.URL,
+                    realReqMethod: operation.TYPE,
+                    intervalTime: intervalTime.value
+                })
+            })
+        } else {
+            // 非物品的操作
             reqData.push({
-                name: item.name,
+                name: operation.name,
                 account: account,
-                formData: GAME_OPTIONS.value.ORIGIN_REQ_DEL_FORM_DATA(item, account, realTimeNumber),
-                realReqUrl: GAME_OPTIONS.value.ORIGIN_REQ_URL,
-                realReqMethod: GAME_OPTIONS.value.ORIGIN_REQ_METHOD,
+                formData: operation.GETDATA(account),
+                realReqUrl: operation.URL,
+                realReqMethod: operation.TYPE,
                 intervalTime: intervalTime.value
             })
-        })
+        }
+
     })
     await axios({ method: 'post', url: reqPre + '/api', data: { reqData: reqData } })
 }
-const getGoodFromLocal = async (i: ItemsSingle) => {
-    let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
-    realTimeAccount = realTimeAccount.split(',')
-    for (let z = 0; z < realTimeAccount.length; z++) {
-        let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
-        let formDataJson = GAME_OPTIONS.value.ORIGIN_REQ_FORM_DATA(i, realTimeAccount[z], realTimeNumber)
-
-        let formData = new FormData()
-        Object.keys(formDataJson).forEach((key) => {
-            formData.append(key, formDataJson[key])
-        })
-        try {
-            let response = await axios.post(GAME_OPTIONS.value.ORIGIN_REQ_URL, formData, {
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                }
-            })
-            emit('addLogs', `${realTimeAccount[z]} ${i.name} ${response.data?.data || response.data}`)
-        } catch (err) {
-            emit('addLogs', `${realTimeAccount[z]} ${i.name} 发送失败`)
-        }
-        if (intervalTime.value) {
-            await sleep(Number(intervalTime.value))
-        }
-    }
-}
+// const getGoods = async (operation: any) => {
+//     for (let i = 0; i < selectedItems.value.length; i++) {
+//         await getGoodFromLocal(selectedItems.value[i]) //前台发送
+//         if (intervalTime.value) {
+//             await sleep(Number(intervalTime.value))
+//         }
+//     }
+// }
+// const getGoodFromLocal = async (i: ItemsSingle) => {
+//     let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
+//     realTimeAccount = realTimeAccount.split(',')
+//     for (let z = 0; z < realTimeAccount.length; z++) {
+//         let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
+//         let formDataJson = GAME_OPTIONS.value.ORIGIN_REQ_FORM_DATA(i, realTimeAccount[z], realTimeNumber)
+//
+//         let formData = new FormData()
+//         Object.keys(formDataJson).forEach((key) => {
+//             formData.append(key, formDataJson[key])
+//         })
+//         try {
+//             let response = await axios.post(GAME_OPTIONS.value.ORIGIN_REQ_URL, formData, {
+//                 headers: {
+//                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+//                 }
+//             })
+//             emit('addLogs', `${realTimeAccount[z]} ${i.name} ${response.data?.data || response.data}`)
+//         } catch (err) {
+//             emit('addLogs', `${realTimeAccount[z]} ${i.name} 发送失败`)
+//         }
+//         if (intervalTime.value) {
+//             await sleep(Number(intervalTime.value))
+//         }
+//     }
+// }
 
 watch(
     () => props.routeType,
