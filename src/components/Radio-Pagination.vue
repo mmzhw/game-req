@@ -43,7 +43,7 @@ const props = withDefaults(defineProps<PropsRadioPagination>(), {
 const emit = defineEmits(['update:currentItem'])
 
 const size = ref(10)
-const sizes = ref([10, 20, 50, 100, 1000, 5000])
+const sizes = ref([10, 20, 50, 100, 200, 300, 400, 500, 1000, 5000])
 const current = ref(1)
 const layout = ref('')
 const realItem = ref('')
