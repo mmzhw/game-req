@@ -66,58 +66,6 @@ export const GAME_OPTIONS: any = [
         }
     },
     {
-        name: '墨迹大侠',
-        value: 'mjdx',
-        pageType: '5',
-        options: {
-            ORIGIN_GOODS: [],
-            ORIGIN_ACCOUNT: '清路尘,倚香雪',
-            ORIGIN_NUMBER: '1',
-            ORIGIN_REQ_URL: 'http://202.140.143.190:88/user/gmquery.php',
-            ORIGIN_REQ_METHOD: 'post',
-            ORIGIN_REQ_FORM_DATA: (item: ItemsTypeSingle, account: string, number: string | number) => ({
-                type: item.type,
-                uid: account,
-                qu: '10001',
-                checknum: '123456',
-                item: item.value,
-                charge: item.value,
-                num: number
-            }),
-            ORIGIN_REQ_DEL_FORM_DATA: (item: ItemsTypeSingle, account: string, number: string | number) => ({
-                type: 'kitem',
-                uid: account,
-                qu: '10001',
-                checknum: '123456',
-                item: item.value,
-                charge: item.value,
-                num: number
-            }),
-        }
-    },
-    {
-        name: '万灵',
-        value: 'wl',
-        pageType: '6',
-        options: {
-            ORIGIN_GOODS: [],
-            ORIGIN_ACCOUNT: '闻人若萱,浩星昊文,车非芙雪,西宫少主',
-            ORIGIN_NUMBER: '1',
-            ORIGIN_REQ_URL: 'http://183.131.85.198:86/gm/user/query.php',
-            ORIGIN_REQ_METHOD: 'post',
-            ORIGIN_REQ_FORM_DATA: (item: ItemsTypeSingle, account: string, number: string | number) => ({
-                type: item.type,
-                uid: account,
-                item: item.value,
-                num: number,
-                qu: '1',
-                pwd: '112233',
-                title: 'GM邮件',
-                content: '亲爱的玩家，请查收您的邮件!'
-            })
-        }
-    },
-    {
         name: '三国猫',
         value: 'sgm',
         pageType: '7',

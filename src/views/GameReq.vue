@@ -26,13 +26,6 @@
                     <el-button style="width: 100px; margin-left: 10px" @click="locationGoods()">下一个</el-button>
                 </div>
             </div>
-            <!--            <div class="flex-line" v-if="!isMobile">-->
-            <!--                <label>定位：</label>-->
-            <!--                <div style="display: flex">-->
-            <!--                    <el-input v-model="keyWordLocation" placeholder="定位" @input="locationGoods()"/>-->
-            <!--                    <el-button style="width: 100px;margin-left: 10px" @click="locationGoods()">下一个</el-button>-->
-            <!--                </div>-->
-            <!--            </div>-->
             <div class="flex-line" v-if="!isMobile">
                 <label>物品：</label>
                 <div>
@@ -94,9 +87,9 @@ const GAME_OPTIONS = ref<any>({})
 
 const isMobile = ref(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
 
-const sleep = async (ms:any) => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-};
+const sleep = async (ms: any) => {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 const initOptions = async () => {
     let gameOptions = await getGameOptions(props.routeType)
@@ -160,21 +153,51 @@ const clearSingleItem = (i: ItemsSingle) => {
     })
 }
 const getGoods = async ($event: any, transmit: boolean) => {
+    if (transmit) {
+        let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value.split(',')
+        let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
+
+        let reqData: any = []
+        realTimeAccount.forEach((account: string) => {
+            selectedItems.value.forEach((item: ItemsSingle) => {
+                reqData.push({
+                    name: item.name,
+                    account: account,
+                    formData: GAME_OPTIONS.value.ORIGIN_REQ_FORM_DATA(item, account, realTimeNumber),
+                    realReqUrl: GAME_OPTIONS.value.ORIGIN_REQ_URL,
+                    realReqMethod: GAME_OPTIONS.value.ORIGIN_REQ_METHOD,
+                    intervalTime: intervalTime.value
+                })
+            })
+        })
+        await axios({ method: 'post', url: reqPre + '/api', data: { reqData: reqData } })
+        return
+    }
     for (let i = 0; i < selectedItems.value.length; i++) {
-        if (transmit) {
-            await getGoodFromServer(selectedItems.value[i]) //后台发送
-        } else {
-            await getGoodFromLocal(selectedItems.value[i]) //前台发送
-        }
-        if (intervalTime.value){
+        await getGoodFromLocal(selectedItems.value[i]) //前台发送
+        if (intervalTime.value) {
             await sleep(Number(intervalTime.value))
         }
     }
 }
 const delGoods = async () => {
-    for (let i = 0; i < selectedItems.value.length; i++) {
-        await delGoodFromServer(selectedItems.value[i]) //后台发送
-    }
+    let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value.split(',')
+    let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
+
+    let reqData: any = []
+    realTimeAccount.forEach((account: string) => {
+        selectedItems.value.forEach((item: ItemsSingle) => {
+            reqData.push({
+                name: item.name,
+                account: account,
+                formData: GAME_OPTIONS.value.ORIGIN_REQ_DEL_FORM_DATA(item, account, realTimeNumber),
+                realReqUrl: GAME_OPTIONS.value.ORIGIN_REQ_URL,
+                realReqMethod: GAME_OPTIONS.value.ORIGIN_REQ_METHOD,
+                intervalTime: intervalTime.value
+            })
+        })
+    })
+    await axios({ method: 'post', url: reqPre + '/api', data: { reqData: reqData } })
 }
 const getGoodFromLocal = async (i: ItemsSingle) => {
     let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
@@ -197,69 +220,9 @@ const getGoodFromLocal = async (i: ItemsSingle) => {
         } catch (err) {
             emit('addLogs', `${realTimeAccount[z]} ${i.name} 发送失败`)
         }
-        if (intervalTime.value){
+        if (intervalTime.value) {
             await sleep(Number(intervalTime.value))
         }
-    }
-}
-const getGoodFromServer = async (i: ItemsTypeSingle) => {
-    let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
-    realTimeAccount = realTimeAccount.split(',')
-    for (let z = 0; z < realTimeAccount.length; z++) {
-        let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
-        let formData = GAME_OPTIONS.value.ORIGIN_REQ_FORM_DATA(i, realTimeAccount[z], realTimeNumber)
-
-        if (props.routeType === 'wl' && i.type === 'charge2') {
-            delete formData.item
-            formData.num = i.value
-        }
-
-        await axios({
-            method: 'post',
-            url: reqPre + '/api',
-            data: {
-                reqData: [
-                    {
-                        name: i.name,
-                        account: realTimeAccount[z],
-                        formData,
-                        realReqUrl: GAME_OPTIONS.value.ORIGIN_REQ_URL,
-                        realReqMethod: GAME_OPTIONS.value.ORIGIN_REQ_METHOD
-                    }
-                ]
-            }
-        })
-        if (intervalTime.value){
-            await sleep(Number(intervalTime.value))
-        }
-    }
-}
-const delGoodFromServer = async (i: ItemsSingle) => {
-    let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value
-    realTimeAccount = realTimeAccount.split(',')
-    for (let z = 0; z < realTimeAccount.length; z++) {
-        let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
-        let formData = GAME_OPTIONS.value.ORIGIN_REQ_DEL_FORM_DATA(i, realTimeAccount[z], realTimeNumber)
-
-        if (props.routeType === 'mjdx'){
-            formData.item = formData.item.replace('additem', 'subitem')
-        }
-
-        await axios({
-            method: 'post',
-            url: reqPre + '/api',
-            data: {
-                reqData: [
-                    {
-                        name: i.name,
-                        account: realTimeAccount[z],
-                        formData,
-                        realReqUrl: GAME_OPTIONS.value.ORIGIN_REQ_URL,
-                        realReqMethod: GAME_OPTIONS.value.ORIGIN_REQ_METHOD
-                    }
-                ]
-            }
-        })
     }
 }
 

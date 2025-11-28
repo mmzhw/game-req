@@ -1,7 +1,6 @@
 import fs from 'fs'
 import path from 'path'
 import http from 'http'
-import https from 'https'
 import Koa from 'koa'
 import axios from 'axios'
 import qs from 'qs'
@@ -14,7 +13,7 @@ import { exec } from 'child_process'
 import { WebSocketServer } from 'ws'
 
 let singleWs = null
-console.log('process.env.NODE_ENV',process.env.NODE_ENV)
+console.log('process.env.NODE_ENV', process.env.NODE_ENV)
 let isDev = process.env.NODE_ENV === 'dev'
 
 /* 创建Koa应用实例 */
@@ -48,104 +47,77 @@ app.use(cors())
     .use(router.routes())
     .use(router.allowedMethods())
 
-const reqFun = async (body) => {
-    let option = {
-        method: body.realReqMethod,
-        url: body.realReqUrl
-    }
-    if (body.params) {
-        option.params = body.params
-    }
-    if (body.data) {
-        option.data = body.data
-    }
-    if (body.formData) {
-        option.data = qs.stringify(body.formData)
-    }
-    let result = await axios(option)
-    let rData = ''
-    if (result && result.data) {
-        try {
-            rData = JSON.stringify(result.data)
-        } catch (e) {}
-    }
-    singleWs && singleWs.send(body.account + ' ' + body.name + ' ' + rData)
-    return result?.data
+const sleep = async (ms) => {
+    return new Promise((resolve) => setTimeout(resolve, ms))
 }
-const delayReqFun = async (bodys, time) => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            reqFun(bodys)
-            resolve('')
-        }, time)
-    })
+const axiosContent = async (bodys = []) => {
+    for (let i = 0; i < bodys.length; i++) {
+        let body = bodys[i]
+        let option = {
+            method: body.realReqMethod,
+            url: body.realReqUrl
+        }
+        if (body.params) {
+            option.params = body.params
+        }
+        if (body.data) {
+            option.data = body.data
+        }
+        if (body.formData) {
+            option.data = qs.stringify(body.formData)
+        }
+        let result = await axios(option)
+        let rData = ''
+        if (result && result.data) {
+            try {
+                rData = JSON.stringify(result.data)
+            } catch (e) {}
+        }
+        singleWs && singleWs.send(body.account + ' ' + body.name + ' ' + rData)
+        if (body.intervalTime) {
+            await sleep(Number(body.intervalTime))
+        }
+    }
 }
-let intervalId = null
 
 router
-    .post('/api', async (ctx) => {
+    .post('/api', (ctx) => {
         if (!ctx.request.body?.reqData || !ctx.request.body?.reqData?.length) {
             ctx.body = '数据异常'
             return
         }
-        ctx.body = await reqFun(ctx.request.body.reqData[0])
+        axiosContent(ctx.request.body.reqData)
+        ctx.body = '正在处理，结果查看ws信息'
     })
-    .post('/apibatch', async (ctx) => {
-        if (!ctx.request.body?.reqData || !ctx.request.body?.reqData?.length) {
-            ctx.body = '数据异常'
-            return
+    .post('/restart', async (ctx) => {
+        try {
+            await axios({ method: 'post', url: 'http://127.0.0.1:3001/restart' })
+            ctx.body = '已通知重启'
+        } catch (e) {
+            ctx.body = '重启失败'
+            console.error(e.message)
         }
-        await reqFun(ctx.request.body.reqData[0])
-        for (let i = 1; i < ctx.request.body.reqData.length; i++) {
-            await delayReqFun(ctx.request.body.reqData[i], ctx.request.body.interval)
-        }
-        ctx.body = '开始发送'
-    })
-    .post('/apiInterval', async (ctx) => {
-        if (!ctx.request.body?.reqData || !ctx.request.body?.reqData?.length) {
-            ctx.body = '数据异常'
-            return
-        }
-        if (ctx.request.body.interval) {
-            if (intervalId) {
-                ctx.body = '存在定时器id为' + intervalId
-                return
-            }
-            intervalId = setInterval(() => {
-                reqFun(ctx.request.body.reqData[0])
-            }, ctx.request.body.interval)
-        }
-        ctx.body = '定时器id为' + intervalId
-    })
-    .post('/closeinterval', async (ctx) => {
-        if (intervalId) {
-            clearInterval(intervalId)
-            intervalId = null
-            ctx.body = '关闭定时器成功'
-            return
-        }
-        ctx.body = '不存在定时器'
     })
     .post('/upload', async (ctx) => {
         // 获取上传文件
         const files = ctx.request.files
         try {
             exec(`rm -rf ${STATIC_DIST}`)
-            console.log('已删除,解压',files.file.filepath, UNZIP_DIST_DIR)
+            console.log('已删除,解压', files.file.filepath, UNZIP_DIST_DIR)
             let res = await compressing.zip.uncompress(files.file.filepath, UNZIP_DIST_DIR)
 
             // 移动dist目录下的server.js和watch.js文件到当前目录
-            const distServerJs = path.resolve(UNZIP_DIST_DIR, 'dist/server.js');
-            const distWatchJs = path.resolve(UNZIP_DIST_DIR, 'dist/watch.js');
-            const currentServerJs = path.resolve('./server.js');
-            const currentWatchJs = path.resolve('./watch.js');
+            const distServerJs = path.resolve(UNZIP_DIST_DIR, 'dist/server.js')
+            const distWatchJs = path.resolve(UNZIP_DIST_DIR, 'dist/watch.js')
+            const currentServerJs = path.resolve('./server.js')
+            const currentWatchJs = path.resolve('./watch.js')
 
             if (fs.existsSync(distWatchJs)) {
-                fs.renameSync(distWatchJs, currentWatchJs);
-                console.log('已移动 watch.js 文件到当前目录');
+                fs.renameSync(distWatchJs, currentWatchJs)
+                console.log('已移动 watch.js 文件到当前目录')
             }
             if (fs.existsSync(distServerJs)) {
-                fs.renameSync(distServerJs, currentServerJs);
+                fs.renameSync(distServerJs, currentServerJs)
                 console.log('已解压并移动文件，开始重启服务')
                 await axios({ method: 'post', url: 'http://127.0.0.1:3001/restart' })
             }
@@ -179,9 +151,8 @@ router
     })
 
 /* 创建挂载Koa应用程序的http服务 */
-const mainServer = http.createServer({ }, app.callback())
+const mainServer = http.createServer({}, app.callback())
 // const mainServer = https.createServer({ key: HTTPS_KEY, cert: HTTPS_CER, ca: HTTPS_CA }, app.callback());
-
 
 const websocketServer = new WebSocketServer({ server: mainServer })
 websocketServer.on('connection', (ws) => {
