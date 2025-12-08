@@ -49,20 +49,20 @@ const addLogs = (message: any) => {
 const initWs = () => {
     let ws: any = null
     let pingId: any = null
-    ws = new WebSocket(import.meta.env.DEV ? 'ws://localhost:3000' : 'ws://' + window.location.host)
+    ws = new WebSocket(import.meta.env.DEV ? 'wss://localhost:3000' : 'wss://' + window.location.host)
     ws.onmessage = (response: any) => {
         if (response.data !== 'pong') {
             addLogs(response.data)
         }
     }
     ws.onopen = () => {
-        addLogs('ws连接成功')
+        addLogs('wss连接成功')
         pingId = setInterval(() => {
             ws.send('ping')
         }, 10000)
     }
     ws.onclose = ws.onerror = () => {
-        addLogs('ws连接失败')
+        addLogs('wss连接失败')
         clearInterval(pingId)
         pingId = null
         ws = null

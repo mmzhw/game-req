@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import https from 'https'
 import http from 'http'
 import Koa from 'koa'
 import axios from 'axios'
@@ -150,9 +151,25 @@ router
         ctx.body = '已执行'
     })
 
-/* 创建挂载Koa应用程序的http服务 */
-const mainServer = http.createServer({}, app.callback())
-// const mainServer = https.createServer({ key: HTTPS_KEY, cert: HTTPS_CER, ca: HTTPS_CA }, app.callback());
+/* 创建挂载Koa应用程序的https服务 */
+// 检查证书文件是否存在
+const hasCertFiles = fs.existsSync(HTTPS_KEY) && fs.existsSync(HTTPS_CER) && fs.existsSync(HTTPS_CA)
+
+let mainServer
+if (hasCertFiles) {
+    // 如果证书文件存在，则创建HTTPS服务器
+    const options = {
+        key: fs.readFileSync(HTTPS_KEY),
+        cert: fs.readFileSync(HTTPS_CER),
+        ca: fs.readFileSync(HTTPS_CA)
+    }
+    mainServer = https.createServer(options, app.callback())
+    console.log('Using HTTPS server')
+} else {
+    // 如果证书文件不存在，则回退到HTTP服务器
+    mainServer = http.createServer(app.callback())
+    console.log('Using HTTP server (certificates not found)')
+}
 
 const websocketServer = new WebSocketServer({ server: mainServer })
 websocketServer.on('connection', (ws) => {
@@ -176,5 +193,9 @@ websocketServer.on('connection', (ws) => {
 /* 开始监听/启动服务（指定3000端口与成功回调） */
 mainServer.listen(3000, () => {
     let port = mainServer.address().port
-    console.log('应用实例，访问地址为 http://localhost:' + port)
+    if (hasCertFiles) {
+        console.log('应用实例，访问地址为 https://localhost:' + port)
+    } else {
+        console.log('应用实例，访问地址为 http://localhost:' + port)
+    }
 })
