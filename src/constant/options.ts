@@ -23,8 +23,8 @@ export const GAME_OPTIONS: any = [
                         num: number,
                         qu: '1'
                     })
-                },
-            ],
+                }
+            ]
         }
     },
     {
@@ -46,8 +46,8 @@ export const GAME_OPTIONS: any = [
                         name: account,
                         cde: 'rssls'
                     })
-                },
-            ],
+                }
+            ]
         }
     },
     {
@@ -76,8 +76,8 @@ export const GAME_OPTIONS: any = [
                         reward3_1: '0',
                         reward3_3: ''
                     })
-                },
-            ],
+                }
+            ]
         }
     },
     {
@@ -101,8 +101,8 @@ export const GAME_OPTIONS: any = [
                         num: number,
                         qu: '2'
                     })
-                },
-            ],
+                }
+            ]
         }
     },
     {
@@ -134,10 +134,10 @@ export const GAME_OPTIONS: any = [
                     GETDATA: (account: string) => ({
                         qid: '1',
                         uid: account,
-                        gmcode: 'ltzy.vip',
+                        gmcode: 'ltzy.vip'
                     })
                 }
-            ],
+            ]
         }
     },
     {
@@ -175,7 +175,55 @@ export const GAME_OPTIONS: any = [
                         itemnum: number
                     })
                 }
-            ],
+            ]
+        }
+    },
+    {
+        name: '全明星激斗',
+        value: 'qmxjd',
+        pageType: '10',
+        options: {
+            ORIGIN_GOODS: [],
+            ORIGIN_ACCOUNT: '4592238693',
+            ORIGIN_NUMBER: '1',
+            OPERATION: [
+                {
+                    NAME: '后台发送',
+                    TYPE: 'POST',
+                    URL: 'http://111.170.148.234:81/gmquery.php',
+                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
+                        action: 'senditem',
+                        qid: '101',
+                        uid: account,
+                        itemid: item.value,
+                        itemnum: number
+                    })
+                }
+            ]
+        }
+    },
+    {
+        name: '极无双',
+        value: 'jws',
+        pageType: '11',
+        options: {
+            ORIGIN_GOODS: [],
+            ORIGIN_ACCOUNT: 'mmzhw1',
+            ORIGIN_NUMBER: '1',
+            OPERATION: [
+                {
+                    NAME: '后台发送',
+                    TYPE: 'POST',
+                    URL: 'http://111.170.152.149:998/query.php',
+                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
+                        action: 'senditem',
+                        qid: '1',
+                        uid: account,
+                        itemid: item.value,
+                        itemnum: number
+                    })
+                }
+            ]
         }
     }
 ]
@@ -185,6 +233,7 @@ export default async function getGameOptions(key: string) {
     if (match) {
         const option = _.cloneDeep(match.options)
         option.ORIGIN_GOODS = (await axios.get(`items/${key}.text`))?.data ?? []
+        debugger
         return option
     }
     return {}
