@@ -190,13 +190,16 @@ export const GAME_OPTIONS: any = [
                 {
                     NAME: '后台发送',
                     TYPE: 'POST',
-                    URL: 'http://111.170.148.234:81/gmquery.php',
+                    URL: 'http://111.170.148.234:81/gm/gmquery.php',
                     GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        action: 'senditem',
-                        qid: '101',
+                        action: item.type,
+                        qid: '1',
                         uid: account,
+                        gmcode: 'ltzy.vip',
                         itemid: item.value,
-                        itemnum: number
+                        chipid: item.value,
+                        itemnum: number,
+                        chipnum: number
                     })
                 }
             ]
