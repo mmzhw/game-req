@@ -8,14 +8,14 @@
                 </el-radio-group>
             </div>
         </div>
-        <game-req-new :routeType="routeOption.value" @addLogs="addLogs"/>
-        <table-pagination :dataList="logList"/>
+        <game-req-new :routeType="routeOption.value" @addLogs="addLogs" />
+        <table-pagination :dataList="logList" />
     </div>
 </template>
 
 <script lang="ts" setup>
-import {computed, onMounted, ref} from 'vue'
-import {useRoute, useRouter} from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import GameReqNew from '@/views/GameReq.vue'
 import TablePagination from '@/components/Table-Pagination.vue'
 import { GAME_OPTIONS } from '@/constant/options'
@@ -28,7 +28,7 @@ const routeType = ref<string>(routeParams.id || '')
 const gameList = ref(GAME_OPTIONS)
 
 let routeOption = computed(() => {
-    return gameList.value.find((item:any) => item.value === routeType.value) || {}
+    return gameList.value.find((item: any) => item.value === routeType.value) || {}
 })
 
 onMounted(() => {
@@ -36,20 +36,20 @@ onMounted(() => {
 })
 //跳转到版本控制
 const jumpVersion = () => {
-    router.push({name: 'version'})
+    router.push({ name: 'version' })
 }
 
 const changeRouteType = () => {
-    router.push({name: 'manage', params: {id: routeType.value}})
+    router.push({ name: 'manage', params: { id: routeType.value } })
 }
 
 const addLogs = (message: any) => {
-    logList.value.unshift({no: logList.value.length + 1, message: message})
+    logList.value.unshift({ no: logList.value.length + 1, message: message })
 }
 const initWs = () => {
     let ws: any = null
     let pingId: any = null
-    ws = new WebSocket(import.meta.env.DEV ? 'wss://localhost:3000' : 'wss://' + window.location.host)
+    ws = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'wss://') + window.location.host)
     ws.onmessage = (response: any) => {
         if (response.data !== 'pong') {
             addLogs(response.data)
@@ -66,9 +66,9 @@ const initWs = () => {
         clearInterval(pingId)
         pingId = null
         ws = null
-        setTimeout(() => {
-            initWs()
-        }, 1000)
+        // setTimeout(() => {
+        //     initWs()
+        // }, 1000)
     }
 }
 </script>

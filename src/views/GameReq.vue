@@ -33,7 +33,10 @@
                 </div>
             </div>
             <checkbox-pagination v-if="isMobile" ref="checkboxPaginationRef" :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="pageSize" maxHeight="50vh" checkboxType="default" />
-            <el-input style="padding-bottom: 10px" v-model="intervalTime" placeholder="间隔发送"></el-input>
+            <div style="display: flex; align-items: center; gap: 10px">
+                <el-input style="padding-bottom: 10px" v-model="intervalTime" placeholder="间隔发送"></el-input>
+                <el-input style="padding-bottom: 10px" v-model="repeatTime" placeholder="重复次数"></el-input>
+            </div>
             <div style="display: flex; padding-bottom: 10px">
                 <!--                <el-button type="primary" @click="getGoods($event, false)">直接发送</el-button>-->
                 <!--                <el-button type="primary" @click="getGoods($event, true)">后台转发</el-button>-->
@@ -71,6 +74,7 @@ const props = withDefaults(defineProps<PropsRadioPagination>(), {
 })
 
 let intervalTime = ref('')
+let repeatTime = ref('')
 let pageSize = ref(50)
 let goodsList: any = ref([])
 let selectedItems: any = ref([])
@@ -161,7 +165,7 @@ const operationSend = async (operation: any) => {
 
     let reqData: any = []
     realTimeAccount.forEach((account: string) => {
-        if (selectedItems?.value?.length){
+        if (selectedItems?.value?.length) {
             selectedItems.value.forEach((item: ItemsSingle) => {
                 reqData.push({
                     name: item.name,
@@ -169,7 +173,6 @@ const operationSend = async (operation: any) => {
                     formData: operation.GETDATA(item, account, realTimeNumber),
                     realReqUrl: operation.URL,
                     realReqMethod: operation.TYPE,
-                    intervalTime: intervalTime.value
                 })
             })
         } else {
@@ -180,12 +183,10 @@ const operationSend = async (operation: any) => {
                 formData: operation.GETDATA(account),
                 realReqUrl: operation.URL,
                 realReqMethod: operation.TYPE,
-                intervalTime: intervalTime.value
             })
         }
-
     })
-    await axios({ method: 'post', url: reqPre + '/api', data: { reqData: reqData } })
+    await axios({ method: 'post', url: reqPre + '/api', data: { reqData: reqData, repeatTime: repeatTime.value, intervalTime: intervalTime.value } })
 }
 // const getGoods = async (operation: any) => {
 //     for (let i = 0; i < selectedItems.value.length; i++) {

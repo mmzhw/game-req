@@ -236,7 +236,6 @@ export default async function getGameOptions(key: string) {
     if (match) {
         const option = _.cloneDeep(match.options)
         option.ORIGIN_GOODS = (await axios.get(`items/${key}.text`))?.data ?? []
-        debugger
         return option
     }
     return {}

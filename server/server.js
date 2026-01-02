@@ -51,7 +51,7 @@ app.use(cors())
 const sleep = async (ms) => {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
-const axiosContent = async (bodys = []) => {
+const axiosContent = async (bodys = [], intervalTime) => {
     for (let i = 0; i < bodys.length; i++) {
         let body = bodys[i]
         let option = {
@@ -75,20 +75,31 @@ const axiosContent = async (bodys = []) => {
             } catch (e) {}
         }
         singleWs && singleWs.send(body.account + ' ' + body.name + ' ' + rData)
-        if (body.intervalTime) {
-            await sleep(Number(body.intervalTime))
+        if (intervalTime) {
+            await sleep(Number(intervalTime))
         }
     }
 }
 
 router
-    .post('/api', (ctx) => {
+    .post('/api', async (ctx) => {
         if (!ctx.request.body?.reqData || !ctx.request.body?.reqData?.length) {
             ctx.body = '数据异常'
             return
         }
-        axiosContent(ctx.request.body.reqData)
         ctx.body = '正在处理，结果查看ws信息'
+        let intervalTime = ctx.request.body.intervalTime
+        let repeatTime = ctx.request.body.repeatTime
+        if (repeatTime) {
+            for (let i = 0; i < Number(repeatTime); i++) {
+                await axiosContent(ctx.request.body.reqData, intervalTime)
+                if (intervalTime) {
+                    await sleep(Number(intervalTime))
+                }
+            }
+        } else {
+            await axiosContent(ctx.request.body.reqData, intervalTime)
+        }
     })
     .post('/restart', async (ctx) => {
         try {
