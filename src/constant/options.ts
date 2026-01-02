@@ -197,9 +197,13 @@ export const GAME_OPTIONS: any = [
                         uid: account,
                         gmcode: 'ltzy.vip',
                         itemid: item.value,
-                        chipid: item.value,
                         itemnum: number,
-                        chipnum: number
+
+                        chipid: item.value,
+                        chipnum: number,
+
+                        chargetype: item.value,
+                        chargenum: number
                     })
                 }
             ]
