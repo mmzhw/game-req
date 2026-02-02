@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import axios from 'axios'
-import { cloneDeep, isEmpty } from 'lodash'
+import { cloneDeep, debounce } from 'lodash'
 
 const dictMap: any = {
-    // 68: '金钱',
-    // 69: '修为',
-    // 70: '感悟',
     1: { label: '物品代码', type: 'select' },
     2: { label: '数量', type: 'number' },
     5: { label: '锋锐', type: 'number' },
@@ -26,6 +23,10 @@ const originalFilename = ref('')
 const itemObj = ref({})
 const currentPage = ref(1)
 const pageSize = ref(10) // 每页显示10个条目
+const searchKey = ref('')
+const debouncedSearchKey = ref('') // 新增防抖后的搜索关键词
+
+const mValueBase = ref({})
 
 const handleFileSelect = (event) => {
     const target = event.target
@@ -41,8 +42,8 @@ const handleFileSelect = (event) => {
                 const content: any = e.target?.result
                 fileContent.value = JSON.parse(content)
                 itemObj.value = fileContent.value.playerentity['1'].itemStorage.content
-
-                console.log(fileContent.value.playerentity['1'].itemStorage)
+                mValueBase.value = JSON.parse(fileContent.value.playerentity['1'].m_valueBase)
+                console.log(fileContent.value.playerentity['1'])
             } catch (error) {
                 console.log(error)
             }
@@ -52,12 +53,45 @@ const handleFileSelect = (event) => {
     }
 }
 
+// 创建防抖函数
+const debouncedUpdateSearch = debounce((newValue) => {
+    debouncedSearchKey.value = newValue
+}, 500)
+
+// 添加防抖逻辑
+watch(searchKey, (newValue) => {
+    debouncedUpdateSearch(newValue)
+})
+
+// 计算过滤后的所有项目键
+const filteredKeys = computed(() => {
+    let keys = Object.keys(itemObj.value)
+
+    // 如果有搜索关键词，则过滤匹配的项目
+    if (debouncedSearchKey.value) {
+        keys = keys.filter((key) => {
+            const item = itemObj.value[key]
+            // 检查是否有key为1的属性（物品代码）
+            if (item && item['1'] !== undefined) {
+                // 在itemOptions中查找对应value的项
+                const matchedOption = itemOptions.value.find((option) => option.value === Number(item['1']))
+                // 如果找到匹配项且其label包含搜索关键词，则返回true
+                if (matchedOption && matchedOption.label.toLowerCase().includes(debouncedSearchKey.value.toLowerCase())) {
+                    return true
+                }
+            }
+            return false
+        })
+    }
+
+    return keys
+})
+
 // 获取当前页的数据
 const paginatedItems = computed(() => {
-    const keys = Object.keys(itemObj.value)
     const startIndex = (currentPage.value - 1) * pageSize.value
     const endIndex = startIndex + pageSize.value
-    return keys.slice(startIndex, endIndex)
+    return filteredKeys.value.slice(startIndex, endIndex)
 })
 
 const handlePageChange = (page) => {
@@ -72,6 +106,7 @@ onMounted(async () => {
 
 const saveFile = () => {
     fileContent.value.playerentity['1'].itemStorage.content = itemObj.value
+    fileContent.value.playerentity['1'].m_valueBase = JSON.stringify(mValueBase.value)
 
     // 将修改后的数据转换为JSON字符串
     const jsonData = JSON.stringify(fileContent.value, null, 2)
@@ -130,14 +165,27 @@ const saveItem = () => {
             <el-button type="primary" @click="saveFile" size="small">保存</el-button>
             <el-button type="primary" @click="addItem" size="small">新增</el-button>
         </div>
-        <template v-if="fileContent?.playerentity?.['1']?.itemStorage?.count">
-            <div>槽数：{{ fileContent?.playerentity?.['1']?.itemStorage?.count }}</div>
-            <el-divider border-style="dashed" />
-        </template>
+        <div class="item-flex" style="padding-top: 0">
+            <p style="width: 50px">金钱</p>
+            <el-input-number class="item-edit" v-model="mValueBase[68]" />
+        </div>
+        <div class="item-flex">
+            <p style="width: 50px">修为</p>
+            <el-input-number class="item-edit" v-model="mValueBase[69]" />
+        </div>
+        <div class="item-flex">
+            <p style="width: 50px">感悟</p>
+            <el-input-number class="item-edit" v-model="mValueBase[70]" />
+        </div>
+        <el-divider border-style="dashed" />
+        <div style="display: flex; align-items: center; padding-bottom: 10px; gap: 10px">
+            <el-input v-model="searchKey" placeholder="输入物品名称搜索" />
+            <div style="flex-shrink: 0" v-if="fileContent?.playerentity?.['1']?.itemStorage?.count">槽数：{{ fileContent?.playerentity?.['1']?.itemStorage?.count }}</div>
+        </div>
         <template v-for="key in paginatedItems" :key="key">
             <div class="item-wrap">
                 <div>槽位：{{ key }}</div>
-                <div style="display: flex; align-items: center; gap: 10px; padding-top: 10px" v-for="subkey in Object.keys(itemObj[key])" :key="key + subkey">
+                <div class="item-flex" v-for="subkey in Object.keys(itemObj[key])" :key="key + subkey">
                     <div style="width: 150px">{{ dictMap[subkey] ? `${dictMap[subkey].label}(${subkey})` : subkey }}</div>
                     <el-select-v2 class="item-edit" v-if="dictMap[subkey].type === 'select'" v-model="itemObj[key][subkey]" :options="itemOptions" filterable />
                     <el-switch class="item-edit" v-else-if="dictMap[subkey].type === 'boolean'" v-model="itemObj[key][subkey]" />
@@ -147,7 +195,7 @@ const saveItem = () => {
             </div>
             <el-divider border-style="dashed" />
         </template>
-        <el-pagination v-if="Object.keys(itemObj).length" class="page-wrap" v-model:current-page="currentPage" v-model:page-size="pageSize" @current-change="handlePageChange" layout="prev, pager, next" :total="Object.keys(itemObj).length" />
+        <el-pagination v-if="Object.keys(itemObj).length" class="page-wrap" v-model:current-page="currentPage" v-model:page-size="pageSize" @current-change="handlePageChange" layout="prev, pager, next" :total="filteredKeys.length" />
     </div>
     <el-dialog v-model="dialogVisible" title="新增" width="90vw" top="10px" class="dialog-wrap">
         <el-form :model="form" label-width="auto">
@@ -184,5 +232,11 @@ const saveItem = () => {
 .dialog-footer {
     display: flex;
     justify-content: flex-end;
+}
+.item-flex {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 10px;
 }
 </style>
