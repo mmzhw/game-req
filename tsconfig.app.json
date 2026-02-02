@@ -1,7 +1,7 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "include": ["env.d.ts", "src/**/*", "src/**/*.vue"],
-  "exclude": ["src/**/__tests__/*", "src/views/SaveFileEdit.vue"],
+  "exclude": ["src/**/__tests__/*", "src/views/SaveFileEdit.vue", "src/views/xyzjhSaveFileEdit.vue"],
   "compilerOptions": {
     "composite": true,
     "baseUrl": ".",

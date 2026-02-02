@@ -1,9 +1,9 @@
-<script setup lang="ts">
+<script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import axios from 'axios'
 import { cloneDeep, debounce } from 'lodash'
 
-const dictMap: any = {
+const dictMap = {
     1: { label: '物品代码', type: 'select' },
     2: { label: '数量', type: 'number' },
     5: { label: '锋锐', type: 'number' },
@@ -17,7 +17,7 @@ const dictMap: any = {
     36: { label: '36', type: 'boolean' }
 }
 
-let fileContent: any = ref({})
+let fileContent = ref({})
 const originalFilename = ref('')
 
 const itemObj = ref({})
@@ -39,7 +39,7 @@ const handleFileSelect = (event) => {
         const reader = new FileReader()
         reader.onload = (e) => {
             try {
-                const content: any = e.target?.result
+                const content = e.target?.result
                 fileContent.value = JSON.parse(content)
                 itemObj.value = fileContent.value.playerentity['1'].itemStorage.content
                 mValueBase.value = JSON.parse(fileContent.value.playerentity['1'].m_valueBase)

@@ -36,11 +36,13 @@ const router = createRouter({
         {
             path: '/dj',
             name: 'dj',
+            // @ts-ignore
             component: () => import('@/views/SaveFileEdit.vue')
         },
         {
             path: '/xyzjh',
             name: 'xyzjh',
+            // @ts-ignore
             component: () => import('@/views/xyzjhSaveFileEdit.vue')
         }
     ]
