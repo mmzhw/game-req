@@ -24,7 +24,7 @@ const result = lines.map(line => {
   const parts = line.split('#');
   const value = Number(parts[0]) // #前面的部分
   // const value = parts[0] // #前面的部分
-  const label = parts.slice(1).join('#'); // #后面的部分（处理可能包含#号的label）
+  const label = parts.slice(1).join('#') + '(' + value + ')' // #后面的部分（处理可能包含#号的label）
 
   return { value, label };
 }).filter(item => item !== null); // 过滤掉空行或无效行
