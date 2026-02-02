@@ -1,5 +1,9 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
+// @ts-ignore
+// @ts-ignore
+// @ts-ignore
+// @ts-ignore
 const router = createRouter({
     history: createWebHashHistory(),
     routes: [
@@ -22,18 +26,22 @@ const router = createRouter({
         {
             path: '/manage/:id',
             name: 'manage',
-            component: () => import('../views/GameMain.vue')
+            component: () => import('@/views/GameMain.vue')
         },
         {
             path: '/version',
             name: 'version',
-            component: () => import('../views/VersionControl.vue')
+            component: () => import('@/views/VersionControl.vue')
         },
         {
             path: '/dj',
             name: 'dj',
-            // @ts-ignore
-            component: () => import('../views/SaveFileEdit.vue')
+            component: () => import('@/views/SaveFileEdit.vue')
+        },
+        {
+            path: '/xyzjh',
+            name: 'xyzjh',
+            component: () => import('@/views/xyzjhSaveFileEdit.vue')
         }
     ]
 })
