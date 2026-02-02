@@ -120,7 +120,7 @@ const saveFile = () => {
     a.href = url
 
     // 使用原始文件名，如果没有则使用默认名称
-    a.download = originalFilename.value || 'savefile0.json'
+    a.download = originalFilename.value
 
     // 触发下载
     document.body.appendChild(a)
