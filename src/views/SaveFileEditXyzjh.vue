@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import axios from 'axios'
 import { cloneDeep, debounce } from 'lodash'
+import { ElLoading } from 'element-plus'
 
 const dictMap = {
     1: { label: '物品代码', type: 'select' },
@@ -29,6 +30,12 @@ const debouncedSearchKey = ref('') // 新增防抖后的搜索关键词
 const mValueBase = ref({})
 
 const handleFileSelect = (event) => {
+    const loading = ElLoading.service({
+        lock: true,
+        text: 'Loading',
+        background: 'rgba(0, 0, 0, 0.7)'
+    })
+
     const target = event.target
     const files = target.files
 
@@ -47,16 +54,35 @@ const handleFileSelect = (event) => {
             } catch (error) {
                 console.log(error)
             }
+            loading.close()
         }
         reader.onerror = () => {}
         reader.readAsText(files[0])
     }
 }
+const saveFile = () => {
+    fileContent.value.playerentity['1'].itemStorage.content = itemObj.value
+    fileContent.value.playerentity['1'].m_valueBase = JSON.stringify(mValueBase.value)
+    // 将修改后的数据转换为JSON字符串
+    const jsonData = JSON.stringify(fileContent.value, null, 4)
+    // 创建Blob对象
+    const blob = new Blob([jsonData], { type: 'application/json' })
+    // 创建下载链接
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = originalFilename.value
+    document.body.appendChild(a)
+    a.click()
+    // 清理资源
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+}
 
 // 创建防抖函数
 const debouncedUpdateSearch = debounce((newValue) => {
     debouncedSearchKey.value = newValue
-}, 500)
+}, 300)
 
 // 添加防抖逻辑
 watch(searchKey, (newValue) => {
@@ -104,33 +130,6 @@ onMounted(async () => {
     itemOptions.value = response.data || []
 })
 
-const saveFile = () => {
-    fileContent.value.playerentity['1'].itemStorage.content = itemObj.value
-    fileContent.value.playerentity['1'].m_valueBase = JSON.stringify(mValueBase.value)
-
-    // 将修改后的数据转换为JSON字符串
-    const jsonData = JSON.stringify(fileContent.value, null, 2)
-
-    // 创建Blob对象
-    const blob = new Blob([jsonData], { type: 'application/json' })
-
-    // 创建下载链接
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-
-    // 使用原始文件名，如果没有则使用默认名称
-    a.download = originalFilename.value
-
-    // 触发下载
-    document.body.appendChild(a)
-    a.click()
-
-    // 清理资源
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-}
-
 const dialogVisible = ref(false)
 const addItem = () => {
     Object.keys(dictMap).forEach((key) => {
@@ -151,7 +150,6 @@ const saveItem = () => {
     itemObj.value[Number(lastKey) + 1] = item
     fileContent.value.playerentity['1'].itemStorage.count++
     fileContent.value.playerentity['1'].itemStorage.content = itemObj.value
-
     dialogVisible.value = false
 }
 </script>
@@ -216,12 +214,6 @@ const saveItem = () => {
 <style scoped lang="scss">
 .container {
     padding: 10px;
-}
-.item-wrap {
-    //display: flex;
-    //align-items: center;
-    //gap: 10px;
-    //padding-bottom: 10px;
 }
 .item-edit {
     width: 100%;

@@ -1,7 +1,6 @@
 <template>
     <div class="flex-line" style="margin-bottom: 0">
         <div style="display: flex">
-            <el-button class="singleButton" @click="jumpMain">主页</el-button>
             <el-upload class="singleButton" :action="isDev ? 'http://localhost:3000/upload' : '/upload'" :on-success="uploadSuccess" :on-error="uploadError" accept="zip">
                 <el-button style="width: 100%"
                     >前端 {{ version }}
@@ -49,10 +48,6 @@ const emit = defineEmits<{
 
 // @ts-ignore
 const version = ref(__Admin_VERSION__ as string)
-
-const jumpMain = () => {
-    router.push({ path: '/' })
-}
 
 const uploadSuccess = (response: any) => {
     emit('uploadSuccess', response)
