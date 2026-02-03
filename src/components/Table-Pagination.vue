@@ -15,9 +15,9 @@
         @size-change="pageSizeChange"
         background
     >
-        <template #default
-            ><span>{{ current }}页 / {{ dataList?.length }}条</span></template
-        >
+        <template #default>
+            <span>{{ current }}页 / {{ dataList?.length }}条</span>
+        </template>
     </el-pagination>
 </template>
 

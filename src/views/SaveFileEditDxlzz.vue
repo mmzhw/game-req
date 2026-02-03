@@ -1,3 +1,90 @@
+<script setup lang="ts">
+import { Close, Plus, UploadFilled } from '@element-plus/icons-vue'
+import { ref } from 'vue'
+import _ from 'lodash'
+import moment from 'moment'
+import { downloadFile } from '@/utils/download-file'
+
+const itemList = ref<any>([])
+const neigongList = ref(['内功_九州诀', '内功_紫薇龙气', '内功_天魔噬魂术', '内功_无极混元功', '内功_摩诃无量', '内功_梵天圣功', '内功_天女散花', '内功_巫蛊毒功', '内功_霓裳羽衣经', '内功_一刀流', '内功_无锋剑意', '内功_通天伏魔功', '内功_兽王诀', '内功_祈禳大法', '内功_儒十三经', '内功_九霄真经', '内功_惊涛骇浪诀', '内功_大日如来经', '内功_满江红', '内功_圣火神功', '内功_无极洞心法', '内功_黄帝阴符经', '内功_烈阳焚天诀', '内功_九幽寒霜气', '内功_吠陀宝经', '内功_霸刀诀', '内功_尉缭子', '内功_绝毒残篇', '内功_DLC2长恨歌', '内功_DLC2九星连珠', '内功_DLC2乖离无相功', '内功_DLC2罗刹决'])
+
+let origin = ''
+
+const handleFileChange = (file: any) => {
+    console.log('file', file)
+    const reader = new FileReader()
+    reader.onload = () => {
+        operationFile(reader.result)
+    }
+    reader.readAsText(file.raw)
+}
+const copy = (text: any) => {
+    navigator.clipboard
+        .writeText(text)
+        .then(() => {
+            console.log('复制成功')
+        })
+        .catch((err: any) => {
+            console.log(err)
+            // 备用方案：创建临时textarea
+            const textarea = document.createElement('textarea')
+            textarea.value = text
+            document.body.appendChild(textarea)
+            textarea.select()
+            document.execCommand('copy')
+            document.body.removeChild(textarea)
+            console.log('已复制（备用方法）')
+        })
+}
+
+const operationFile = (fileStr: any) => {
+    origin = fileStr
+    let obj = JSON.parse(fileStr)
+    let list = obj.Data.value.storedDatas
+    console.log('数据', list)
+    let filteredList = list.filter((i: any) => i.SChinese).filter((i: any) => i.UName.match('ItemName_'))
+    filteredList = filteredList.map((i: any) => {
+        let item: any = { UName: i.UName, SChinese: i.SChinese, matchName: i.UName.replace('ItemName_', '') }
+        list.forEach((j: any) => {
+            if (j['__type'] === 'GameData.KungfuData,ModShare.Runtime' && j.UName.match(item.matchName)) {
+                item.InterForceType = j.InterForceType //
+                item.ActiveInternalBuffs = j.ActiveInternalBuffs //内功
+                item.CastBuffs = j.CastBuffs //武功
+                item.CharacterPropNeed = j.CharacterPropNeed.map((i: any) => JSON.stringify(i))
+            }
+            if (j['__type'] === 'GameData.KungfuLevelData,ModShare.Runtime' && j.UName.match(item.matchName + '_10')) {
+                item.CharacterPropAdd = j.CharacterPropAdd.map((i: any) => JSON.stringify(i))
+            }
+        })
+        return item
+    })
+    itemList.value = filteredList
+}
+
+const save = () => {
+    try {
+        let list = _.cloneDeep(itemList.value)
+        let originObj = JSON.parse(origin)
+        list.forEach((i: any) => {
+            originObj.Data.value.storedDatas.forEach((j: any) => {
+                if (j['__type'] === 'GameData.KungfuData,ModShare.Runtime' && j.UName.match(i.matchName)) {
+                    j.InterForceType = Number(i.InterForceType)
+                    j.ActiveInternalBuffs = i.ActiveInternalBuffs
+                    j.CastBuffs = i.CastBuffs
+                    j.CharacterPropNeed = i.CharacterPropNeed.map((m: any) => JSON.parse(m))
+                }
+                if (j['__type'] === 'GameData.KungfuLevelData,ModShare.Runtime' && j.UName.match(i.matchName + '_10')) {
+                    j.CharacterPropAdd = i.CharacterPropAdd.map((m: any) => JSON.parse(m))
+                }
+            })
+        })
+        downloadFile(originObj, `SaveFile_${moment().unix()}.decrypted`)
+    } catch (e: any) {
+        alert('请检查是否有错误的格式')
+        console.log(e?.message || e)
+    }
+}
+</script>
 <template>
     <div class="wrap">
         <div class="flow-wrap">
@@ -7,7 +94,7 @@
             <p>4、将保存后的文件访问<a href="https://es3.tusinean.ro" target="_blank">https://es3.tusinean.ro</a>后在Encryption下上传，并勾选GZip后将加密后的文件下载下来</p>
             <p>5、将加密后的文件名称改为SaveObjectDynamicData.save放到游戏原位置即可</p>
         </div>
-       <el-upload class="upload-demo" drag action="#" :on-change="handleFileChange" :auto-upload="false" :show-file-list="false">
+        <el-upload class="upload-demo" drag action="#" :on-change="handleFileChange" :auto-upload="false" :show-file-list="false">
             <el-icon class="el-icon--upload">
                 <upload-filled />
             </el-icon>
@@ -74,119 +161,7 @@
         </div>
     </div>
 </template>
-<script setup>
-import { Close, Plus, UploadFilled } from '@element-plus/icons-vue'
-import { ref } from 'vue'
-import _ from 'lodash'
-import moment from 'moment'
-
-const itemList = ref([])
-const neigongList = ref(['内功_九州诀', '内功_紫薇龙气', '内功_天魔噬魂术', '内功_无极混元功', '内功_摩诃无量', '内功_梵天圣功', '内功_天女散花', '内功_巫蛊毒功', '内功_霓裳羽衣经', '内功_一刀流', '内功_无锋剑意', '内功_通天伏魔功', '内功_兽王诀', '内功_祈禳大法', '内功_儒十三经', '内功_九霄真经', '内功_惊涛骇浪诀', '内功_大日如来经', '内功_满江红', '内功_圣火神功', '内功_无极洞心法', '内功_黄帝阴符经', '内功_烈阳焚天诀', '内功_九幽寒霜气', '内功_吠陀宝经', '内功_霸刀诀', '内功_尉缭子', '内功_绝毒残篇', '内功_DLC2长恨歌', '内功_DLC2九星连珠', '内功_DLC2乖离无相功', '内功_DLC2罗刹决'])
-
-let origin = ''
-
-const handleFileChange = (file) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-        operationFile(reader.result)
-    }
-    reader.readAsText(file.raw)
-}
-const copy = (text) => {
-    navigator.clipboard.writeText(text)
-        .then(() => {
-            console.log('复制成功');
-        })
-        .catch(err => {
-            // 备用方案：创建临时textarea
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            console.log('已复制（备用方法）');
-        });
-}
-
-const operationFile = (fileStr) => {
-    origin = fileStr
-    let obj = JSON.parse(fileStr)
-    let list = obj.Data.value.storedDatas
-    console.log('数据',list)
-    let filteredList = list.filter((i) => i.SChinese).filter((i) => i.UName.match('ItemName_'))
-    filteredList = filteredList.map((i) => {
-        let item = { UName: i.UName, SChinese: i.SChinese, matchName: i.UName.replace('ItemName_', '') }
-        list.forEach((j) => {
-            if (j['__type'] === 'GameData.KungfuData,ModShare.Runtime' && j.UName.match(item.matchName)) {
-                item.InterForceType = j.InterForceType //
-                item.ActiveInternalBuffs = j.ActiveInternalBuffs //内功
-                item.CastBuffs = j.CastBuffs //武功
-                item.CharacterPropNeed = j.CharacterPropNeed.map((i) => JSON.stringify(i))
-            }
-            if (j['__type'] === 'GameData.KungfuLevelData,ModShare.Runtime' && j.UName.match(item.matchName + '_10')) {
-                item.CharacterPropAdd = j.CharacterPropAdd.map((i) => JSON.stringify(i))
-            }
-        })
-        return item
-    })
-    itemList.value = filteredList
-}
-
-const save = () => {
-    try {
-        let list = _.cloneDeep(itemList.value)
-        let originObj = JSON.parse(origin)
-        list.forEach((i) => {
-            originObj.Data.value.storedDatas.forEach((j) => {
-                if (j['__type'] === 'GameData.KungfuData,ModShare.Runtime' && j.UName.match(i.matchName)) {
-                    j.InterForceType = Number(i.InterForceType)
-                    j.ActiveInternalBuffs = i.ActiveInternalBuffs
-                    j.CastBuffs = i.CastBuffs
-                    j.CharacterPropNeed = i.CharacterPropNeed.map((m) => JSON.parse(m))
-                }
-                if (j['__type'] === 'GameData.KungfuLevelData,ModShare.Runtime' && j.UName.match(i.matchName + '_10')) {
-                    j.CharacterPropAdd = i.CharacterPropAdd.map((m) => JSON.parse(m))
-                }
-            })
-        })
-        savefile(originObj)
-    } catch (e) {
-        alert('请检查是否有错误的格式')
-        console.log(e?.message || e)
-    }
-}
-const savefile = (jsonObject) => {
-    try {
-        // 将 JSON 对象转换为字符串
-        const jsonString = JSON.stringify(jsonObject)
-
-        // 创建一个 Blob 对象
-        const blob = new Blob([jsonString], { type: 'text/plain;charset=utf-8' })
-
-        // 创建下载链接
-        const downloadLink = document.createElement('a')
-        downloadLink.href = URL.createObjectURL(blob)
-        downloadLink.download = `SaveFile_${moment().unix()}.decrypted`
-
-        // 添加到 DOM 并触发点击
-        document.body.appendChild(downloadLink)
-        downloadLink.click()
-
-        // 清理
-        document.body.removeChild(downloadLink)
-        URL.revokeObjectURL(downloadLink.href)
-
-        console.log('JSON 已编码并下载')
-        return true
-    } catch (error) {
-        console.error('下载编码后的 JSON 时出错:', error)
-        return false
-    }
-}
-</script>
-
-<style scoped>
+<style scoped lang="scss">
 .wrap {
     padding-bottom: 10px;
 }
@@ -236,7 +211,7 @@ div {
     color: red;
     font-size: 12px;
 }
-.flow-wrap{
+.flow-wrap {
     padding-bottom: 10px;
 }
 </style>

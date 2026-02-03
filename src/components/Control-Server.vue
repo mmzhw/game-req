@@ -13,8 +13,8 @@
                 </el-button>
             </el-upload>
             <el-upload class="singleButton" :action="isDev ? 'http://localhost:3000/uploadServer' : '/uploadServer'" :on-success="uploadSuccess" :on-error="uploadError" accept="js">
-                <el-button style="width: 100%"
-                    >服务端
+                <el-button style="width: 100%">
+                    服务端
                     <el-tooltip placement="top">
                         <template #content>上传server.js会替换并重启服务，其他文件会出问题</template>
                         <el-icon style="margin-left: 5px">
@@ -30,14 +30,12 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { InfoFilled } from '@element-plus/icons-vue'
 import axios from 'axios'
 
-const router = useRouter()
 const isDev = ref(import.meta.env.DEV)
 
-const props = defineProps<{
+defineProps<{
     labelWidth: String
 }>()
 const emit = defineEmits<{

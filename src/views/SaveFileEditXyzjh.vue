@@ -3,6 +3,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 import axios from 'axios'
 import { cloneDeep, debounce } from 'lodash'
 import { ElLoading } from 'element-plus'
+import { UploadFilled } from '@element-plus/icons-vue'
+import { downloadFile } from '@/utils/download-file'
 
 const dictMap: any = {
     1: { label: '物品代码', type: 'select' },
@@ -29,54 +31,35 @@ const debouncedSearchKey = ref('') // 新增防抖后的搜索关键词
 
 const mValueBase = ref<any>({})
 
-const handleFileSelect = (event: any) => {
+const handleFileSelect = (file: any) => {
     const loading = ElLoading.service({
         lock: true,
         text: 'Loading',
         background: 'rgba(0, 0, 0, 0.7)'
     })
+    console.log('file', file)
+    // 记录原始文件名
+    originalFilename.value = file.name
 
-    const target = event.target
-    const files = target.files
-
-    if (files && files.length > 0) {
-        // 记录原始文件名
-        originalFilename.value = files[0].name
-
-        const reader = new FileReader()
-        reader.onload = (e) => {
-            try {
-                const content: any = e.target?.result
-                fileContent.value = JSON.parse(content)
-                itemObj.value = fileContent.value.playerentity['1'].itemStorage.content
-                mValueBase.value = JSON.parse(fileContent.value.playerentity['1'].m_valueBase)
-                console.log(fileContent.value.playerentity['1'])
-            } catch (error) {
-                console.log(error)
-            }
-            loading.close()
+    const reader = new FileReader()
+    reader.onload = (e) => {
+        try {
+            const content: any = e.target?.result
+            fileContent.value = JSON.parse(content)
+            itemObj.value = fileContent.value.playerentity['1'].itemStorage.content
+            mValueBase.value = JSON.parse(fileContent.value.playerentity['1'].m_valueBase)
+            console.log(fileContent.value.playerentity['1'])
+        } catch (error) {
+            console.log(error)
         }
-        reader.onerror = () => {}
-        reader.readAsText(files[0])
+        loading.close()
     }
+    reader.readAsText(file.raw)
 }
 const saveFile = () => {
     fileContent.value.playerentity['1'].itemStorage.content = itemObj.value
     fileContent.value.playerentity['1'].m_valueBase = JSON.stringify(mValueBase.value)
-    // 将修改后的数据转换为JSON字符串
-    const jsonData = JSON.stringify(fileContent.value, null, 4)
-    // 创建Blob对象
-    const blob = new Blob([jsonData], { type: 'application/json' })
-    // 创建下载链接
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = originalFilename.value
-    document.body.appendChild(a)
-    a.click()
-    // 清理资源
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    downloadFile(fileContent.value, originalFilename.value)
 }
 
 // 创建防抖函数
@@ -187,11 +170,14 @@ const saveItem = () => {
 
 <template>
     <div class="container">
-        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px">
-            <input type="file" accept=".json" @change="handleFileSelect" />
-            <el-button type="primary" @click="saveFile" size="small">保存</el-button>
-        </div>
-        <div class="item-flex" style="padding-top: 0">
+        <el-upload class="upload-demo" drag action="#" :on-change="handleFileSelect" :auto-upload="false" :show-file-list="false">
+            <el-icon class="el-icon--upload">
+                <upload-filled />
+            </el-icon>
+            <div class="el-upload__text">Drop file here or <em>click to upload</em></div>
+        </el-upload>
+        <el-button type="primary" @click="saveFile">保存</el-button>
+        <div class="item-flex">
             <p style="width: 50px">金钱</p>
             <el-input-number class="item-edit" v-model="mValueBase[68]" />
         </div>
@@ -275,5 +261,8 @@ const saveItem = () => {
     > .item-edit {
         flex: 1;
     }
+}
+.upload-demo {
+    padding-bottom: 10px;
 }
 </style>

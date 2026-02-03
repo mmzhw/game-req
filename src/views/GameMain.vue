@@ -36,7 +36,7 @@ onMounted(() => {
 })
 //跳转到版本控制
 const jumpVersion = () => {
-    router.push({ name: 'version' })
+    router.push({ path: '/' })
 }
 
 const changeRouteType = () => {
