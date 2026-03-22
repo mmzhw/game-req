@@ -5,8 +5,8 @@
         v-model="realItem"
         @change="changeItemId"
     >
-        <el-radio-button v-for="(item, index) in realList" :key="index" :label="item.value"
-            >{{ item.name }}
+        <el-radio-button v-for="(item, index) in realList" :key="index" :label="item.value">
+            {{ item.name }}
         </el-radio-button>
     </el-radio-group>
     <el-pagination
@@ -20,9 +20,9 @@
         @current-change="pageCurrentChange"
         @size-change="pageSizeChange"
     >
-        <template #default
-            ><span>{{ current }}页 / {{ dataList?.length }}条</span></template
-        >
+        <template #default>
+            <span>{{ current }}页 / {{ dataList?.length }}条</span>
+        </template>
     </el-pagination>
 </template>
 

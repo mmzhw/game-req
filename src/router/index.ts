@@ -1,27 +1,11 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-
-// @ts-ignore
-// @ts-ignore
-// @ts-ignore
-// @ts-ignore
 const router = createRouter({
     history: createWebHashHistory(),
     routes: [
         {
             path: '/',
-            name: '/',
-            redirect: () => {
-                // 方法接收目标路由作为参数
-                // return 重定向的字符串路径/路径对象
-                return { name: 'minewy' }
-            }
-        },
-        {
-            path: '/minewy',
-            name: 'minewy',
-            redirect: () => {
-                return { name: 'manage', params: { id: 'zcylt' } }
-            }
+            name: 'index',
+            component: () => import('@/views/HOME.vue')
         },
         {
             path: '/manage/:id',
@@ -29,21 +13,20 @@ const router = createRouter({
             component: () => import('@/views/GameMain.vue')
         },
         {
-            path: '/version',
-            name: 'version',
-            component: () => import('@/views/VersionControl.vue')
-        },
-        {
-            path: '/dj',
-            name: 'dj',
-            // @ts-ignore
-            component: () => import('@/views/SaveFileEdit.vue')
+            path: '/dxlzz',
+            name: 'dxlzz',
+            component: () => import('@/views/SaveFileEditDxlzz.vue'),
+            meta: {
+                title: '大侠立志传存档编辑器'
+            }
         },
         {
             path: '/xyzjh',
             name: 'xyzjh',
-            // @ts-ignore
-            component: () => import('@/views/xyzjhSaveFileEdit.vue')
+            component: () => import('@/views/SaveFileEditXyzjh.vue'),
+            meta: {
+                title: '下一站江湖2存档编辑器'
+            }
         }
     ]
 })
