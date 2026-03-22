@@ -41,6 +41,7 @@ const handleFileSelect = (event) => {
             try {
                 const content = e.target?.result
                 fileContent.value = JSON.parse(content)
+                console.log(fileContent.value)
                 itemObj.value = fileContent.value.playerentity['1'].itemStorage.content
                 mValueBase.value = JSON.parse(fileContent.value.playerentity['1'].m_valueBase)
                 console.log(fileContent.value.playerentity['1'])
@@ -51,6 +52,33 @@ const handleFileSelect = (event) => {
         reader.onerror = () => {}
         reader.readAsText(files[0])
     }
+}
+
+const saveFile = () => {
+    fileContent.value.playerentity['1'].itemStorage.content = itemObj.value
+    fileContent.value.playerentity['1'].m_valueBase = JSON.stringify(mValueBase.value)
+
+    // 将修改后的数据转换为JSON字符串
+    const jsonData = JSON.stringify(fileContent.value, null, 4)
+
+    // 创建Blob对象
+    const blob = new Blob([jsonData], { type: 'application/json' })
+
+    // 创建下载链接
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+
+    // 使用原始文件名，如果没有则使用默认名称
+    a.download = originalFilename.value
+
+    // 触发下载
+    document.body.appendChild(a)
+    a.click()
+
+    // 清理资源
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
 }
 
 // 创建防抖函数
@@ -103,33 +131,6 @@ onMounted(async () => {
     let response = await axios.get('db1_parsed.json')
     itemOptions.value = response.data || []
 })
-
-const saveFile = () => {
-    fileContent.value.playerentity['1'].itemStorage.content = itemObj.value
-    fileContent.value.playerentity['1'].m_valueBase = JSON.stringify(mValueBase.value)
-
-    // 将修改后的数据转换为JSON字符串
-    const jsonData = JSON.stringify(fileContent.value, null, 2)
-
-    // 创建Blob对象
-    const blob = new Blob([jsonData], { type: 'application/json' })
-
-    // 创建下载链接
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-
-    // 使用原始文件名，如果没有则使用默认名称
-    a.download = originalFilename.value
-
-    // 触发下载
-    document.body.appendChild(a)
-    a.click()
-
-    // 清理资源
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-}
 
 const dialogVisible = ref(false)
 const addItem = () => {
