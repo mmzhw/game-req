@@ -11,13 +11,15 @@ const dictMap: any = {
     2: { label: '数量', type: 'number' },
     5: { label: '锋锐', type: 'number' },
     6: { label: '坚韧', type: 'number' },
+    7: { label: '7', type: 'number' },
     8: { label: '耐久', type: 'number' },
     9: { label: '品质', type: 'number' },
     10: { label: '阶数', type: 'number' },
     11: { label: '11', type: 'number' },
     12: { label: '属性/效果', type: 'input' },
     14: { label: '装备词条', type: 'input' },
-    36: { label: '36', type: 'boolean' }
+    36: { label: '36', type: 'boolean' },
+    42: { label: '42', type: 'number' }
 }
 
 let fileContent = ref<any>({})
@@ -65,7 +67,7 @@ const saveFile = () => {
 // 创建防抖函数
 const debouncedUpdateSearch = debounce((newValue) => {
     debouncedSearchKey.value = newValue
-}, 300)
+}, 500)
 
 // 添加防抖逻辑
 watch(searchKey, (newValue) => {
