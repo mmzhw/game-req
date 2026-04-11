@@ -11,15 +11,34 @@ const dictMap: any = {
     2: { label: '数量', type: 'number' },
     5: { label: '锋锐', type: 'number' },
     6: { label: '坚韧', type: 'number' },
-    7: { label: '7', type: 'number' },
     8: { label: '耐久', type: 'number' },
     9: { label: '品质', type: 'number' },
     10: { label: '阶数', type: 'number' },
-    11: { label: '11', type: 'number' },
     12: { label: '属性/效果', type: 'input' },
     14: { label: '装备词条', type: 'input' },
-    36: { label: '36', type: 'boolean' },
-    42: { label: '42', type: 'number' }
+}
+
+// 自动解析并添加未知的key到dictMap
+const parseUnknownKeys = (data: any) => {
+    if (!data) return
+    Object.keys(data).forEach((key) => {
+        const item = data[key]
+        if (item && typeof item === 'object') {
+            Object.keys(item).forEach((subkey) => {
+                if (!dictMap[subkey]) {
+                    // 根据值类型推断type
+                    const value = item[subkey]
+                    let type = 'input'
+                    if (typeof value === 'number') {
+                        type = 'number'
+                    } else if (typeof value === 'boolean') {
+                        type = 'boolean'
+                    }
+                    dictMap[subkey] = { label: subkey, type }
+                }
+            })
+        }
+    })
 }
 
 let fileContent = ref<any>({})
@@ -50,6 +69,8 @@ const handleFileSelect = (file: any) => {
             fileContent.value = JSON.parse(content)
             itemObj.value = fileContent.value.playerentity['1'].itemStorage.content
             mValueBase.value = JSON.parse(fileContent.value.playerentity['1'].m_valueBase)
+            // 解析未知的key
+            parseUnknownKeys(itemObj.value)
             console.log(fileContent.value.playerentity['1'])
         } catch (error) {
             console.log(error)
@@ -207,9 +228,9 @@ const saveItem = () => {
                 </div>
                 <div class="item-flex" v-for="subkey in Object.keys(itemObj[key])" :key="key + subkey">
                     <div class="label">{{ dictMap[subkey] ? `${dictMap[subkey].label}(${subkey})` : subkey }}</div>
-                    <el-select-v2 class="item-edit" v-if="dictMap[subkey].type === 'select'" v-model="itemObj[key][subkey]" :options="itemOptions" filterable />
-                    <el-switch class="item-edit" v-else-if="dictMap[subkey].type === 'boolean'" v-model="itemObj[key][subkey]" />
-                    <el-input-number class="item-edit" v-else-if="dictMap[subkey].type === 'number'" v-model="itemObj[key][subkey]" />
+                    <el-select-v2 class="item-edit" v-if="dictMap[subkey] && dictMap[subkey].type === 'select'" v-model="itemObj[key][subkey]" :options="itemOptions" filterable />
+                    <el-switch class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'boolean'" v-model="itemObj[key][subkey]" />
+                    <el-input-number class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'number'" v-model="itemObj[key][subkey]" />
                     <el-input class="item-edit" v-else v-model="itemObj[key][subkey]" />
                 </div>
             </div>
