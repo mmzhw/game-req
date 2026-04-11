@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import axios from 'axios'
-import { cloneDeep, debounce } from 'lodash'
+import { cloneDeep } from 'lodash'
 import { ElLoading } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { downloadFile } from '@/utils/download-file'
@@ -48,7 +48,7 @@ const itemObj = ref<any>({})
 const currentPage = ref(1)
 const pageSize = ref(10) // 每页显示10个条目
 const searchKey = ref('')
-const debouncedSearchKey = ref('') // 新增防抖后的搜索关键词
+const filterKey = ref('') // 用于过滤的搜索关键词
 
 const mValueBase = ref<any>({})
 
@@ -85,22 +85,17 @@ const saveFile = () => {
     downloadFile(fileContent.value, originalFilename.value)
 }
 
-// 创建防抖函数
-const debouncedUpdateSearch = debounce((newValue) => {
-    debouncedSearchKey.value = newValue
-}, 500)
-
-// 添加防抖逻辑
-watch(searchKey, (newValue) => {
-    debouncedUpdateSearch(newValue)
-})
+// 触发搜索过滤
+const triggerSearch = () => {
+    filterKey.value = searchKey.value
+}
 
 // 计算过滤后的所有项目键
 const filteredKeys = computed(() => {
     let keys = Object.keys(itemObj.value)
 
     // 如果有搜索关键词，则过滤匹配的项目
-    if (debouncedSearchKey.value) {
+    if (filterKey.value) {
         keys = keys.filter((key) => {
             const item = itemObj.value[key]
             // 检查是否有key为1的属性（物品代码）
@@ -108,7 +103,7 @@ const filteredKeys = computed(() => {
                 // 在itemOptions中查找对应value的项
                 const matchedOption: any = itemOptions.value.find((option: any) => option.value === Number(item['1']))
                 // 如果找到匹配项且其label包含搜索关键词，则返回true
-                if (matchedOption && matchedOption.label.toLowerCase().includes(debouncedSearchKey.value.toLowerCase())) {
+                if (matchedOption && matchedOption.label.toLowerCase().includes(filterKey.value.toLowerCase())) {
                     return true
                 }
             }
@@ -215,7 +210,7 @@ const saveItem = () => {
         <el-divider border-style="dashed" />
         <div style="display: flex; align-items: center; padding-bottom: 10px; gap: 10px">
             <el-button type="primary" @click="addItem">新增</el-button>
-            <el-input v-model="searchKey" placeholder="输入物品名称搜索">
+            <el-input v-model="searchKey" placeholder="输入物品名称搜索" @keyup.enter="triggerSearch" @blur="triggerSearch">
                 <template #append>槽数：{{ fileContent?.playerentity?.['1']?.itemStorage?.count }}</template>
             </el-input>
         </div>
