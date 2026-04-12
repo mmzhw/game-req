@@ -146,6 +146,13 @@ onMounted(async () => {
 
 const dialogVisible = ref(false)
 
+// 根据内容计算 textarea 的行数
+const getRows = (value: any) => {
+    if (!value || typeof value !== 'string') return 2
+    const lines = value.split('\n')
+    return Math.max(2, lines.length)
+}
+
 const editKey = ref<any>(null)
 const form = ref<any>({})
 const addItem = () => {
@@ -227,8 +234,8 @@ const saveItem = () => {
                 <template #append>槽数：{{ fileContent?.playerentity?.['1']?.itemStorage?.count }}</template>
             </el-input>
         </div>
-        <template v-for="key in paginatedItems" :key="key">
-            <div class="item-wrap">
+        <template v-for="(key, index) in paginatedItems" :key="key">
+            <div class="item-wrap" :class="{ 'item-bg': index % 2 === 0 }">
                 <div class="item-flex">
                     <div class="label">槽位</div>
                     <div style="flex: 1">{{ key }}</div>
@@ -239,10 +246,9 @@ const saveItem = () => {
                     <el-select-v2 class="item-edit" v-if="dictMap[subkey] && dictMap[subkey].type === 'select'" v-model="itemObj[key][subkey]" :options="itemOptions" filterable />
                     <el-switch class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'boolean'" v-model="itemObj[key][subkey]" />
                     <el-input-number class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'number'" v-model="itemObj[key][subkey]" />
-                    <el-input class="item-edit" v-else v-model="itemObj[key][subkey]" :rows="10" type="textarea" />
+                    <el-input class="item-edit" v-else v-model="itemObj[key][subkey]" :rows="getRows(itemObj[key][subkey])" type="textarea" />
                 </div>
             </div>
-            <el-divider border-style="dashed" />
         </template>
         <el-pagination v-if="Object.keys(itemObj).length" class="page-wrap" v-model:current-page="currentPage" v-model:page-size="pageSize" @current-change="handlePageChange" layout="prev, pager, next, total" :total="filteredKeys.length" />
     </div>
@@ -252,7 +258,7 @@ const saveItem = () => {
                 <el-select-v2 class="item-edit" v-if="dictMap[key].type === 'select'" v-model="form[key]" :options="itemOptions" filterable />
                 <el-switch class="item-edit" v-else-if="dictMap[key].type === 'boolean'" v-model="form[key]" />
                 <el-input-number class="item-edit" v-else-if="dictMap[key].type === 'number'" v-model="form[key]" />
-                <el-input class="item-edit" v-else v-model="form[key]" :rows="10" type="textarea" />
+                <el-input class="item-edit" v-else v-model="form[key]" :rows="getRows(form[key])" type="textarea" />
             </el-form-item>
         </el-form>
         <div class="dialog-footer">
@@ -295,5 +301,12 @@ const saveItem = () => {
 }
 .upload-demo {
     padding-bottom: 10px;
+}
+.item-wrap {
+    padding: 10px;
+    border-radius: 4px;
+}
+.item-bg {
+    background-color: #f5f7fa;
 }
 </style>
