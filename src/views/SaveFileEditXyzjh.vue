@@ -15,7 +15,7 @@ const dictMap: any = {
     9: { label: '品质', type: 'number' },
     10: { label: '阶数', type: 'number' },
     12: { label: '属性/效果', type: 'input' },
-    14: { label: '装备词条', type: 'input' },
+    14: { label: '装备词条', type: 'input' }
 }
 
 // 自动解析并添加未知的key到dictMap
@@ -35,6 +35,19 @@ const parseUnknownKeys = (data: any) => {
                         type = 'boolean'
                     }
                     dictMap[subkey] = { label: subkey, type }
+                }
+                if (typeof data[key][subkey] === 'string') {
+                    try {
+                        const parsed = JSON.parse(data[key][subkey])
+                        // 如果是数组，每个元素单独一行展示
+                        if (Array.isArray(parsed)) {
+                            // 将每个对象元素格式化为一行
+                            const formattedElements = parsed.map((item) => JSON.stringify(item))
+                            data[key][subkey] = '[\n  ' + formattedElements.join(',\n  ') + '\n]'
+                        } else {
+                            data[key][subkey] = JSON.stringify(parsed, null, 4)
+                        }
+                    } catch (error) {}
                 }
             })
         }
@@ -226,7 +239,7 @@ const saveItem = () => {
                     <el-select-v2 class="item-edit" v-if="dictMap[subkey] && dictMap[subkey].type === 'select'" v-model="itemObj[key][subkey]" :options="itemOptions" filterable />
                     <el-switch class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'boolean'" v-model="itemObj[key][subkey]" />
                     <el-input-number class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'number'" v-model="itemObj[key][subkey]" />
-                    <el-input class="item-edit" v-else v-model="itemObj[key][subkey]" />
+                    <el-input class="item-edit" v-else v-model="itemObj[key][subkey]" :rows="10" type="textarea" />
                 </div>
             </div>
             <el-divider border-style="dashed" />
@@ -239,7 +252,7 @@ const saveItem = () => {
                 <el-select-v2 class="item-edit" v-if="dictMap[key].type === 'select'" v-model="form[key]" :options="itemOptions" filterable />
                 <el-switch class="item-edit" v-else-if="dictMap[key].type === 'boolean'" v-model="form[key]" />
                 <el-input-number class="item-edit" v-else-if="dictMap[key].type === 'number'" v-model="form[key]" />
-                <el-input class="item-edit" v-else v-model="form[key]" />
+                <el-input class="item-edit" v-else v-model="form[key]" :rows="10" type="textarea" />
             </el-form-item>
         </el-form>
         <div class="dialog-footer">
