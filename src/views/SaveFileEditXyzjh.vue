@@ -317,6 +317,21 @@ const addsj = () => {
     addItemsBatch(sjCodes, 1)
     ElMessage.success(`成功添加 ${sjCodes.length} 个书籍`)
 }
+
+// 一键添加所有秘法
+const addmf = () => {
+    const mfCodes = itemOptions.value
+        .filter((item: any) => item.label.startsWith('秘法：'))
+        .map((item: any) => item.value)
+    
+    if (mfCodes.length === 0) {
+        ElMessage.warning('未找到秘法物品')
+        return
+    }
+    
+    addItemsBatch(mfCodes, 1)
+    ElMessage.success(`成功添加 ${mfCodes.length} 个秘法`)
+}
 </script>
 
 <template>
@@ -347,6 +362,7 @@ const addsj = () => {
             <el-button type="primary" @click="addsj">书籍</el-button>
             <el-button type="primary" @click="addhjj">化境卷</el-button>
             <el-button type="primary" @click="addjnj">技能卷</el-button>
+            <el-button type="primary" @click="addmf">秘法</el-button>
         </div>
         <div style="display: flex; align-items: center; padding-bottom: 10px; gap: 10px">
             <el-button type="primary" @click="addItem">新增</el-button>
