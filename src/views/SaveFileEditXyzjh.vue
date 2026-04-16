@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { cloneDeep } from 'lodash'
-import { ElLoading } from 'element-plus'
+import { ElLoading, ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { downloadFile } from '@/utils/download-file'
 
@@ -204,6 +204,119 @@ const saveItem = () => {
     }
     dialogVisible.value = false
 }
+
+// 获取下一个可用的槽位key
+const getNextKey = () => {
+    const keys = Object.keys(itemObj.value)
+    if (keys.length === 0) return '1'
+    const lastKey = Math.max(...keys.map(k => Number(k)))
+    return String(lastKey + 1)
+}
+
+// 批量添加物品
+const addItemsBatch = (itemCodes: number[], quantity: number = 1) => {
+    itemCodes.forEach(code => {
+        const nextKey = getNextKey()
+        itemObj.value[nextKey] = {
+            '1': code,
+            '2': quantity // 默认数量为1，可自定义
+        }
+        fileContent.value.playerentity['1'].itemStorage.count++
+    })
+    fileContent.value.playerentity['1'].itemStorage.content = itemObj.value
+}
+
+// 一键添加所有化境卷
+const addhjj = () => {
+    const hjjCodes = itemOptions.value
+        .filter((item: any) => item.label.includes('化境卷'))
+        .map((item: any) => item.value)
+    
+    if (hjjCodes.length === 0) {
+        ElMessage.warning('未找到化境卷物品')
+        return
+    }
+    
+    addItemsBatch(hjjCodes)
+    ElMessage.success(`成功添加 ${hjjCodes.length} 个化境卷`)
+}
+
+// 一键添加所有技能卷
+const addjnj = () => {
+    const jnjCodes = itemOptions.value
+        .filter((item: any) => item.label.includes('技能卷'))
+        .map((item: any) => item.value)
+    
+    if (jnjCodes.length === 0) {
+        ElMessage.warning('未找到技能卷物品')
+        return
+    }
+    
+    addItemsBatch(jnjCodes)
+    ElMessage.success(`成功添加 ${jnjCodes.length} 个技能卷`)
+}
+
+// 一键添加所有配方
+const addpf = () => {
+    const pfCodes = itemOptions.value
+        .filter((item: any) => item.label.includes('配方') && item.value >= 1000 && item.value < 1100)
+        .map((item: any) => item.value)
+    
+    if (pfCodes.length === 0) {
+        ElMessage.warning('未找到配方物品')
+        return
+    }
+    
+    addItemsBatch(pfCodes)
+    ElMessage.success(`成功添加 ${pfCodes.length} 个配方`)
+}
+
+// 一键添加所有宝册（数量999）
+const addbc = () => {
+    const bcCodes = itemOptions.value
+        .filter((item: any) => item.label.includes('宝册'))
+        .map((item: any) => item.value)
+    
+    if (bcCodes.length === 0) {
+        ElMessage.warning('未找到宝册物品')
+        return
+    }
+    
+    addItemsBatch(bcCodes, 999)
+    ElMessage.success(`成功添加 ${bcCodes.length} 个宝册（数量999）`)
+}
+
+// 一键添加所有书籍
+const addsj = () => {
+    // 定义书籍前缀列表
+    const bookPrefixes = [
+        '道学·',
+        '佛学·',
+        '儒学·',
+        '墨学·',
+        '农学·',
+        '琴艺·',
+        '棋艺·',
+        '书法·',
+        '画道·',
+        '酒量·',
+        '悟性·',
+        '魔学·',
+        '垂钓·'
+    ]
+    
+    const sjCodes = itemOptions.value
+        .filter((item: any) => bookPrefixes.some(prefix => item.label.startsWith(prefix)))
+        .map((item: any) => item.value)
+    
+    if (sjCodes.length === 0) {
+        ElMessage.warning('未找到书籍物品')
+        return
+    }
+    
+    addItemsBatch(sjCodes, 1)
+    ElMessage.success(`成功添加 ${sjCodes.length} 个书籍`)
+}
 </script>
 
 <template>
@@ -228,6 +341,13 @@ const saveItem = () => {
             <el-input-number class="item-edit" v-model="mValueBase[70]" />
         </div>
         <el-divider border-style="dashed" />
+        <div style="display: flex; align-items: center; padding-bottom: 10px;">
+            <el-button type="primary" @click="addpf">配方</el-button>
+            <el-button type="primary" @click="addbc">宝册</el-button>
+            <el-button type="primary" @click="addsj">书籍</el-button>
+            <el-button type="primary" @click="addhjj">化境卷</el-button>
+            <el-button type="primary" @click="addjnj">技能卷</el-button>
+        </div>
         <div style="display: flex; align-items: center; padding-bottom: 10px; gap: 10px">
             <el-button type="primary" @click="addItem">新增</el-button>
             <el-input v-model="searchKey" placeholder="输入物品名称搜索" @keyup.enter="triggerSearch" @blur="triggerSearch">
