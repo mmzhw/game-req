@@ -209,13 +209,13 @@ const saveItem = () => {
 const getNextKey = () => {
     const keys = Object.keys(itemObj.value)
     if (keys.length === 0) return '1'
-    const lastKey = Math.max(...keys.map(k => Number(k)))
+    const lastKey = Math.max(...keys.map((k) => Number(k)))
     return String(lastKey + 1)
 }
 
 // 批量添加物品
 const addItemsBatch = (itemCodes: number[], quantity: number = 1) => {
-    itemCodes.forEach(code => {
+    itemCodes.forEach((code) => {
         const nextKey = getNextKey()
         itemObj.value[nextKey] = {
             '1': code,
@@ -228,60 +228,52 @@ const addItemsBatch = (itemCodes: number[], quantity: number = 1) => {
 
 // 一键添加所有化境卷
 const addhjj = () => {
-    const hjjCodes = itemOptions.value
-        .filter((item: any) => item.label.includes('化境卷'))
-        .map((item: any) => item.value)
-    
+    const hjjCodes = itemOptions.value.filter((item: any) => item.label.includes('化境卷')).map((item: any) => item.value)
+
     if (hjjCodes.length === 0) {
         ElMessage.warning('未找到化境卷物品')
         return
     }
-    
+
     addItemsBatch(hjjCodes)
     ElMessage.success(`成功添加 ${hjjCodes.length} 个化境卷`)
 }
 
 // 一键添加所有技能卷
 const addjnj = () => {
-    const jnjCodes = itemOptions.value
-        .filter((item: any) => item.label.includes('技能卷'))
-        .map((item: any) => item.value)
-    
+    const jnjCodes = itemOptions.value.filter((item: any) => item.label.includes('技能卷')).map((item: any) => item.value)
+
     if (jnjCodes.length === 0) {
         ElMessage.warning('未找到技能卷物品')
         return
     }
-    
+
     addItemsBatch(jnjCodes)
     ElMessage.success(`成功添加 ${jnjCodes.length} 个技能卷`)
 }
 
 // 一键添加所有配方
 const addpf = () => {
-    const pfCodes = itemOptions.value
-        .filter((item: any) => item.label.includes('配方') && item.value >= 1000 && item.value < 1100)
-        .map((item: any) => item.value)
-    
+    const pfCodes = itemOptions.value.filter((item: any) => item.label.includes('配方') && item.value >= 1000 && item.value < 1100).map((item: any) => item.value)
+
     if (pfCodes.length === 0) {
         ElMessage.warning('未找到配方物品')
         return
     }
-    
+
     addItemsBatch(pfCodes)
     ElMessage.success(`成功添加 ${pfCodes.length} 个配方`)
 }
 
 // 一键添加所有宝册（数量999）
 const addbc = () => {
-    const bcCodes = itemOptions.value
-        .filter((item: any) => item.label.includes('宝册'))
-        .map((item: any) => item.value)
-    
+    const bcCodes = itemOptions.value.filter((item: any) => item.label.includes('宝册')).map((item: any) => item.value)
+
     if (bcCodes.length === 0) {
         ElMessage.warning('未找到宝册物品')
         return
     }
-    
+
     addItemsBatch(bcCodes, 999)
     ElMessage.success(`成功添加 ${bcCodes.length} 个宝册（数量999）`)
 }
@@ -289,48 +281,38 @@ const addbc = () => {
 // 一键添加所有书籍
 const addsj = () => {
     // 定义书籍前缀列表
-    const bookPrefixes = [
-        '道学·',
-        '佛学·',
-        '儒学·',
-        '墨学·',
-        '农学·',
-        '琴艺·',
-        '棋艺·',
-        '书法·',
-        '画道·',
-        '酒量·',
-        '悟性·',
-        '魔学·',
-        '垂钓·'
-    ]
-    
-    const sjCodes = itemOptions.value
-        .filter((item: any) => bookPrefixes.some(prefix => item.label.startsWith(prefix)))
-        .map((item: any) => item.value)
-    
+    const bookPrefixes = ['道学·', '佛学·', '儒学·', '墨学·', '农学·', '琴艺·', '棋艺·', '书法·', '画道·', '酒量·', '悟性·', '魔学·', '垂钓·']
+
+    const sjCodes = itemOptions.value.filter((item: any) => bookPrefixes.some((prefix) => item.label.startsWith(prefix))).map((item: any) => item.value)
+
     if (sjCodes.length === 0) {
         ElMessage.warning('未找到书籍物品')
         return
     }
-    
+
     addItemsBatch(sjCodes, 1)
     ElMessage.success(`成功添加 ${sjCodes.length} 个书籍`)
 }
 
 // 一键添加所有秘法
 const addmf = () => {
-    const mfCodes = itemOptions.value
-        .filter((item: any) => item.label.startsWith('秘法：'))
-        .map((item: any) => item.value)
-    
+    const mfCodes = itemOptions.value.filter((item: any) => item.label.startsWith('秘法：')).map((item: any) => item.value)
+
     if (mfCodes.length === 0) {
         ElMessage.warning('未找到秘法物品')
         return
     }
-    
+
     addItemsBatch(mfCodes, 1)
     ElMessage.success(`成功添加 ${mfCodes.length} 个秘法`)
+}
+
+// 快速设置物品数量
+const setItem = (key: string, quantity: number) => {
+    if (itemObj.value[key]) {
+        itemObj.value[key]['2'] = quantity
+        ElMessage.success(`槽位 ${key} 数量已设置为 ${quantity}`)
+    }
 }
 </script>
 
@@ -356,14 +338,16 @@ const addmf = () => {
             <el-input-number class="item-edit" v-model="mValueBase[70]" />
         </div>
         <el-divider border-style="dashed" />
-        <div style="display: flex; align-items: center; padding-bottom: 10px;">
-            <el-button type="primary" @click="addpf">配方</el-button>
-            <el-button type="primary" @click="addbc">宝册</el-button>
-            <el-button type="primary" @click="addsj">书籍</el-button>
-            <el-button type="primary" @click="addhjj">化境卷</el-button>
-            <el-button type="primary" @click="addjnj">技能卷</el-button>
-            <el-button type="primary" @click="addmf">秘法</el-button>
+        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px">
+            <el-button style="margin: 0" type="primary" @click="addpf">配方</el-button>
+            <el-button style="margin: 0" type="primary" @click="addbc">宝册</el-button>
+            <el-button style="margin: 0" type="primary" @click="addsj">书籍</el-button>
+            <el-button style="margin: 0" type="primary" @click="addhjj">化境卷</el-button>
+            <el-button style="margin: 0" type="primary" @click="addjnj">技能卷</el-button>
+            <el-button style="margin: 0" type="primary" @click="addmf">秘法</el-button>
         </div>
+        <el-divider border-style="dashed" />
+
         <div style="display: flex; align-items: center; padding-bottom: 10px; gap: 10px">
             <el-button type="primary" @click="addItem">新增</el-button>
             <el-input v-model="searchKey" placeholder="输入物品名称搜索" @keyup.enter="triggerSearch" @blur="triggerSearch">
@@ -375,6 +359,9 @@ const addmf = () => {
                 <div class="item-flex">
                     <div class="label">槽位</div>
                     <div style="flex: 1">{{ key }}</div>
+                    <el-button size="small" @click="setItem(key, 99)">99</el-button>
+                    <el-button size="small" @click="setItem(key, 999)">999</el-button>
+                    <el-button size="small" @click="setItem(key, 9999)">9999</el-button>
                     <el-button size="small" @click="editItem(key)">编辑</el-button>
                 </div>
                 <div class="item-flex" v-for="subkey in Object.keys(itemObj[key])" :key="key + subkey">
@@ -433,6 +420,11 @@ const addmf = () => {
     }
     > .item-edit {
         flex: 1;
+    }
+    :deep() {
+        .el-button {
+            margin: 0;
+        }
     }
 }
 .upload-demo {
