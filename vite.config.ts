@@ -26,6 +26,11 @@ export default defineConfig(({ command, mode }) => {
         // vite 配置
         define: {
             __Admin_VERSION__: JSON.stringify(process.env.npm_package_version)
+        },
+        server: {
+            host: '0.0.0.0', // 允许局域网访问
+            port: 5173, // 可选：指定端口号
+            strictPort: false // 如果端口被占用，自动尝试下一个可用端口
         }
     }
 })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, shallowRef, nextTick } from 'vue'
 import axios from 'axios'
 import { cloneDeep } from 'lodash'
 import { ElLoading, ElMessage } from 'element-plus'
@@ -139,9 +139,21 @@ const handlePageChange = (page: number) => {
 }
 
 const itemOptions = ref([])
+const isMobile = ref(false)
+
+// 检测是否为移动端
+const checkMobile = () => {
+    isMobile.value = window.innerWidth <= 768
+}
+
 onMounted(async () => {
     let response = await axios.get('db1_parsed.json')
     itemOptions.value = response.data || []
+
+    // 初始化检测
+    checkMobile()
+    // 监听窗口大小变化
+    window.addEventListener('resize', checkMobile)
 })
 
 const dialogVisible = ref(false)
@@ -324,36 +336,38 @@ const setItem = (key: string, quantity: number) => {
             </el-icon>
             <div class="el-upload__text">Drop file here or <em>click to upload</em></div>
         </el-upload>
-        <el-button type="primary" @click="saveFile">保存</el-button>
-        <div class="item-flex">
-            <p style="width: 50px">金钱</p>
-            <el-input-number class="item-edit" v-model="mValueBase[68]" />
-        </div>
-        <div class="item-flex">
-            <p style="width: 50px">修为</p>
-            <el-input-number class="item-edit" v-model="mValueBase[69]" />
-        </div>
-        <div class="item-flex">
-            <p style="width: 50px">感悟</p>
-            <el-input-number class="item-edit" v-model="mValueBase[70]" />
-        </div>
-        <el-divider border-style="dashed" />
-        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px">
-            <el-button style="margin: 0" type="primary" @click="addpf">配方</el-button>
-            <el-button style="margin: 0" type="primary" @click="addbc">宝册</el-button>
-            <el-button style="margin: 0" type="primary" @click="addsj">书籍</el-button>
-            <el-button style="margin: 0" type="primary" @click="addhjj">化境卷</el-button>
-            <el-button style="margin: 0" type="primary" @click="addjnj">技能卷</el-button>
-            <el-button style="margin: 0" type="primary" @click="addmf">秘法</el-button>
-        </div>
-        <el-divider border-style="dashed" />
+        <template v-if="paginatedItems?.length">
+            <el-button type="primary" @click="saveFile">保存</el-button>
+            <div class="item-flex">
+                <p style="width: 50px">金钱</p>
+                <el-input-number class="item-edit" v-model="mValueBase[68]" />
+            </div>
+            <div class="item-flex">
+                <p style="width: 50px">修为</p>
+                <el-input-number class="item-edit" v-model="mValueBase[69]" />
+            </div>
+            <div class="item-flex">
+                <p style="width: 50px">感悟</p>
+                <el-input-number class="item-edit" v-model="mValueBase[70]" />
+            </div>
+            <el-divider border-style="dashed" />
+            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px">
+                <el-button style="margin: 0" type="primary" @click="addpf">配方</el-button>
+                <el-button style="margin: 0" type="primary" @click="addbc">宝册</el-button>
+                <el-button style="margin: 0" type="primary" @click="addsj">书籍</el-button>
+                <el-button style="margin: 0" type="primary" @click="addhjj">化境卷</el-button>
+                <el-button style="margin: 0" type="primary" @click="addjnj">技能卷</el-button>
+                <el-button style="margin: 0" type="primary" @click="addmf">秘法</el-button>
+            </div>
+            <el-divider border-style="dashed" />
 
-        <div style="display: flex; align-items: center; padding-bottom: 10px; gap: 10px">
-            <el-button type="primary" @click="addItem">新增</el-button>
-            <el-input v-model="searchKey" placeholder="输入物品名称搜索" @keyup.enter="triggerSearch" @blur="triggerSearch">
-                <template #append>槽数：{{ fileContent?.playerentity?.['1']?.itemStorage?.count }}</template>
-            </el-input>
-        </div>
+            <div style="display: flex; align-items: center; padding-bottom: 10px; gap: 10px">
+                <el-button type="primary" @click="addItem">新增</el-button>
+                <el-input v-model="searchKey" placeholder="输入物品名称搜索" @keyup.enter="triggerSearch" @blur="triggerSearch">
+                    <template #append>槽数：{{ fileContent?.playerentity?.['1']?.itemStorage?.count }}</template>
+                </el-input>
+            </div>
+        </template>
         <template v-for="(key, index) in paginatedItems" :key="key">
             <div class="item-wrap" :class="{ 'item-bg': index % 2 === 0 }">
                 <div class="item-flex">
@@ -373,8 +387,8 @@ const setItem = (key: string, quantity: number) => {
                 </div>
             </div>
         </template>
-        <el-pagination v-if="Object.keys(itemObj).length" class="page-wrap" v-model:current-page="currentPage" v-model:page-size="pageSize" @current-change="handlePageChange" layout="prev, pager, next, total" :total="filteredKeys.length" />
     </div>
+    <el-pagination v-if="Object.keys(itemObj).length" class="page-wrap" background v-model:current-page="currentPage" v-model:page-size="pageSize" @current-change="handlePageChange" layout="prev, pager, next, total" :total="filteredKeys.length" :pager-count="isMobile ? 4 : 7" />
     <el-dialog v-model="dialogVisible" title="新增/编辑" width="90vw" top="10px" class="dialog-wrap">
         <el-form :model="form" label-width="auto">
             <el-form-item v-for="key in Object.keys(dictMap)" :key="key" :label="dictMap[key].label">
@@ -394,7 +408,12 @@ const setItem = (key: string, quantity: number) => {
 <style scoped lang="scss">
 .container {
     width: 100%;
+    min-height: 100vh;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding-bottom: 60px; // 为固定分页留出空间
     > div {
         width: 100%;
     }
@@ -404,6 +423,14 @@ const setItem = (key: string, quantity: number) => {
 }
 .page-wrap {
     width: 100%;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    padding: 10px;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 100;
 }
 .dialog-footer {
     display: flex;
