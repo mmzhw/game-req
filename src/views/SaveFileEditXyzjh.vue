@@ -14,8 +14,8 @@ const dictMap: any = {
     8: { label: '耐久', type: 'number' },
     9: { label: '品质', type: 'number' },
     10: { label: '阶数', type: 'number' },
-    12: { label: '属性/效果', type: 'input' },
-    14: { label: '装备词条', type: 'input' }
+    12: { label: '装备属性', type: 'input' },
+    14: { label: '词条属性', type: 'input' }
 }
 
 // 自动解析并添加未知的key到dictMap
@@ -34,20 +34,22 @@ const parseUnknownKeys = (data: any) => {
                     } else if (typeof value === 'boolean') {
                         type = 'boolean'
                     }
-                    dictMap[subkey] = { label: subkey, type }
+                    dictMap[subkey] = { label: subkey, type, unknown: true }
                 }
                 if (typeof data[key][subkey] === 'string') {
                     try {
                         const parsed = JSON.parse(data[key][subkey])
-                        // 如果是数组，每个元素单独一行展示
+                        // 如果是数组,每个元素单独一行展示
                         if (Array.isArray(parsed)) {
-                            // 将每个对象元素格式化为一行
-                            const formattedElements = parsed.map((item) => JSON.stringify(item))
-                            data[key][subkey] = '[\n  ' + formattedElements.join(',\n  ') + '\n]'
+                            // 将每个对象元素格式化为一行,并在冒号后添加空格
+                            const formattedElements = parsed.map((item) => JSON.stringify(item, null, 1).replace(/\n/g, '').replace(/,/g, ', '))
+                            data[key][subkey] = '[\n  ' + formattedElements.join(',\n  ') + ',\n]'
                         } else {
                             data[key][subkey] = JSON.stringify(parsed, null, 4)
                         }
-                    } catch (error) {}
+                    } catch (error) {
+                        console.log(error)
+                    }
                 }
             })
         }
@@ -80,7 +82,17 @@ const handleFileSelect = (file: any) => {
         try {
             const content: any = e.target?.result
             fileContent.value = JSON.parse(content)
+
+            Object.keys(fileContent.value.playerentity['1'].itemStorage.content).forEach((key: any) => {
+                if (fileContent.value.playerentity['1'].itemStorage.content[key][12]) {
+                    fileContent.value.playerentity['1'].itemStorage.content[key][12] = JSON.stringify(JSON.parse(fileContent.value.playerentity['1'].itemStorage.content[key][12]))
+                }
+                if (fileContent.value.playerentity['1'].itemStorage.content[key][14]) {
+                    fileContent.value.playerentity['1'].itemStorage.content[key][14] = JSON.stringify(JSON.parse(fileContent.value.playerentity['1'].itemStorage.content[key][14]))
+                }
+            })
             itemObj.value = fileContent.value.playerentity['1'].itemStorage.content
+            console.log(itemObj.value)
             mValueBase.value = JSON.parse(fileContent.value.playerentity['1'].m_valueBase)
             // 解析未知的key
             parseUnknownKeys(itemObj.value)
@@ -93,6 +105,15 @@ const handleFileSelect = (file: any) => {
     reader.readAsText(file.raw)
 }
 const saveFile = () => {
+    Object.keys(itemObj.value).forEach((key: any) => {
+        if (itemObj.value[key][12]) {
+            itemObj.value[key][12] = JSON.stringify(JSON.parse(itemObj.value[key][12]))
+        }
+        if (itemObj.value[key][14]) {
+            itemObj.value[key][14] = JSON.stringify(JSON.parse(itemObj.value[key][14]))
+        }
+    })
+
     fileContent.value.playerentity['1'].itemStorage.content = itemObj.value
     fileContent.value.playerentity['1'].m_valueBase = JSON.stringify(mValueBase.value)
     downloadFile(fileContent.value, originalFilename.value)
@@ -167,7 +188,7 @@ const getRows = (value: any) => {
 
 // 根据物品ID获取物品名称
 const getItemName = (itemId: number) => {
-    const item = itemOptions.value.find((option: any) => option.value === itemId)
+    const item: any = itemOptions.value.find((option: any) => option.value === itemId)
     return item ? item.label : '未知物品'
 }
 
@@ -343,18 +364,21 @@ const setItem = (key: string, quantity: number) => {
             <div class="el-upload__text">Drop file here or <em>click to upload</em></div>
         </el-upload>
         <template v-if="paginatedItems?.length">
-            <el-button type="primary" @click="saveFile">保存</el-button>
-            <div class="item-flex">
-                <p style="width: 50px">金钱</p>
-                <el-input-number class="item-edit" v-model="mValueBase[68]" />
-            </div>
-            <div class="item-flex">
-                <p style="width: 50px">修为</p>
-                <el-input-number class="item-edit" v-model="mValueBase[69]" />
-            </div>
-            <div class="item-flex">
-                <p style="width: 50px">感悟</p>
-                <el-input-number class="item-edit" v-model="mValueBase[70]" />
+            <div style="display: flex; gap: 10px; flex-direction: column">
+                <el-button type="primary" @click="saveFile">保存</el-button>
+
+                <div class="item-flex">
+                    <p style="width: 50px">金钱</p>
+                    <el-input-number class="item-edit" v-model="mValueBase[68]" />
+                </div>
+                <div class="item-flex">
+                    <p style="width: 50px">修为</p>
+                    <el-input-number class="item-edit" v-model="mValueBase[69]" />
+                </div>
+                <div class="item-flex">
+                    <p style="width: 50px">感悟</p>
+                    <el-input-number class="item-edit" v-model="mValueBase[70]" />
+                </div>
             </div>
             <el-divider border-style="dashed" />
             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px">
@@ -366,7 +390,6 @@ const setItem = (key: string, quantity: number) => {
                 <el-button style="margin: 0" type="primary" @click="addmf">秘法</el-button>
             </div>
             <el-divider border-style="dashed" />
-
             <div style="display: flex; align-items: center; padding-bottom: 10px; gap: 10px">
                 <el-button type="primary" @click="addItem">新增</el-button>
                 <el-input v-model="searchKey" placeholder="输入物品名称搜索" @keyup.enter="triggerSearch" @blur="triggerSearch">
@@ -377,26 +400,26 @@ const setItem = (key: string, quantity: number) => {
         <template v-for="(key, index) in paginatedItems" :key="key">
             <div class="item-wrap" :class="{ 'item-bg': index % 2 === 0 }">
                 <div class="item-flex">
-                    <div class="label">槽位</div>
+                    <div class="label">槽位：</div>
                     <div style="flex: 1">{{ key }}</div>
                     <el-button size="small" @click="setItem(key, 99)">99</el-button>
                     <el-button size="small" @click="setItem(key, 999)">999</el-button>
                     <el-button size="small" @click="setItem(key, 9999)">9999</el-button>
                     <el-button size="small" @click="editItem(key)">编辑</el-button>
                 </div>
-                <div class="item-flex" v-for="subkey in Object.keys(itemObj[key])" :key="key + subkey">
-                    <div class="label">{{ dictMap[subkey] ? `${dictMap[subkey].label}(${subkey})` : subkey }}</div>
-                    <div class="item-edit" v-if="dictMap[subkey] && dictMap[subkey].type === 'select'">
-                        <span>{{ getItemName(itemObj[key][subkey]) }}</span>
+                <template v-for="subkey in Object.keys(itemObj[key])" :key="key + subkey">
+                    <div class="item-flex" v-if="!dictMap?.[subkey]?.unknown">
+                        <div class="label">{{ dictMap[subkey].label }}：</div>
+                        <div class="item-edit" v-if="dictMap[subkey] && dictMap[subkey].type === 'select'">{{ getItemName(itemObj[key][subkey]) }}</div>
+                        <el-switch class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'boolean'" v-model="itemObj[key][subkey]" />
+                        <el-input-number class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'number'" v-model="itemObj[key][subkey]" />
+                        <el-input class="item-edit" v-else v-model="itemObj[key][subkey]" :rows="getRows(itemObj[key][subkey])" type="textarea" />
                     </div>
-                    <el-switch class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'boolean'" v-model="itemObj[key][subkey]" />
-                    <el-input-number class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'number'" v-model="itemObj[key][subkey]" />
-                    <el-input class="item-edit" v-else v-model="itemObj[key][subkey]" :rows="getRows(itemObj[key][subkey])" type="textarea" />
-                </div>
+                </template>
             </div>
         </template>
     </div>
-    <el-pagination v-if="Object.keys(itemObj).length" class="page-wrap" background v-model:current-page="currentPage" v-model:page-size="pageSize" @current-change="handlePageChange" layout="prev, pager, next, total" :total="filteredKeys.length" :pager-count="isMobile ? 4 : 7" />
+    <el-pagination v-if="Object.keys(itemObj).length" class="page-wrap" background v-model:current-page="currentPage" v-model:page-size="pageSize" @current-change="handlePageChange" layout="prev, pager, next, total" :total="filteredKeys.length" :pager-count="isMobile ? 5 : 7" size="small" />
     <el-dialog v-model="dialogVisible" title="新增/编辑" width="90vw" top="10px" class="dialog-wrap">
         <el-form :model="form" label-width="auto">
             <el-form-item v-for="key in Object.keys(dictMap)" :key="key" :label="dictMap[key].label">
@@ -439,6 +462,8 @@ const setItem = (key: string, quantity: number) => {
     padding: 10px;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
     z-index: 100;
+    :deep() {
+    }
 }
 .dialog-footer {
     display: flex;
@@ -448,9 +473,8 @@ const setItem = (key: string, quantity: number) => {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding-top: 10px;
     > .label {
-        width: 100px;
+        width: 75px;
         flex-shrink: 0;
     }
     > .item-edit {
@@ -468,8 +492,16 @@ const setItem = (key: string, quantity: number) => {
 .item-wrap {
     padding: 10px;
     border-radius: 4px;
+    gap: 10px;
+    display: flex;
+    flex-direction: column;
 }
 .item-bg {
     background-color: #f5f7fa;
+}
+:deep() {
+    .el-divider {
+        margin: 15px 0;
+    }
 }
 </style>
