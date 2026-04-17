@@ -165,6 +165,12 @@ const getRows = (value: any) => {
     return Math.max(2, lines.length)
 }
 
+// 根据物品ID获取物品名称
+const getItemName = (itemId: number) => {
+    const item = itemOptions.value.find((option: any) => option.value === itemId)
+    return item ? item.label : '未知物品'
+}
+
 const editKey = ref<any>(null)
 const form = ref<any>({})
 const addItem = () => {
@@ -380,7 +386,9 @@ const setItem = (key: string, quantity: number) => {
                 </div>
                 <div class="item-flex" v-for="subkey in Object.keys(itemObj[key])" :key="key + subkey">
                     <div class="label">{{ dictMap[subkey] ? `${dictMap[subkey].label}(${subkey})` : subkey }}</div>
-                    <el-select-v2 class="item-edit" v-if="dictMap[subkey] && dictMap[subkey].type === 'select'" v-model="itemObj[key][subkey]" :options="itemOptions" filterable />
+                    <div class="item-edit" v-if="dictMap[subkey] && dictMap[subkey].type === 'select'">
+                        <span>{{ getItemName(itemObj[key][subkey]) }}</span>
+                    </div>
                     <el-switch class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'boolean'" v-model="itemObj[key][subkey]" />
                     <el-input-number class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'number'" v-model="itemObj[key][subkey]" />
                     <el-input class="item-edit" v-else v-model="itemObj[key][subkey]" :rows="getRows(itemObj[key][subkey])" type="textarea" />
