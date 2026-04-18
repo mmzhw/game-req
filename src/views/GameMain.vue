@@ -1,5 +1,5 @@
 <template>
-    <div class="flex-column">
+    <div class="flex-column" style="padding: 10px">
         <div class="flex-line marginBottomFive">
             <label @click="jumpVersion">类型：</label>
             <div class="gameTypeWrap">

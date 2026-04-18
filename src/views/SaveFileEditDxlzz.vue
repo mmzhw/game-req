@@ -163,7 +163,7 @@ const save = () => {
 </template>
 <style scoped lang="scss">
 .wrap {
-    padding-bottom: 10px;
+    padding: 10px;
 }
 div {
     box-sizing: border-box;

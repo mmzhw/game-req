@@ -39,11 +39,13 @@ const parseUnknownKeys = (data: any) => {
                 if (typeof data[key][subkey] === 'string') {
                     try {
                         const parsed = JSON.parse(data[key][subkey])
-                        // 如果是数组,每个元素单独一行展示
+                        // 如果是数组,每个对象元素单独一行展示
                         if (Array.isArray(parsed)) {
-                            // 将每个对象元素格式化为一行,并在冒号后添加空格
-                            const formattedElements = parsed.map((item) => JSON.stringify(item, null, 1).replace(/\n/g, '').replace(/,/g, ', '))
-                            data[key][subkey] = '[\n  ' + formattedElements.join(',\n  ') + ',\n]'
+                            // 将每个对象格式化为单行,冒号后加空格
+                            const formattedItems = parsed.map((item: any) => {
+                                return JSON.stringify(item).replace(/:/g, ':  ').replace(/,/g, ',  ').replace(/{/g, '  {  ').replace(/}/g, '  }')
+                            })
+                            data[key][subkey] = '[\n  ' + formattedItems.join(',\n  ') + '\n]'
                         } else {
                             data[key][subkey] = JSON.stringify(parsed, null, 4)
                         }
@@ -66,6 +68,8 @@ const searchKey = ref('')
 const filterKey = ref('') // 用于过滤的搜索关键词
 
 const mValueBase = ref<any>({})
+
+const fileLoaded = ref(false)
 
 const handleFileSelect = (file: any) => {
     const loading = ElLoading.service({
@@ -97,6 +101,7 @@ const handleFileSelect = (file: any) => {
             // 解析未知的key
             parseUnknownKeys(itemObj.value)
             console.log(fileContent.value.playerentity['1'])
+            fileLoaded.value = true
         } catch (error) {
             console.log(error)
         }
@@ -105,16 +110,33 @@ const handleFileSelect = (file: any) => {
     reader.readAsText(file.raw)
 }
 const saveFile = () => {
-    Object.keys(itemObj.value).forEach((key: any) => {
-        if (itemObj.value[key][12]) {
-            itemObj.value[key][12] = JSON.stringify(JSON.parse(itemObj.value[key][12]))
+    function parseCommentedJSObject(str: string): any {
+        try {
+            // 1. 去掉单行注释
+            const cleaned = str.replace(/\/\/.*$/gm, '')
+
+            // 2. 给 key 加双引号
+            const jsonStr = cleaned.replace(/(\w+)\s*:/g, '"$1":')
+
+            // 3. 解析
+            return JSON.parse(jsonStr)
+        } catch (error) {
+            console.error('解析失败:', error)
+            throw new Error('无法解析该字符串为 JSON')
         }
-        if (itemObj.value[key][14]) {
-            itemObj.value[key][14] = JSON.stringify(JSON.parse(itemObj.value[key][14]))
+    }
+
+    let temp = cloneDeep(itemObj.value)
+    Object.keys(temp).forEach((key: any) => {
+        if (temp[key][12]) {
+            temp[key][12] = JSON.stringify(JSON.parse(temp[key][12]))
+        }
+        if (temp[key][14]) {
+            temp[key][14] = JSON.stringify(parseCommentedJSObject(temp[key][14]))
         }
     })
 
-    fileContent.value.playerentity['1'].itemStorage.content = itemObj.value
+    fileContent.value.playerentity['1'].itemStorage.content = temp
     fileContent.value.playerentity['1'].m_valueBase = JSON.stringify(mValueBase.value)
     downloadFile(fileContent.value, originalFilename.value)
 }
@@ -356,69 +378,72 @@ const setItem = (key: string, quantity: number) => {
 </script>
 
 <template>
-    <div class="container">
-        <el-upload class="upload-demo" drag action="#" :on-change="handleFileSelect" :auto-upload="false" :show-file-list="false">
-            <el-icon class="el-icon--upload">
-                <upload-filled />
-            </el-icon>
-            <div class="el-upload__text">Drop file here or <em>click to upload</em></div>
-        </el-upload>
-        <template v-if="paginatedItems?.length">
-            <div style="display: flex; gap: 10px; flex-direction: column">
-                <el-button type="primary" @click="saveFile">保存</el-button>
+    <el-upload v-if="!fileLoaded" class="upload-demo" drag action="#" :on-change="handleFileSelect" :auto-upload="false" :show-file-list="false">
+        <el-icon class="el-icon--upload">
+            <upload-filled />
+        </el-icon>
+        <div class="el-upload__text">Drop file here or <em>click to upload</em></div>
+    </el-upload>
+    <el-button class="save-button-wrap" v-if="fileLoaded" type="primary" @click="saveFile">保存</el-button>
 
-                <div class="item-flex">
-                    <p style="width: 50px">金钱</p>
-                    <el-input-number class="item-edit" v-model="mValueBase[68]" />
-                </div>
-                <div class="item-flex">
-                    <p style="width: 50px">修为</p>
-                    <el-input-number class="item-edit" v-model="mValueBase[69]" />
-                </div>
-                <div class="item-flex">
-                    <p style="width: 50px">感悟</p>
-                    <el-input-number class="item-edit" v-model="mValueBase[70]" />
-                </div>
-            </div>
-            <el-divider border-style="dashed" />
-            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px">
-                <el-button style="margin: 0" type="primary" @click="addpf">配方</el-button>
-                <el-button style="margin: 0" type="primary" @click="addbc">宝册</el-button>
-                <el-button style="margin: 0" type="primary" @click="addsj">书籍</el-button>
-                <el-button style="margin: 0" type="primary" @click="addhjj">化境卷</el-button>
-                <el-button style="margin: 0" type="primary" @click="addjnj">技能卷</el-button>
-                <el-button style="margin: 0" type="primary" @click="addmf">秘法</el-button>
-            </div>
-            <el-divider border-style="dashed" />
-            <div style="display: flex; align-items: center; padding-bottom: 10px; gap: 10px">
-                <el-button type="primary" @click="addItem">新增</el-button>
-                <el-input v-model="searchKey" placeholder="输入物品名称搜索" @keyup.enter="triggerSearch" @blur="triggerSearch">
-                    <template #append>槽数：{{ fileContent?.playerentity?.['1']?.itemStorage?.count }}</template>
-                </el-input>
-            </div>
-        </template>
-        <template v-for="(key, index) in paginatedItems" :key="key">
-            <div class="item-wrap" :class="{ 'item-bg': index % 2 === 0 }">
-                <div class="item-flex">
-                    <div class="label">槽位：</div>
-                    <div style="flex: 1">{{ key }}</div>
-                    <el-button size="small" @click="setItem(key, 99)">99</el-button>
-                    <el-button size="small" @click="setItem(key, 999)">999</el-button>
-                    <el-button size="small" @click="setItem(key, 9999)">9999</el-button>
-                    <el-button size="small" @click="editItem(key)">编辑</el-button>
-                </div>
-                <template v-for="subkey in Object.keys(itemObj[key])" :key="key + subkey">
-                    <div class="item-flex" v-if="!dictMap?.[subkey]?.unknown">
-                        <div class="label">{{ dictMap[subkey].label }}：</div>
-                        <div class="item-edit" v-if="dictMap[subkey] && dictMap[subkey].type === 'select'">{{ getItemName(itemObj[key][subkey]) }}</div>
-                        <el-switch class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'boolean'" v-model="itemObj[key][subkey]" />
-                        <el-input-number class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'number'" v-model="itemObj[key][subkey]" />
-                        <el-input class="item-edit" v-else v-model="itemObj[key][subkey]" :rows="getRows(itemObj[key][subkey])" type="textarea" />
+    <el-scrollbar v-if="fileLoaded" style="height: calc(100vh - 85px); padding: 10px 0">
+        <div class="container">
+            <template>
+                <div style="display: flex; gap: 10px; flex-direction: column">
+                    <div class="item-flex">
+                        <p style="width: 50px">金钱</p>
+                        <el-input-number class="item-edit" v-model="mValueBase[68]" />
                     </div>
-                </template>
-            </div>
-        </template>
-    </div>
+                    <div class="item-flex">
+                        <p style="width: 50px">修为</p>
+                        <el-input-number class="item-edit" v-model="mValueBase[69]" />
+                    </div>
+                    <div class="item-flex">
+                        <p style="width: 50px">感悟</p>
+                        <el-input-number class="item-edit" v-model="mValueBase[70]" />
+                    </div>
+                </div>
+                <el-divider border-style="dashed" />
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px">
+                    <el-button style="margin: 0" type="primary" @click="addpf">配方</el-button>
+                    <el-button style="margin: 0" type="primary" @click="addbc">宝册</el-button>
+                    <el-button style="margin: 0" type="primary" @click="addsj">书籍</el-button>
+                    <el-button style="margin: 0" type="primary" @click="addhjj">化境卷</el-button>
+                    <el-button style="margin: 0" type="primary" @click="addjnj">技能卷</el-button>
+                    <el-button style="margin: 0" type="primary" @click="addmf">秘法</el-button>
+                </div>
+                <el-divider border-style="dashed" />
+                <div style="display: flex; align-items: center; padding-bottom: 10px; gap: 10px">
+                    <el-button type="primary" @click="addItem">新增</el-button>
+                    <el-input v-model="searchKey" placeholder="输入物品名称搜索" @keyup.enter="triggerSearch" @blur="triggerSearch">
+                        <template #append>槽数：{{ fileContent?.playerentity?.['1']?.itemStorage?.count }}</template>
+                    </el-input>
+                </div>
+            </template>
+            <template v-for="(key, index) in paginatedItems" :key="key">
+                <div class="item-wrap" :class="{ 'item-bg': index % 2 === 0 }">
+                    <div class="item-flex">
+                        <div class="label">槽位：</div>
+                        <div style="flex: 1">{{ key }}</div>
+                        <el-button size="small" @click="setItem(key, 99)">99</el-button>
+                        <el-button size="small" @click="setItem(key, 999)">999</el-button>
+                        <el-button size="small" @click="setItem(key, 9999)">9999</el-button>
+                        <el-button size="small" @click="editItem(key)">编辑</el-button>
+                    </div>
+                    <template v-for="subkey in Object.keys(itemObj[key])" :key="key + subkey">
+                        <div class="item-flex" v-if="!dictMap?.[subkey]?.unknown">
+                            <div class="label">{{ dictMap[subkey].label }}：</div>
+                            <div class="item-edit" v-if="dictMap[subkey] && dictMap[subkey].type === 'select'">{{ getItemName(itemObj[key][subkey]) }}</div>
+                            <el-switch class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'boolean'" v-model="itemObj[key][subkey]" />
+                            <el-input-number class="item-edit" v-else-if="dictMap[subkey] && dictMap[subkey].type === 'number'" v-model="itemObj[key][subkey]" />
+                            <el-input class="item-edit" v-else v-model="itemObj[key][subkey]" :rows="getRows(itemObj[key][subkey])" type="textarea" />
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </el-scrollbar>
+
     <el-pagination v-if="Object.keys(itemObj).length" class="page-wrap" background v-model:current-page="currentPage" v-model:page-size="pageSize" @current-change="handlePageChange" layout="prev, pager, next, total" :total="filteredKeys.length" :pager-count="isMobile ? 5 : 7" size="small" />
     <el-dialog v-model="dialogVisible" title="新增/编辑" width="90vw" top="10px" class="dialog-wrap">
         <el-form :model="form" label-width="auto">
@@ -437,14 +462,21 @@ const setItem = (key: string, quantity: number) => {
 </template>
 
 <style scoped lang="scss">
-.container {
-    width: 100%;
-    min-height: 100vh;
+.upload-demo {
+    padding: 10px;
+}
+.save-button-wrap {
+    width: calc(100% - 20px);
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
+    margin: 10px 10px 0 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+.container {
+    width: calc(100% - 20px);
+    margin: 0 10px 0 10px;
+    box-sizing: border-box;
     position: relative;
-    padding-bottom: 60px; // 为固定分页留出空间
     > div {
         width: 100%;
     }
@@ -454,10 +486,6 @@ const setItem = (key: string, quantity: number) => {
 }
 .page-wrap {
     width: 100%;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
     background-color: #fff;
     padding: 10px;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
@@ -486,9 +514,7 @@ const setItem = (key: string, quantity: number) => {
         }
     }
 }
-.upload-demo {
-    padding-bottom: 10px;
-}
+
 .item-wrap {
     padding: 10px;
     border-radius: 4px;
