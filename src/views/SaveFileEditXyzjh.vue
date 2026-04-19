@@ -66,6 +66,7 @@ const currentPage = ref(1)
 const pageSize = ref(10) // 每页显示10个条目
 const searchKey = ref('')
 const filterKey = ref('') // 用于过滤的搜索关键词
+const quickAddKeyword = ref('') // 快速添加关键词
 
 const mValueBase = ref<any>({})
 
@@ -200,6 +201,7 @@ onMounted(async () => {
 })
 
 const dialogVisible = ref(false)
+const quickAddDialogVisible = ref(false)
 
 // 根据内容计算 textarea 的行数
 const getRows = (value: any) => {
@@ -287,85 +289,24 @@ const addItemsBatch = (itemCodes: number[], quantity: number = 1) => {
     fileContent.value.playerentity['1'].itemStorage.content = itemObj.value
 }
 
-// 一键添加所有化境卷
-const addhjj = () => {
-    const hjjCodes = itemOptions.value.filter((item: any) => item.label.includes('化境卷')).map((item: any) => item.value)
+// 根据名称数组批量添加物品
+const addItemsByNames = (nameList: string[], quantity: number = 1, typeName: string = '物品', useStartsWith: boolean = false, extraFilter?: (item: any) => boolean) => {
+    let matchedItems = itemOptions.value.filter((item: any) => nameList.some((name) => (useStartsWith ? item.label.startsWith(name) : item.label.includes(name))))
 
-    if (hjjCodes.length === 0) {
-        ElMessage.warning('未找到化境卷物品')
+    // 如果有额外的过滤条件
+    if (extraFilter) {
+        matchedItems = matchedItems.filter(extraFilter)
+    }
+
+    if (matchedItems.length === 0) {
+        ElMessage.warning(`未找到${typeName}`)
         return
     }
 
-    addItemsBatch(hjjCodes)
-    ElMessage.success(`成功添加 ${hjjCodes.length} 个化境卷`)
-}
-
-// 一键添加所有技能卷
-const addjnj = () => {
-    const jnjCodes = itemOptions.value.filter((item: any) => item.label.includes('技能卷')).map((item: any) => item.value)
-
-    if (jnjCodes.length === 0) {
-        ElMessage.warning('未找到技能卷物品')
-        return
-    }
-
-    addItemsBatch(jnjCodes)
-    ElMessage.success(`成功添加 ${jnjCodes.length} 个技能卷`)
-}
-
-// 一键添加所有配方
-const addpf = () => {
-    const pfCodes = itemOptions.value.filter((item: any) => item.label.includes('配方') && item.value >= 1000 && item.value < 1100).map((item: any) => item.value)
-
-    if (pfCodes.length === 0) {
-        ElMessage.warning('未找到配方物品')
-        return
-    }
-
-    addItemsBatch(pfCodes)
-    ElMessage.success(`成功添加 ${pfCodes.length} 个配方`)
-}
-
-// 一键添加所有宝册（数量999）
-const addbc = () => {
-    const bcCodes = itemOptions.value.filter((item: any) => item.label.includes('宝册')).map((item: any) => item.value)
-
-    if (bcCodes.length === 0) {
-        ElMessage.warning('未找到宝册物品')
-        return
-    }
-
-    addItemsBatch(bcCodes, 999)
-    ElMessage.success(`成功添加 ${bcCodes.length} 个宝册（数量999）`)
-}
-
-// 一键添加所有书籍
-const addsj = () => {
-    // 定义书籍前缀列表
-    const bookPrefixes = ['道学·', '佛学·', '儒学·', '墨学·', '农学·', '琴艺·', '棋艺·', '书法·', '画道·', '酒量·', '悟性·', '魔学·', '垂钓·']
-
-    const sjCodes = itemOptions.value.filter((item: any) => bookPrefixes.some((prefix) => item.label.startsWith(prefix))).map((item: any) => item.value)
-
-    if (sjCodes.length === 0) {
-        ElMessage.warning('未找到书籍物品')
-        return
-    }
-
-    addItemsBatch(sjCodes, 1)
-    ElMessage.success(`成功添加 ${sjCodes.length} 个书籍`)
-}
-
-// 一键添加所有秘法
-const addmf = () => {
-    const mfCodes = itemOptions.value.filter((item: any) => item.label.startsWith('秘法：')).map((item: any) => item.value)
-
-    if (mfCodes.length === 0) {
-        ElMessage.warning('未找到秘法物品')
-        return
-    }
-
-    addItemsBatch(mfCodes, 1)
-    ElMessage.success(`成功添加 ${mfCodes.length} 个秘法`)
+    const matchedCodes = matchedItems.map((item: any) => item.value)
+    addItemsBatch(matchedCodes, quantity)
+    ElMessage.success(`成功添加 ${matchedCodes.length} 个${typeName}${quantity > 1 ? `（数量${quantity}）` : ''}`)
+    quickAddDialogVisible.value = false
 }
 
 // 快速设置物品数量
@@ -374,6 +315,17 @@ const setItem = (key: string, quantity: number) => {
         itemObj.value[key]['2'] = quantity
         ElMessage.success(`槽位 ${key} 数量已设置为 ${quantity}`)
     }
+}
+
+// 一键添加匹配关键词的物品
+const quickAddItems = () => {
+    if (!quickAddKeyword.value) {
+        ElMessage.warning('请输入物品名称关键词')
+        return
+    }
+
+    addItemsByNames([quickAddKeyword.value], 1, `匹配 "${quickAddKeyword.value}" 的物品`)
+    quickAddKeyword.value = ''
 }
 </script>
 
@@ -386,40 +338,30 @@ const setItem = (key: string, quantity: number) => {
     </el-upload>
     <el-button class="save-button-wrap" v-if="fileLoaded" type="primary" @click="saveFile">保存</el-button>
 
-    <el-scrollbar v-if="fileLoaded" style="height: calc(100vh - 85px); padding: 10px 0">
+    <el-scrollbar v-if="fileLoaded" style="height: calc(100vh - 60px); padding: 52px 10px 0">
         <div class="container">
-            <template>
-                <div style="display: flex; gap: 10px; flex-direction: column">
-                    <div class="item-flex">
-                        <p style="width: 50px">金钱</p>
-                        <el-input-number class="item-edit" v-model="mValueBase[68]" />
-                    </div>
-                    <div class="item-flex">
-                        <p style="width: 50px">修为</p>
-                        <el-input-number class="item-edit" v-model="mValueBase[69]" />
-                    </div>
-                    <div class="item-flex">
-                        <p style="width: 50px">感悟</p>
-                        <el-input-number class="item-edit" v-model="mValueBase[70]" />
-                    </div>
+            <div style="display: flex; gap: 10px; flex-direction: column">
+                <div class="item-flex">
+                    <p style="width: 50px">金钱</p>
+                    <el-input-number class="item-edit" v-model="mValueBase[68]" />
                 </div>
-                <el-divider border-style="dashed" />
-                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px">
-                    <el-button style="margin: 0" type="primary" @click="addpf">配方</el-button>
-                    <el-button style="margin: 0" type="primary" @click="addbc">宝册</el-button>
-                    <el-button style="margin: 0" type="primary" @click="addsj">书籍</el-button>
-                    <el-button style="margin: 0" type="primary" @click="addhjj">化境卷</el-button>
-                    <el-button style="margin: 0" type="primary" @click="addjnj">技能卷</el-button>
-                    <el-button style="margin: 0" type="primary" @click="addmf">秘法</el-button>
+                <div class="item-flex">
+                    <p style="width: 50px">修为</p>
+                    <el-input-number class="item-edit" v-model="mValueBase[69]" />
                 </div>
-                <el-divider border-style="dashed" />
-                <div style="display: flex; align-items: center; padding-bottom: 10px; gap: 10px">
-                    <el-button type="primary" @click="addItem">新增</el-button>
-                    <el-input v-model="searchKey" placeholder="输入物品名称搜索" @keyup.enter="triggerSearch" @blur="triggerSearch">
-                        <template #append>槽数：{{ fileContent?.playerentity?.['1']?.itemStorage?.count }}</template>
-                    </el-input>
+                <div class="item-flex">
+                    <p style="width: 50px">感悟</p>
+                    <el-input-number class="item-edit" v-model="mValueBase[70]" />
                 </div>
-            </template>
+            </div>
+            <el-divider border-style="dashed" />
+            <div class="add-wrap">
+                <el-button type="primary" @click="quickAddDialogVisible = true">一键新增</el-button>
+                <el-button type="primary" @click="addItem">新增</el-button>
+                <el-input v-model="searchKey" placeholder="物品名称" @keyup.enter="triggerSearch" @blur="triggerSearch">
+                    <template #append>槽数：{{ fileContent?.playerentity?.['1']?.itemStorage?.count }}</template>
+                </el-input>
+            </div>
             <template v-for="(key, index) in paginatedItems" :key="key">
                 <div class="item-wrap" :class="{ 'item-bg': index % 2 === 0 }">
                     <div class="item-flex">
@@ -459,6 +401,25 @@ const setItem = (key: string, quantity: number) => {
             <el-button type="primary" @click="saveItem">确认</el-button>
         </div>
     </el-dialog>
+
+    <el-dialog v-model="quickAddDialogVisible" title="一键添加物品" width="100vw" class="dialog-wrap">
+        <div style="display: flex; flex-direction: column; gap: 15px">
+            <div style="display: flex; gap: 10px">
+                <el-input v-model="quickAddKeyword" placeholder="输入物品名称关键词" style="flex: 1" @keyup.enter="quickAddItems" />
+                <el-button type="success" @click="quickAddItems">添加</el-button>
+            </div>
+            <el-divider border-style="dashed" />
+            <div style="display: flex; flex-wrap: wrap; gap: 10px">
+                <el-button type="primary" @click="addItemsByNames(['配方'], 1, '配方', false, (item: any) => item.value >= 1000 && item.value < 1100)">配方</el-button>
+                <el-button type="primary" @click="addItemsByNames(['宝册'], 999, '宝册')">宝册</el-button>
+                <el-button type="primary" @click="addItemsByNames(['道学·', '佛学·', '儒学·', '墨学·', '农学·', '琴艺·', '棋艺·', '书法·', '画道·', '酒量·', '悟性·', '魔学·', '垂钓·'], 1, '书籍')">书籍</el-button>
+                <el-button type="primary" @click="addItemsByNames(['化境卷'], 1, '化境卷')">化境卷</el-button>
+                <el-button type="primary" @click="addItemsByNames(['技能卷'], 1, '技能卷')">技能卷</el-button>
+                <el-button type="primary" @click="addItemsByNames(['秘法：'], 1, '秘法', true)">秘法</el-button>
+                <el-button type="primary" @click="addItemsByNames(['秘术：'], 1, '秘术', true)">秘术</el-button>
+            </div>
+        </div>
+    </el-dialog>
 </template>
 
 <style scoped lang="scss">
@@ -471,11 +432,12 @@ const setItem = (key: string, quantity: number) => {
     margin: 10px 10px 0 10px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     z-index: 100;
+    position: fixed;
+    top: 0;
+    left: 0;
 }
 .container {
-    width: calc(100% - 20px);
-    margin: 0 10px 0 10px;
-    box-sizing: border-box;
+    width: 100%;
     position: relative;
     > div {
         width: 100%;
@@ -488,10 +450,11 @@ const setItem = (key: string, quantity: number) => {
     width: 100%;
     background-color: #fff;
     padding: 10px;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
     z-index: 100;
-    :deep() {
-    }
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    border-top: 1px solid #dcdfe6;
 }
 .dialog-footer {
     display: flex;
@@ -528,6 +491,20 @@ const setItem = (key: string, quantity: number) => {
 :deep() {
     .el-divider {
         margin: 15px 0;
+    }
+}
+.add-wrap {
+    display: flex;
+    align-items: center;
+    padding-bottom: 10px;
+    gap: 10px;
+    :deep() {
+        .el-button {
+            margin: 0;
+        }
+        .el-input-group__append {
+            padding: 0 5px;
+        }
     }
 }
 </style>
