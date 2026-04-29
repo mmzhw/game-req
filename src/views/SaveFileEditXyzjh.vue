@@ -96,12 +96,11 @@ const handleFileSelect = (file: any) => {
                     fileContent.value.playerentity['1'].itemStorage.content[key][14] = JSON.stringify(JSON.parse(fileContent.value.playerentity['1'].itemStorage.content[key][14]))
                 }
             })
+            console.log(fileContent.value.playerentity['1'])
             itemObj.value = fileContent.value.playerentity['1'].itemStorage.content
-            console.log(itemObj.value)
             mValueBase.value = JSON.parse(fileContent.value.playerentity['1'].m_valueBase)
             // 解析未知的key
             parseUnknownKeys(itemObj.value)
-            console.log(fileContent.value.playerentity['1'])
             fileLoaded.value = true
         } catch (error) {
             console.log(error)
@@ -137,7 +136,24 @@ const saveFile = () => {
         }
     })
 
-    fileContent.value.playerentity['1'].itemStorage.content = temp
+    // 重新格式化itemStorage，确保content按顺序，count正确
+    const itemStorage = fileContent.value.playerentity['1'].itemStorage
+    if (itemStorage && temp) {
+        // 将content的键按数字顺序重新排列
+        const sortedContent: any = {}
+        const keys = Object.keys(temp)
+            .map(Number)
+            .sort((a, b) => a - b)
+        keys.forEach((key, index) => {
+            sortedContent[index] = temp[key]
+        })
+        // 更新content和count
+        itemStorage.content = sortedContent
+        itemStorage.count = Object.keys(sortedContent).length
+    } else {
+        fileContent.value.playerentity['1'].itemStorage.content = temp
+    }
+
     fileContent.value.playerentity['1'].m_valueBase = JSON.stringify(mValueBase.value)
     downloadFile(fileContent.value, originalFilename.value)
 }
@@ -213,7 +229,7 @@ const getRows = (value: any) => {
 // 根据物品ID获取物品名称
 const getItemName = (itemId: number) => {
     const item: any = itemOptions.value.find((option: any) => option.value === itemId)
-    return item ? item.label : '未知物品'
+    return item ? item.label : `未知物品（${itemId}）`
 }
 
 const editKey = ref<any>(null)
