@@ -10,7 +10,8 @@ interface ItemsSingleMenu {
 interface ItemsTypeSingle {
     name: string
     value: string
-    type: string
+    type?: string
+    action?: string
 }
 interface ItemsGJQT {
     nameWord: string

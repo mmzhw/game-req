@@ -232,6 +232,60 @@ export const GAME_OPTIONS: any = [
                 }
             ]
         }
+    },
+    {
+        name: '快乐水世界',
+        value: 'klssj',
+        pageType: '12',
+        options: {
+            ORIGIN_GOODS: [],
+            ORIGIN_ACCOUNT: '213256',
+            ORIGIN_NUMBER: '1',
+            OPERATION: [
+                {
+                    NAME: '后台发送',
+                    TYPE: 'POST',
+                    URL: 'http://111.170.151.103:90/gm/gmquery.php',
+                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
+                        // action: 'sendmoney',
+                        // action: 'senditem',
+                        action: item.action,
+                        qid: '1',
+                        uid: account,
+                        gmcode: 'ltzy',
+                        chargetype: item.value,
+                        itemid: item.value,
+                        chargenum: number,
+                        itemnum: number
+                    })
+                }
+            ]
+        }
+    },
+    {
+        name: '源战役2',
+        value: 'yzy2',
+        pageType: '13',
+        options: {
+            ORIGIN_GOODS: [],
+            ORIGIN_ACCOUNT: '4294968821',
+            ORIGIN_NUMBER: '1',
+            OPERATION: [
+                {
+                    NAME: '后台发送',
+                    TYPE: 'POST',
+                    URL: 'http://115.231.220.33:83/gm/gmquery.php',
+                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
+                        action: item.action,
+                        qid: '1',
+                        uid: account,
+                        gmcode: 'ltzy',
+                        itemid: item.value,
+                        itemnum: number
+                    })
+                }
+            ]
+        }
     }
 ]
 
