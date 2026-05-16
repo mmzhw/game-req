@@ -47,3 +47,5 @@ const ts = [
     { 0: 605723, 1: 5, 2: false }, //精神
     { 0: 605717, 1: 4, 2: false } //轻功
 ]
+
+//JSON.stringify(x.items.map(i => ({value:i.value,name:i.name,action:'senditem'})).filter(i => i.name !== '请选择'))

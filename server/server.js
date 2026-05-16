@@ -163,8 +163,8 @@ router
     })
 
 /* 创建挂载Koa应用程序的https服务 */
-// 检查证书文件是否存在
-const hasCertFiles = fs.existsSync(HTTPS_KEY) && fs.existsSync(HTTPS_CER) && fs.existsSync(HTTPS_CA)
+// 检查证书文件是否存在（开发环境强制使用HTTP）
+const hasCertFiles = !isDev && fs.existsSync(HTTPS_KEY) && fs.existsSync(HTTPS_CER) && fs.existsSync(HTTPS_CA)
 
 let mainServer
 if (hasCertFiles) {
@@ -177,9 +177,9 @@ if (hasCertFiles) {
     mainServer = https.createServer(options, app.callback())
     console.log('Using HTTPS server')
 } else {
-    // 如果证书文件不存在，则回退到HTTP服务器
+    // 如果证书文件不存在或开发环境，则使用HTTP服务器
     mainServer = http.createServer(app.callback())
-    console.log('Using HTTP server (certificates not found)')
+    console.log('Using HTTP server' + (isDev ? ' (development mode)' : ' (certificates not found)'))
 }
 
 const websocketServer = new WebSocketServer({ server: mainServer })

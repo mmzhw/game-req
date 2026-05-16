@@ -243,12 +243,25 @@ export const GAME_OPTIONS: any = [
             ORIGIN_NUMBER: '1',
             OPERATION: [
                 {
-                    NAME: '后台发送',
+                    NAME: '后台发送1',
                     TYPE: 'POST',
                     URL: 'http://111.170.151.103:90/gm/gmquery.php',
                     GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        // action: 'sendmoney',
-                        // action: 'senditem',
+                        action: item.action,
+                        qid: '1',
+                        uid: account,
+                        gmcode: 'ltzy',
+                        chargetype: item.value,
+                        itemid: item.value,
+                        chargenum: number,
+                        itemnum: number
+                    })
+                },
+                {
+                    NAME: '后台发送2',
+                    TYPE: 'POST',
+                    URL: 'http://111.170.151.103:90/gm/gmquery.php',
+                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
                         action: item.action,
                         qid: '1',
                         uid: account,

@@ -49,20 +49,22 @@ const addLogs = (message: any) => {
 const initWs = () => {
     let ws: any = null
     let pingId: any = null
-    ws = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'wss://') + window.location.host)
+    // 开发环境使用 localhost:3000，生产环境使用当前 host
+    const wsUrl = process.env.NODE_ENV === 'development' ? 'ws://localhost:3000' : (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host
+    ws = new WebSocket(wsUrl)
     ws.onmessage = (response: any) => {
         if (response.data !== 'pong') {
             addLogs(response.data)
         }
     }
     ws.onopen = () => {
-        addLogs('wss连接成功')
+        addLogs(`${process.env.NODE_ENV === 'development' ? 'ws' : 'wss'}连接成功`)
         pingId = setInterval(() => {
             ws.send('ping')
         }, 10000)
     }
     ws.onclose = ws.onerror = () => {
-        addLogs('wss连接失败')
+        addLogs(`${process.env.NODE_ENV === 'development' ? 'ws' : 'wss'}连接失败`)
         clearInterval(pingId)
         pingId = null
         ws = null
