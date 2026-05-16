@@ -245,7 +245,7 @@ export const GAME_OPTIONS: any = [
                 {
                     NAME: '后台发送1',
                     TYPE: 'POST',
-                    URL: 'http://111.170.151.103:90/gm/gmquery.php',
+                    URL: 'http://139.155.146.224:90/gm/gmquery.php',
                     GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
                         action: item.action,
                         qid: '1',
@@ -260,10 +260,10 @@ export const GAME_OPTIONS: any = [
                 {
                     NAME: '后台发送2',
                     TYPE: 'POST',
-                    URL: 'http://111.170.151.103:90/gm/gmquery.php',
+                    URL: 'http://139.155.146.224:90/gm/gmquery.php',
                     GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
                         action: item.action,
-                        qid: '1',
+                        qid: '2',
                         uid: account,
                         gmcode: 'ltzy',
                         chargetype: item.value,
