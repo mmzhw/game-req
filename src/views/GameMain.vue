@@ -14,7 +14,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import GameReqNew from '@/views/GameReq.vue'
 import TablePagination from '@/components/Table-Pagination.vue'
@@ -46,33 +46,63 @@ const changeRouteType = () => {
 const addLogs = (message: any) => {
     logList.value.unshift({ no: logList.value.length + 1, message: message })
 }
+
+let ws: WebSocket | null = null
+let pingId: number | null = null
+
 const initWs = () => {
-    let ws: any = null
-    let pingId: any = null
-    // 开发环境使用 localhost:3000，生产环境使用当前 host
     const wsUrl = process.env.NODE_ENV === 'development' ? 'ws://localhost:3000' : (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host
+
+    // 如果已有连接，先关闭
+    if (ws) {
+        ws.close()
+        ws = null
+    }
+
     ws = new WebSocket(wsUrl)
-    ws.onmessage = (response: any) => {
+
+    ws.onmessage = (response: MessageEvent) => {
         if (response.data !== 'pong') {
             addLogs(response.data)
         }
     }
+
     ws.onopen = () => {
-        addLogs(`${process.env.NODE_ENV === 'development' ? 'ws' : 'wss'}连接成功`)
-        pingId = setInterval(() => {
-            ws.send('ping')
+        addLogs(`${wsUrl}连接成功`)
+        pingId = window.setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send('ping')
+            }
         }, 10000)
     }
-    ws.onclose = ws.onerror = () => {
-        addLogs(`${process.env.NODE_ENV === 'development' ? 'ws' : 'wss'}连接失败`)
-        clearInterval(pingId)
-        pingId = null
-        ws = null
-        // setTimeout(() => {
-        //     initWs()
-        // }, 1000)
+
+    ws.onclose = () => {
+        addLogs(`${wsUrl}连接关闭`)
+        cleanup()
+        setTimeout(() => {
+            initWs()
+        }, 1000)
+    }
+
+    ws.onerror = () => {
+        addLogs(`${wsUrl}连接失败`)
     }
 }
+
+const cleanup = () => {
+    if (pingId) {
+        clearInterval(pingId)
+        pingId = null
+    }
+    if (ws) {
+        ws.close()
+        ws = null
+    }
+}
+
+onUnmounted(() => {
+    cleanup()
+})
 </script>
 
 <style scoped src="../assets/game-req.scss"></style>
