@@ -250,13 +250,12 @@ export const GAME_OPTIONS: any = [
                         action: item.action,
                         qid: '1',
                         uid: account,
-                        gmcode: 'ltzy',
-                        chargetype: item.value,
-                        itemid: item.value,
-                        chargenum: number,
-                        itemnum: number
+                        pswd: 'ltzy',
+                        chargetype: item.action === 'sendmoney' ? item.value : undefined,
+                        chargenum: item.action === 'sendmoney' ? number : undefined,
+                        items: item.action !== 'sendmoney' ? { id: item.value, num: number } : undefined
                     })
-                },
+                }
             ]
         }
     },
