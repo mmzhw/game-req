@@ -243,9 +243,9 @@ export const GAME_OPTIONS: any = [
             ORIGIN_NUMBER: '1',
             OPERATION: [
                 {
-                    NAME: '后台发送1',
+                    NAME: '后台发送',
                     TYPE: 'POST',
-                    URL: 'http://139.155.146.224:90/gm/gmquery.php',
+                    URL: 'http://139.155.146.224:90/gm/query.php',
                     GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
                         action: item.action,
                         qid: '1',
@@ -257,21 +257,6 @@ export const GAME_OPTIONS: any = [
                         itemnum: number
                     })
                 },
-                {
-                    NAME: '后台发送2',
-                    TYPE: 'POST',
-                    URL: 'http://139.155.146.224:90/gm/gmquery.php',
-                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        action: item.action,
-                        qid: '2',
-                        uid: account,
-                        gmcode: 'ltzy',
-                        chargetype: item.value,
-                        itemid: item.value,
-                        chargenum: number,
-                        itemnum: number
-                    })
-                }
             ]
         }
     },

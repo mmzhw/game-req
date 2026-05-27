@@ -48,4 +48,6 @@ const ts = [
     { 0: 605717, 1: 4, 2: false } //轻功
 ]
 
-//JSON.stringify(x.items.map(i => ({value:i.value,name:i.name,action:'senditem'})).filter(i => i.name !== '请选择'))
+let temp = []
+JSON.stringify(temp.items.map(i => ({value:i.value,name:i.name,action:'senditem'})).filter(i => i.name !== '请选择'))
+JSON.stringify(Array.from(document.getElementById('chargetype')).filter(i => !i.label.match('请选择')).map(i => ({value:i.value,name:i.label,action:'sendmoney'})))
