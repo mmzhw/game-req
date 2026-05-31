@@ -14,10 +14,10 @@ export const GAME_OPTIONS: any = [
                 {
                     NAME: '后台发送',
                     TYPE: 'POST',
-                    URL: 'http://111.119.248.34:8081/gm_lt/user/gmquery.php',
+                    URL: 'http://115.231.220.134:8081/gm/user/gmquery.php',
                     GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
                         type: 'mail',
-                        checknum: '123456',
+                        checknum: 'ltzy.vip',
                         uid: account,
                         item: item.value,
                         num: number,
@@ -243,7 +243,7 @@ export const GAME_OPTIONS: any = [
             ORIGIN_NUMBER: '1',
             OPERATION: [
                 {
-                    NAME: '后台发送',
+                    NAME: '后台发送1',
                     TYPE: 'POST',
                     URL: 'http://139.155.146.224:90/gm/query.php',
                     GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
@@ -253,7 +253,7 @@ export const GAME_OPTIONS: any = [
                         pswd: 'ltzy',
                         chargetype: item.action === 'sendmoney' ? item.value : undefined,
                         chargenum: item.action === 'sendmoney' ? number : undefined,
-                        items: item.action !== 'sendmoney' ? { id: item.value, num: number } : undefined
+                        items: item.action !== 'sendmoney' ? JSON.stringify([{ id: item.value, num: number }]) : undefined
                     })
                 }
             ]

@@ -49,5 +49,14 @@ const ts = [
 ]
 
 let temp = []
-JSON.stringify(temp.items.map(i => ({value:i.value,name:i.name,action:'senditem'})).filter(i => i.name !== '请选择'))
-JSON.stringify(Array.from(document.getElementById('chargetype')).filter(i => !i.label.match('请选择')).map(i => ({value:i.value,name:i.label,action:'sendmoney'})))
+JSON.stringify(temp.items.map((i) => ({ value: i.value, name: i.name, action: 'senditem' })).filter((i) => i.name !== '请选择'))
+JSON.stringify(
+    Array.from(document.getElementById('chargetype'))
+        .filter((i) => !i.label.match('请选择'))
+        .map((i) => ({ value: i.value, name: i.label, action: 'sendmoney' }))
+)
+JSON.stringify(
+    Array.from(document.getElementById('mailid'))
+        .filter((i) => !i.label.match('请选择'))
+        .map((i) => ({ value: i.value, name: i.label, action: 'mail' }))
+)
