@@ -16,7 +16,7 @@ export const GAME_OPTIONS: any = [
                     TYPE: 'POST',
                     URL: 'http://115.231.220.134:8081/gm/user/gmquery.php',
                     GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        type: item.type,
+                        type: item.action,
                         checknum: 'ltzy.vip',
                         uid: account,
                         item: item.value,
