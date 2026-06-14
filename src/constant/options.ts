@@ -239,7 +239,7 @@ export const GAME_OPTIONS: any = [
         pageType: '12',
         options: {
             ORIGIN_GOODS: [],
-            ORIGIN_ACCOUNT: '213256',
+            ORIGIN_ACCOUNT: 'mmzhw51',
             ORIGIN_NUMBER: '1',
             OPERATION: [
                 {
