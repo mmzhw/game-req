@@ -283,6 +283,30 @@ export const GAME_OPTIONS: any = [
                 }
             ]
         }
+    },
+    {
+        name: '生成33天',
+        value: 'sc33t',
+        pageType: '14',
+        options: {
+            ORIGIN_GOODS: [],
+            ORIGIN_ACCOUNT: 'mmzhw52',
+            ORIGIN_NUMBER: '1',
+            OPERATION: [
+                {
+                    NAME: '后台发送',
+                    TYPE: 'POST',
+                    URL: 'http://111.170.152.149:8855/ht/query.php',
+                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
+                        action: item.action,
+                        qid: '1',
+                        uid: account,
+                        pswd: 'ltzy',
+                        items: JSON.stringify([{ id: item.value, num: Number(number) }])
+                    })
+                }
+            ]
+        }
     }
 ]
 

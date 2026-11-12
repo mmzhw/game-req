@@ -51,6 +51,112 @@ app.use(cors())
 const sleep = async (ms) => {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
+
+const normalizeHeaders = (headers) => {
+    if (!headers) {
+        return {}
+    }
+    if (typeof headers.toJSON === 'function') {
+        return headers.toJSON()
+    }
+    return headers
+}
+
+const getRequestUrl = (config, nativeRequest) => {
+    try {
+        const host = nativeRequest?.getHeader?.('host') || normalizeHeaders(config?.headers)?.host
+        if (nativeRequest?.protocol && nativeRequest?.path && host) {
+            return `${nativeRequest.protocol}//${host}${nativeRequest.path}`
+        }
+    } catch (e) {}
+
+    if (!config) {
+        return ''
+    }
+    let url = `${config.baseURL || ''}${config.url || ''}`
+    if (config.params) {
+        const params = qs.stringify(config.params)
+        if (params) {
+            url += `${url.includes('?') ? '&' : '?'}${params}`
+        }
+    }
+    return url
+}
+
+const formatResponseData = (data) => {
+    if (data === undefined || data === null || data === '') {
+        return '(空)'
+    }
+    if (typeof data === 'string') {
+        const text = data.trim()
+        if (!text) {
+            return '(空)'
+        }
+        try {
+            return JSON.stringify(JSON.parse(text), null, 2)
+        } catch (e) {
+            return text
+        }
+    }
+    try {
+        return JSON.stringify(data, null, 2)
+    } catch (e) {
+        return String(data)
+    }
+}
+
+const formatRequestBody = (data) => {
+    if (data === undefined || data === null || data === '') {
+        return '(无)'
+    }
+    const text = Buffer.isBuffer(data) ? data.toString() : typeof data === 'string' ? data : JSON.stringify(data)
+    try {
+        return JSON.stringify(JSON.parse(text), null, 2)
+    } catch (e) {}
+
+    if (text.includes('=') || text.includes('&')) {
+        try {
+            const params = Array.from(new URLSearchParams(text).entries())
+            if (params.length) {
+                return params.map(([key, value]) => `  ${key}: ${value}`).join('\n')
+            }
+        } catch (e) {
+            return text
+        }
+    }
+    return text
+}
+
+const formatRequestLog = ({ body, option, result, error, durationMs }) => {
+    const config = result?.config || error?.config || option
+    const nativeRequest = result?.request || error?.request
+    const response = result || error?.response
+    const method = String(config?.method || option.method || '').toUpperCase()
+    const lines = [`${body.account || '-'}  ${body.name || '-'}  ${durationMs}ms`, '', '[请求]', `${method} ${getRequestUrl(config, nativeRequest)}`, '请求内容', formatRequestBody(config?.data), '', '[响应]']
+
+    if (response) {
+        lines.push(`HTTP ${response.status} ${response.statusText || ''}`.trim(), formatResponseData(response.data))
+    } else {
+        lines.push(`请求失败${error?.code ? ` (${error.code})` : ''}: ${error?.message || '未知错误'}`)
+    }
+    return lines.join('\n')
+}
+
+const sendLog = (message) => {
+    if (!singleWs || singleWs.readyState !== 1) {
+        return
+    }
+    try {
+        singleWs.send(message, (error) => {
+            if (error) {
+                console.error('[WEBSOCKET SERVER] send error:', error.message)
+            }
+        })
+    } catch (e) {
+        console.error('[WEBSOCKET SERVER] send error:', e.message)
+    }
+}
+
 const axiosContent = async (bodys = [], intervalTime) => {
     for (let i = 0; i < bodys.length; i++) {
         let body = bodys[i]
@@ -67,14 +173,29 @@ const axiosContent = async (bodys = [], intervalTime) => {
         if (body.formData) {
             option.data = qs.stringify(body.formData)
         }
-        let result = await axios(option)
-        let rData = ''
-        if (result && result.data) {
-            try {
-                rData = JSON.stringify(result.data)
-            } catch (e) {}
+        const startedAt = Date.now()
+        try {
+            const result = await axios(option)
+            sendLog(
+                formatRequestLog({
+                    body,
+                    option,
+                    result,
+                    error: null,
+                    durationMs: Date.now() - startedAt
+                })
+            )
+        } catch (error) {
+            sendLog(
+                formatRequestLog({
+                    body,
+                    option,
+                    result: null,
+                    error,
+                    durationMs: Date.now() - startedAt
+                })
+            )
         }
-        singleWs && singleWs.send(body.account + ' ' + body.name + ' ' + rData)
         if (intervalTime) {
             await sleep(Number(intervalTime))
         }
