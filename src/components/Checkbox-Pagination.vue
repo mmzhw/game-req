@@ -5,10 +5,10 @@
         @change="changeItemId"
     >
         <template v-if="props.checkboxType === 'button'">
-            <el-checkbox-button v-for="(item, index) in realList" :key="index" :value="item" :title="item.name">{{ item.name }}</el-checkbox-button>
+            <el-checkbox-button v-for="(item, index) in realList" :key="index" :value="item" :title="item.name + '（' + item.value + '）'">{{ item.name }}（{{ item.value }}）</el-checkbox-button>
         </template>
         <template v-else>
-            <el-checkbox v-for="(item, index) in realList" :key="index" :value="item" :title="item.name">{{ item.name }}</el-checkbox>
+            <el-checkbox v-for="(item, index) in realList" :key="index" :value="item" :title="item.name + '（' + item.value + '）'">{{ item.name }}（{{ item.value }}）</el-checkbox>
         </template>
     </el-checkbox-group>
     <div :style="{display: 'flex', alignItems: 'center', marginBottom: isMobile ? '10px' : ''}">

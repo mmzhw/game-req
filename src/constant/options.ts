@@ -1,6 +1,15 @@
 import _ from 'lodash'
 import axios from 'axios'
 
+interface BatchItem {
+    item: ItemsTypeSingle
+    number: any
+}
+
+const stringifyBatchItems = (items: BatchItem[]) => {
+    return JSON.stringify(items.map(({ item, number }) => ({ id: item.value, num: Number(number) })))
+}
+
 export const GAME_OPTIONS: any = [
     {
         name: '这城有良田',
@@ -159,7 +168,15 @@ export const GAME_OPTIONS: any = [
                         qid: '1',
                         uid: account,
                         pswd: 'ltzy',
-                        items: JSON.stringify([{ id: item.value, num: Number(number) }])
+                        items: stringifyBatchItems([{ item, number }])
+                    }),
+                    MAX_ITEM_COUNT: 5,
+                    GETDATA_BATCH: (items: BatchItem[], account: string) => ({
+                        action: items[0].item.action,
+                        qid: '1',
+                        uid: account,
+                        pswd: 'ltzy',
+                        items: stringifyBatchItems(items)
                     })
                 }
             ]
@@ -183,7 +200,27 @@ export const GAME_OPTIONS: any = [
                         qid: '1001',
                         uid: account,
                         pswd: '',
-                        items: JSON.stringify([{ id: item.value, num: Number(number) }])
+                        items: stringifyBatchItems([{ item, number }])
+                    }),
+                    MAX_ITEM_COUNT: 10,
+                    GETDATA_BATCH: (items: BatchItem[], account: string) => ({
+                        action: items[0].item.action,
+                        qid: '1001',
+                        uid: account,
+                        pswd: '',
+                        items: stringifyBatchItems(items)
+                    })
+                },
+                {
+                    NAME: '清空背包',
+                    TYPE: 'POST',
+                    URL: 'http://115.231.8.162:8202/ht/gm/query.php',
+                    GETDATA: (account: string) => ({
+                        action: 'clear_bag',
+                        qid: '1001',
+                        uid: account,
+                        pswd: '',
+                        confirm: '1'
                     })
                 }
             ]

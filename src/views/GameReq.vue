@@ -11,11 +11,16 @@
             </div>
             <div class="flex-line">
                 <label>已选({{ selectedItems.length }})：</label>
-                <div style="line-height: 32px; max-height: 8vh; overflow: auto">
+                <div>
                     <template v-if="selectedItems?.length">
-                        <el-tag class="marginRightFive" v-for="(i, index) in selectedItems" :key="'selected-good' + index" closable @close="clearSingleItem(i)">{{ i.name }}</el-tag>
+                        <div class="selected-list">
+                            <div class="selected-item" v-for="(i, index) in selectedItems" :key="'selected-good' + index">
+                                <el-tag class="selected-item-tag" closable @close="clearSingleItem(i)">{{ i.name }}（{{ i.value }}）</el-tag>
+                                <el-input-number class="selected-item-number" v-model="itemNumbers[i.value]" :min="1" :step="1" :precision="0" size="small" controls-position="right" :title="'设置 ' + i.name + '（' + i.value + '）的发送数量'" />
+                            </div>
+                        </div>
                     </template>
-                    <span v-else>暂未选择</span>
+                    <span v-else class="selected-empty">暂未选择</span>
                 </div>
             </div>
             <div class="flex-line">
@@ -69,6 +74,11 @@ interface CheckboxPaginationInstance {
     updateSize(page: number): void
 }
 
+interface SelectedItemNumber {
+    item: ItemsTypeSingle
+    number: number
+}
+
 const props = withDefaults(defineProps<PropsRadioPagination>(), {
     routeType: ''
 })
@@ -78,13 +88,14 @@ let repeatTime = ref('')
 let pageSize = ref(50)
 let goodsList: any = ref([])
 let selectedItems: any = ref([])
+const itemNumbers = reactive<Record<string, number>>({})
 let keyWord: any = ref('')
 let keyWordLocation: any = ref('')
 let keyWordLocationCurrent: any = ref('')
 let keyWordLocationMatchIndex: any = ref('')
 let baseForm: any = reactive([
     { label: '角色', key: 'account', value: '' },
-    { label: '数量', key: 'number', value: '1' }
+    { label: '默认数量', key: 'number', value: '1' }
 ])
 const checkboxPaginationRef = ref<CheckboxPaginationInstance | null>(null)
 
@@ -159,30 +170,68 @@ const clearSingleItem = (i: ItemsSingle) => {
         return z.value !== i.value
     })
 }
+
+const getDefaultNumber = () => {
+    const value = Number(baseForm.find((item: any) => item.key === 'number')?.value)
+    return Number.isFinite(value) && value > 0 ? value : 1
+}
+
+const getItemNumber = (item: ItemsTypeSingle) => {
+    return itemNumbers[item.value] ?? getDefaultNumber()
+}
+
+const getBatchName = (items: SelectedItemNumber[]) => {
+    const firstName = items[0]?.item.name || '物品'
+    return items.length > 1 ? `${firstName} 等${items.length}件` : firstName
+}
+
 const operationSend = async (operation: any) => {
-    let realTimeAccount = baseForm.find((j: any) => j.key === 'account')?.value.split(',')
-    let realTimeNumber = baseForm.find((j: any) => j.key === 'number')?.value
+    const realTimeAccount = String(baseForm.find((j: any) => j.key === 'account')?.value || '')
+        .split(',')
+        .map((account: string) => account.trim())
+        .filter(Boolean)
+    const selectedItemNumbers: SelectedItemNumber[] = selectedItems.value.map((item: ItemsTypeSingle) => ({
+        item,
+        number: getItemNumber(item)
+    }))
+    const maxItemCount = Number(operation.MAX_ITEM_COUNT) || 0
 
     let reqData: any = []
     realTimeAccount.forEach((account: string) => {
-        if (selectedItems?.value?.length) {
-            selectedItems.value.forEach((item: ItemsSingle) => {
-                reqData.push({
-                    name: item.name,
-                    account: account,
-                    formData: operation.GETDATA(item, account, realTimeNumber),
-                    realReqUrl: operation.URL,
-                    realReqMethod: operation.TYPE,
+        if (selectedItemNumbers.length) {
+            if (operation.GETDATA_BATCH && maxItemCount > 0) {
+                const actionGroups = _.groupBy(selectedItemNumbers, ({ item }) => item.action || '')
+                const groups = Object.values(actionGroups) as SelectedItemNumber[][]
+                groups.forEach((group) => {
+                    _.chunk(group, maxItemCount).forEach((items: SelectedItemNumber[]) => {
+                        reqData.push({
+                            name: getBatchName(items),
+                            account: account,
+                            formData: operation.GETDATA_BATCH(items, account),
+                            realReqUrl: operation.URL,
+                            realReqMethod: operation.TYPE
+                        })
+                    })
                 })
-            })
+            } else {
+                selectedItemNumbers.forEach(({ item, number }: SelectedItemNumber) => {
+                    reqData.push({
+                        name: item.name,
+                        account: account,
+                        formData: operation.GETDATA(item, account, number),
+                        realReqUrl: operation.URL,
+                        realReqMethod: operation.TYPE
+                    })
+                })
+            }
         } else {
             // 非物品的操作
             reqData.push({
-                name: operation.name,
+                name: operation.NAME,
                 account: account,
                 formData: operation.GETDATA(account),
                 realReqUrl: operation.URL,
-                realReqMethod: operation.TYPE,
+                realReqMethod: operation.TYPE
             })
         }
     })
@@ -230,6 +279,25 @@ watch(
     },
     { immediate: true }
 )
+
+watch(
+    selectedItems,
+    (items: ItemsTypeSingle[]) => {
+        const defaultNumber = getDefaultNumber()
+        const selectedValues = new Set(items.map((item) => item.value))
+        items.forEach((item) => {
+            if (itemNumbers[item.value] === undefined) {
+                itemNumbers[item.value] = defaultNumber
+            }
+        })
+        Object.keys(itemNumbers).forEach((value) => {
+            if (!selectedValues.has(value)) {
+                delete itemNumbers[value]
+            }
+        })
+    },
+    { deep: true, immediate: true }
+)
 </script>
 
 <style scoped src="../assets/game-req.scss"></style>
@@ -261,5 +329,28 @@ watch(
 
 .marginRightFive {
     margin-right: 5px;
+}
+
+.selected-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-height: 20vh;
+    overflow: auto;
+    line-height: 1;
+}
+
+.selected-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.selected-item-number {
+    width: 100px;
+}
+
+.selected-empty {
+    line-height: 32px;
 }
 </style>
