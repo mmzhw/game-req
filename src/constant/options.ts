@@ -81,31 +81,6 @@ export const GAME_OPTIONS: any = [
         }
     },
     {
-        name: '三国猫',
-        value: 'sgm',
-        pageType: '7',
-        options: {
-            ORIGIN_GOODS: [],
-            ORIGIN_ACCOUNT: 'mmzhw51',
-            ORIGIN_NUMBER: '1',
-            OPERATION: [
-                {
-                    NAME: '后台发送',
-                    TYPE: 'POST',
-                    URL: 'http://115.231.220.33:81/gm/user/gmquery.php',
-                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        type: 'mail',
-                        checknum: 'ltzy.vip',
-                        uid: account,
-                        item: item.value,
-                        num: number,
-                        qu: '2'
-                    })
-                }
-            ]
-        }
-    },
-    {
         name: '少女回战',
         value: 'snhz',
         pageType: '8',
@@ -141,99 +116,6 @@ export const GAME_OPTIONS: any = [
         }
     },
     {
-        name: '炼仙传说',
-        value: 'lxcs',
-        pageType: '9',
-        options: {
-            ORIGIN_GOODS: [],
-            ORIGIN_ACCOUNT: 'mmzhw51',
-            ORIGIN_NUMBER: '1',
-            OPERATION: [
-                {
-                    NAME: '后台发送',
-                    TYPE: 'POST',
-                    URL: 'http://115.231.220.245:88/gm/gmquery.php',
-                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        action: 'senditem',
-                        qid: '1',
-                        uid: account,
-                        gmcode: 'ltzy.vip',
-                        itemid: item.value,
-                        itemnum: number
-                    })
-                },
-                {
-                    NAME: '删除物品',
-                    TYPE: 'POST',
-                    URL: 'http://115.231.220.245:88/gm/gmquery.php',
-                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        action: 'senddelitem',
-                        qid: '1',
-                        uid: account,
-                        gmcode: 'ltzy.vip',
-                        itemid: item.value,
-                        itemnum: number
-                    })
-                }
-            ]
-        }
-    },
-    {
-        name: '全明星激斗',
-        value: 'qmxjd',
-        pageType: '10',
-        options: {
-            ORIGIN_GOODS: [],
-            ORIGIN_ACCOUNT: '4592238693',
-            ORIGIN_NUMBER: '1',
-            OPERATION: [
-                {
-                    NAME: '后台发送',
-                    TYPE: 'POST',
-                    URL: 'http://111.170.148.234:81/gm/gmquery.php',
-                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        action: item.type,
-                        qid: '1',
-                        uid: account,
-                        gmcode: 'ltzy.vip',
-                        itemid: item.value,
-                        itemnum: number,
-
-                        chipid: item.value,
-                        chipnum: number,
-
-                        chargetype: item.value,
-                        chargenum: number
-                    })
-                }
-            ]
-        }
-    },
-    {
-        name: '极无双',
-        value: 'jws',
-        pageType: '11',
-        options: {
-            ORIGIN_GOODS: [],
-            ORIGIN_ACCOUNT: 'mmzhw1',
-            ORIGIN_NUMBER: '1',
-            OPERATION: [
-                {
-                    NAME: '后台发送',
-                    TYPE: 'POST',
-                    URL: 'http://111.170.152.149:998/query.php',
-                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        action: 'senditem',
-                        qid: '1',
-                        uid: account,
-                        itemid: item.value,
-                        itemnum: number
-                    })
-                }
-            ]
-        }
-    },
-    {
         name: '快乐水世界',
         value: 'klssj',
         pageType: '12',
@@ -260,31 +142,6 @@ export const GAME_OPTIONS: any = [
         }
     },
     {
-        name: '源战役2',
-        value: 'yzy2',
-        pageType: '13',
-        options: {
-            ORIGIN_GOODS: [],
-            ORIGIN_ACCOUNT: '4294968821',
-            ORIGIN_NUMBER: '1',
-            OPERATION: [
-                {
-                    NAME: '后台发送',
-                    TYPE: 'POST',
-                    URL: 'http://115.231.220.33:83/gm/gmquery.php',
-                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        action: item.action,
-                        qid: '1',
-                        uid: account,
-                        gmcode: 'ltzy',
-                        itemid: item.value,
-                        itemnum: number
-                    })
-                }
-            ]
-        }
-    },
-    {
         name: '生成33天',
         value: 'sc33t',
         pageType: '14',
@@ -302,6 +159,30 @@ export const GAME_OPTIONS: any = [
                         qid: '1',
                         uid: account,
                         pswd: 'ltzy',
+                        items: JSON.stringify([{ id: item.value, num: Number(number) }])
+                    })
+                }
+            ]
+        }
+    },
+    {
+        name: '镇邪人',
+        value: 'zxr',
+        pageType: '15',
+        options: {
+            ORIGIN_GOODS: [],
+            ORIGIN_ACCOUNT: 'mmzhw51',
+            ORIGIN_NUMBER: '1',
+            OPERATION: [
+                {
+                    NAME: '后台发送',
+                    TYPE: 'POST',
+                    URL: 'http://115.231.8.162:8202/ht/gm/query.php',
+                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
+                        action: item.action,
+                        qid: '1001',
+                        uid: account,
+                        pswd: '',
                         items: JSON.stringify([{ id: item.value, num: Number(number) }])
                     })
                 }

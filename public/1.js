@@ -60,3 +60,6 @@ JSON.stringify(
         .filter((i) => !i.label.match('请选择'))
         .map((i) => ({ value: i.value, name: i.label, action: 'mail' }))
 )
+
+
+JSON.stringify(x.items.map(i => ({name:i.name,value:i.value,action:'senditems_batch'})))
