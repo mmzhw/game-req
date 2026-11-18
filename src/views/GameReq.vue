@@ -287,7 +287,7 @@ watch(
     selectedItems,
     (items: ItemsTypeSingle[]) => {
         const defaultNumber = getDefaultNumber()
-        const selectedValues = new Set(items.map((item) => item.value))
+        const selectedValues = new Set(items.map((item) => String(item.value)))
         items.forEach((item) => {
             if (itemNumbers[item.value] === undefined) {
                 itemNumbers[item.value] = defaultNumber
