@@ -225,6 +225,47 @@ export const GAME_OPTIONS: any = [
                 }
             ]
         }
+    },
+    {
+        name: '灵契不良人',
+        value: 'xblr',
+        pageType: '16',
+        options: {
+            ORIGIN_GOODS: [],
+            ORIGIN_ACCOUNT: 'mmzhw52',
+            ORIGIN_NUMBER: '1',
+            OPERATION: [
+                {
+                    NAME: '后台发送',
+                    TYPE: 'POST',
+                    URL: 'http://115.231.8.159:9105/api.php',
+                    SESSION: {
+                        RESOLVE_URL: 'http://115.231.8.159:9105/resolve.php',
+                        ACCOUNT_FIELD: 'account'
+                    },
+                    HEADERS: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        Origin: 'http://115.231.8.159:9105',
+                        Referer: 'http://115.231.8.159:9105/gm.php'
+                    },
+                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
+                        action: 'send_items_batch',
+                        mail_title: '凌天众游',
+                        mail_content: '凌天众游-您有新的邮件，请查收！',
+                        gm_pswd: '',
+                        items: stringifyBatchItems([{ item, number }])
+                    }),
+                    MAX_ITEM_COUNT: 5,
+                    GETDATA_BATCH: (items: BatchItem[], account: string) => ({
+                        action: 'send_items_batch',
+                        mail_title: '凌天众游',
+                        mail_content: '凌天众游-您有新的邮件，请查收！',
+                        gm_pswd: '',
+                        items: stringifyBatchItems(items)
+                    })
+                }
+            ]
+        }
     }
 ]
 

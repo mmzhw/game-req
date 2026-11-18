@@ -28,6 +28,8 @@ const HTTPS_CER = path.resolve(isDev ? './server' : './dist', './111.119.248.34_
 const HTTPS_CA = path.resolve(isDev ? './server' : './dist', './111.119.248.34_ca.crt')
 const UNZIP_DIST_DIR = path.resolve('./')
 const NODE_SERVER_FILE = path.resolve('./dist', './server.js')
+const DEFAULT_SESSION_TTL_MS = 10 * 60 * 1000
+const sessionCookieStore = new Map()
 
 app.use(cors())
     // .use(bodyParser())
@@ -157,6 +159,91 @@ const sendLog = (message) => {
     }
 }
 
+const getSessionKey = (session, account) => {
+    return `${session.RESOLVE_URL}|${account}`
+}
+
+const getCookieHeader = (headers) => {
+    const setCookie = headers?.['set-cookie']
+    if (!setCookie) {
+        return ''
+    }
+    const cookies = Array.isArray(setCookie) ? setCookie : [setCookie]
+    return cookies
+        .map((cookie) => String(cookie).split(';')[0])
+        .filter(Boolean)
+        .join('; ')
+}
+
+const resolveSessionCookie = async (body, session) => {
+    const accountField = session.ACCOUNT_FIELD || 'account'
+    const response = await axios({
+        method: 'post',
+        url: session.RESOLVE_URL,
+        data: qs.stringify({ [accountField]: body.account }),
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            ...normalizeHeaders(body.headers)
+        },
+        timeout: Number(session.TIMEOUT_MS) || 15000
+    })
+    if (response.data?.ok === false) {
+        throw new Error(`Session 绑定失败: ${response.data?.msg || '账号不存在或未创建角色'}`)
+    }
+    const cookie = getCookieHeader(response.headers)
+    if (!cookie) {
+        throw new Error('Session 绑定失败: 未返回 Cookie')
+    }
+    sessionCookieStore.set(getSessionKey(session, body.account), {
+        cookie,
+        expiresAt: Date.now() + (Number(session.TTL_MS) || DEFAULT_SESSION_TTL_MS)
+    })
+    return cookie
+}
+
+const getSessionCookie = async (body, forceResolve = false) => {
+    const key = getSessionKey(body.session, body.account)
+    if (forceResolve) {
+        sessionCookieStore.delete(key)
+    }
+    const cached = sessionCookieStore.get(key)
+    if (cached && cached.expiresAt > Date.now()) {
+        return cached.cookie
+    }
+    return resolveSessionCookie(body, body.session)
+}
+
+const sendRequest = async (body, option, forceResolve = false) => {
+    const headers = { ...normalizeHeaders(body.headers) }
+    if (body.session) {
+        headers.Cookie = await getSessionCookie(body, forceResolve)
+    }
+    option.headers = headers
+    return axios(option)
+}
+
+const isSessionExpired = (data) => {
+    if (!data || typeof data !== 'object') {
+        return false
+    }
+    return Number(data.code) === 401 || /未登录|请先绑定|登录已失效/.test(String(data.msg || data.message || ''))
+}
+
+const sendWithSession = async (body, option) => {
+    try {
+        const result = await sendRequest(body, option)
+        if (body.session && isSessionExpired(result.data)) {
+            return sendRequest(body, option, true)
+        }
+        return result
+    } catch (error) {
+        if (body.session && error.response?.status === 401) {
+            return sendRequest(body, option, true)
+        }
+        throw error
+    }
+}
+
 const axiosContent = async (bodys = [], intervalTime) => {
     for (let i = 0; i < bodys.length; i++) {
         let body = bodys[i]
@@ -175,7 +262,7 @@ const axiosContent = async (bodys = [], intervalTime) => {
         }
         const startedAt = Date.now()
         try {
-            const result = await axios(option)
+            const result = await sendWithSession(body, option)
             sendLog(
                 formatRequestLog({
                     body,

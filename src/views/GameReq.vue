@@ -195,6 +195,12 @@ const operationSend = async (operation: any) => {
         number: getItemNumber(item)
     }))
     const maxItemCount = Number(operation.MAX_ITEM_COUNT) || 0
+    const requestMeta = {
+        realReqUrl: operation.URL,
+        realReqMethod: operation.TYPE,
+        headers: operation.HEADERS,
+        session: operation.SESSION
+    }
 
     let reqData: any = []
     realTimeAccount.forEach((account: string) => {
@@ -208,8 +214,7 @@ const operationSend = async (operation: any) => {
                             name: getBatchName(items),
                             account: account,
                             formData: operation.GETDATA_BATCH(items, account),
-                            realReqUrl: operation.URL,
-                            realReqMethod: operation.TYPE
+                            ...requestMeta
                         })
                     })
                 })
@@ -219,8 +224,7 @@ const operationSend = async (operation: any) => {
                         name: item.name,
                         account: account,
                         formData: operation.GETDATA(item, account, number),
-                        realReqUrl: operation.URL,
-                        realReqMethod: operation.TYPE
+                        ...requestMeta
                     })
                 })
             }
@@ -230,8 +234,7 @@ const operationSend = async (operation: any) => {
                 name: operation.NAME,
                 account: account,
                 formData: operation.GETDATA(account),
-                realReqUrl: operation.URL,
-                realReqMethod: operation.TYPE
+                ...requestMeta
             })
         }
     })
