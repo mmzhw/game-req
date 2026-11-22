@@ -266,6 +266,38 @@ export const GAME_OPTIONS: any = [
                 }
             ]
         }
+    },
+    {
+        name: '时光大爆炸',
+        value: 'sgdbz',
+        pageType: '17',
+        options: {
+            ORIGIN_GOODS: [],
+            ORIGIN_ACCOUNT: 'mmzhw52',
+            ORIGIN_NUMBER: '1',
+            OPERATION: [
+                {
+                    NAME: '后台发送',
+                    TYPE: 'POST',
+                    URL: 'http://115.231.8.162:8103/ht/gm/query.php',
+                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
+                        action: item.action,
+                        qid: '1',
+                        uid: account,
+                        pswd: '361d8e4b44f4bbc8271ee2bd6fc1ad176cfd9e1263e06071',
+                        items: stringifyBatchItems([{ item, number }])
+                    }),
+                    MAX_ITEM_COUNT: 5,
+                    GETDATA_BATCH: (items: BatchItem[], account: string) => ({
+                        action: items[0].item.action,
+                        qid: '1',
+                        uid: account,
+                        pswd: '361d8e4b44f4bbc8271ee2bd6fc1ad176cfd9e1263e06071',
+                        items: stringifyBatchItems(items)
+                    })
+                }
+            ]
+        }
     }
 ]
 
