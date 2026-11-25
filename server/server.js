@@ -9,9 +9,10 @@ import Router from 'koa-router'
 import koaStatic from 'koa-static'
 import { koaBody } from 'koa-body'
 import cors from 'koa2-cors'
-import compressing from 'compressing'
-import { exec } from 'child_process'
 import { WebSocketServer } from 'ws'
+import { CheckinService, registerCheckinRoutes } from './checkin/service.js'
+import { FnatClient, FNAT_SITE, parseFnatCookie } from './checkin/fnat.js'
+import { isUpdateUpload, registerUpdateRoutes } from './update/routes.js'
 
 let singleWs = null
 console.log('process.env.NODE_ENV', process.env.NODE_ENV)
@@ -20,31 +21,28 @@ let isDev = process.env.NODE_ENV === 'dev'
 /* 创建Koa应用实例 */
 const app = new Koa()
 const router = new Router()
+const checkinService = await new CheckinService().init()
+const fnatService = await new CheckinService({
+    site: { id: 'fnat', name: 'FNAT 内网穿透', url: FNAT_SITE, requiresFingerprint: false, parseCookie: parseFnatCookie },
+    clientFactory: (config) => new FnatClient(config)
+}).init()
+registerCheckinRoutes(router, checkinService, [fnatService])
+const readBuildFile = (file) => JSON.parse(fs.readFileSync(new URL(file, import.meta.url), 'utf8'))
+const build = process.env.GAME_REQ_MANAGED_RELEASE === '1' ? readBuildFile('./.release.json') : { id: 'local' }
+registerUpdateRoutes(router, { root: process.cwd(), build })
 
 const UPLOAD_DIR = path.resolve(isDev ? './server' : './', './uploads')
 const STATIC_DIST = path.resolve('./', './dist')
-const HTTPS_KEY = path.resolve(isDev ? './server' : './dist', './111.119.248.34.key')
-const HTTPS_CER = path.resolve(isDev ? './server' : './dist', './111.119.248.34_cer.crt')
-const HTTPS_CA = path.resolve(isDev ? './server' : './dist', './111.119.248.34_ca.crt')
-const UNZIP_DIST_DIR = path.resolve('./')
-const NODE_SERVER_FILE = path.resolve('./dist', './server.js')
+const TLS_DIR = process.env.GAME_REQ_TLS_DIR
+const HTTPS_KEY = path.resolve(TLS_DIR || (isDev ? './server' : './dist'), './111.119.248.34.key')
+const HTTPS_CER = path.resolve(TLS_DIR || (isDev ? './server' : './dist'), './111.119.248.34_cer.crt')
+const HTTPS_CA = path.resolve(TLS_DIR || (isDev ? './server' : './dist'), './111.119.248.34_ca.crt')
 const DEFAULT_SESSION_TTL_MS = 10 * 60 * 1000
 const sessionCookieStore = new Map()
 
+const parseBody = koaBody({ multipart: true, formidable: { uploadDir: UPLOAD_DIR, keepExtensions: true } })
 app.use(cors())
-    // .use(bodyParser())
-    .use(
-        koaBody({
-            multipart: true,
-            formidable: {
-                uploadDir: UPLOAD_DIR, // 设置文件上传目录
-                keepExtensions: true // 保持文件的后缀
-            }
-            // onFileBegin:(name,file)=>{
-            //     console.log(name,file)
-            // }
-        })
-    )
+    .use((ctx, next) => (isUpdateUpload(ctx) ? next() : parseBody(ctx, next)))
     /* 指定一个目录作为静态资源的根目录（亦即站点根目录） */
     .use(koaStatic(STATIC_DIST))
     .use(router.routes())
@@ -309,70 +307,11 @@ router
             await axiosContent(ctx.request.body.reqData, intervalTime)
         }
     })
-    .post('/restart', async (ctx) => {
-        try {
-            await axios({ method: 'post', url: 'http://127.0.0.1:3001/restart' })
-            ctx.body = '已通知重启'
-        } catch (e) {
-            ctx.body = '重启失败'
-            console.error(e.message)
-        }
-    })
-    .post('/upload', async (ctx) => {
-        // 获取上传文件
-        const files = ctx.request.files
-        try {
-            exec(`rm -rf ${STATIC_DIST}`)
-            console.log('已删除,解压', files.file.filepath, UNZIP_DIST_DIR)
-            let res = await compressing.zip.uncompress(files.file.filepath, UNZIP_DIST_DIR)
-
-            // 移动dist目录下的server.js和watch.js文件到当前目录
-            const distServerJs = path.resolve(UNZIP_DIST_DIR, 'dist/server.js')
-            const distWatchJs = path.resolve(UNZIP_DIST_DIR, 'dist/watch.js')
-            const currentServerJs = path.resolve('./server.js')
-            const currentWatchJs = path.resolve('./watch.js')
-
-            if (fs.existsSync(distWatchJs)) {
-                fs.renameSync(distWatchJs, currentWatchJs)
-                console.log('已移动 watch.js 文件到当前目录')
-            }
-            if (fs.existsSync(distServerJs)) {
-                fs.renameSync(distServerJs, currentServerJs)
-                console.log('已解压并移动文件，开始重启服务')
-                await axios({ method: 'post', url: 'http://127.0.0.1:3001/restart' })
-            }
-
-            if (res) {
-                ctx.body = files.file.filepath + '上传解压成功'
-            } else {
-                ctx.body = files.file.filepath
-            }
-        } catch (e) {
-            ctx.body = files.file.filepath + '解压失败'
-            console.error(e.message)
-        }
-    })
-    .post('/uploadServer', async (ctx) => {
-        // 获取上传的文件
-        const files = ctx.request.files
-        // 将上传的文件复制到NODE_SERVER_FILE指定的位置，强制覆盖
-        exec('cp -f ' + files.file.filepath + ' ' + NODE_SERVER_FILE)
-        // 向本地3001端口发送重启服务的请求
-        axios({ method: 'post', url: 'http://localhost:3001/restart' })
-        ctx.body = files.file.filepath + '上传成功'
-    })
-    .post('/controlsh', async (ctx) => {
-        axios({
-            method: 'post',
-            url: 'http://localhost:3001/controlsh',
-            data: { cmd: ctx.request.body.cmd }
-        })
-        ctx.body = '已执行'
-    })
 
 /* 创建挂载Koa应用程序的https服务 */
 // 检查证书文件是否存在（开发环境强制使用HTTP）
 const hasCertFiles = !isDev && fs.existsSync(HTTPS_KEY) && fs.existsSync(HTTPS_CER) && fs.existsSync(HTTPS_CA)
+if (TLS_DIR && !hasCertFiles) throw new Error('GAME_REQ_TLS_DIR 未包含完整 HTTPS 证书')
 
 let mainServer
 if (hasCertFiles) {
@@ -411,6 +350,8 @@ websocketServer.on('connection', (ws) => {
 
 /* 开始监听/启动服务（指定3000端口与成功回调） */
 mainServer.listen(3000, () => {
+    checkinService.start()
+    fnatService.start()
     let port = mainServer.address().port
     if (hasCertFiles) {
         console.log('应用实例，访问地址为 https://localhost:' + port)

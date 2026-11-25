@@ -13,6 +13,25 @@ const router = createRouter({
             component: () => import('@/views/GameMain.vue')
         },
         {
+            path: '/checkin',
+            name: 'checkin',
+            component: () => import('@/views/CheckinSites.vue'),
+            meta: { title: '每日签到' }
+        },
+        {
+            path: '/checkin/laowang',
+            name: 'checkin-laowang',
+            component: () => import('@/views/CheckinConfig.vue'),
+            meta: { title: '老王论坛签到' }
+        },
+        {
+            path: '/checkin/fnat',
+            name: 'checkin-fnat',
+            component: () => import('@/views/CheckinConfig.vue'),
+            props: { provider: 'fnat' },
+            meta: { title: 'FNAT 签到' }
+        },
+        {
             path: '/dxlzz',
             name: 'dxlzz',
             component: () => import('@/views/SaveFileEditDxlzz.vue'),

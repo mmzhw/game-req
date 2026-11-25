@@ -273,7 +273,7 @@ export default async function getGameOptions(key: string) {
     const match = GAME_OPTIONS.find((item: any) => item.value === key)
     if (match) {
         const option = _.cloneDeep(match.options)
-        option.ORIGIN_GOODS = (await axios.get(`items/${key}.text`))?.data ?? []
+        option.ORIGIN_GOODS = (await axios.get(`items/${key}.txt`))?.data ?? []
         return option
     }
     return {}

@@ -28,3 +28,7 @@ coverage
 *.sw?
 
 server/dist.zip
+
+# Private check-in credentials, durable locks, and runtime logs
+server/data/
+server/release.zip
