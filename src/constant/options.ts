@@ -37,94 +37,6 @@ export const GAME_OPTIONS: any = [
         }
     },
     {
-        name: '打僵尸',
-        value: 'djs',
-        pageType: '3',
-        options: {
-            ORIGIN_GOODS: [],
-            ORIGIN_ACCOUNT: '慕灵',
-            ORIGIN_NUMBER: '1',
-            OPERATION: [
-                {
-                    NAME: '后台发送',
-                    TYPE: 'POST',
-                    URL: 'http://kp.a5o.cn/gm/gmPay.php',
-                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        code: item.value + ' ' + number,
-                        request_type: item.type,
-                        name: account,
-                        cde: 'rssls'
-                    })
-                }
-            ]
-        }
-    },
-    {
-        name: 'x战娘',
-        value: 'xzn',
-        pageType: '4',
-        options: {
-            ORIGIN_GOODS: [],
-            ORIGIN_ACCOUNT: 'ns00000009',
-            ORIGIN_NUMBER: '1',
-            OPERATION: [
-                {
-                    NAME: '后台发送',
-                    TYPE: 'POST',
-                    URL: 'http://111.119.248.34:82/manage/mail_one/',
-                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        title: 'GM',
-                        text: 'GM',
-                        server_select: '1',
-                        accname: account,
-                        reward1_1: item.type,
-                        reward1_2: item.value,
-                        reward1_3: number,
-                        reward2_1: '0',
-                        reward2_3: '',
-                        reward3_1: '0',
-                        reward3_3: ''
-                    })
-                }
-            ]
-        }
-    },
-    {
-        name: '少女回战',
-        value: 'snhz',
-        pageType: '8',
-        options: {
-            ORIGIN_GOODS: [],
-            ORIGIN_ACCOUNT: 'mmzhw51',
-            ORIGIN_NUMBER: '1',
-            OPERATION: [
-                {
-                    NAME: '后台发送',
-                    TYPE: 'POST',
-                    URL: 'http://111.170.152.157:81/gm/gmquery.php',
-                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
-                        action: 'senditem',
-                        qid: '1',
-                        uid: account,
-                        gmcode: 'ltzy.vip',
-                        itemid: item.value,
-                        itemnum: number
-                    })
-                },
-                {
-                    NAME: '清空邮箱',
-                    TYPE: 'POST',
-                    URL: 'http://111.170.152.157:81/gm/ltdelete.php',
-                    GETDATA: (account: string) => ({
-                        qid: '1',
-                        uid: account,
-                        gmcode: 'ltzy.vip'
-                    })
-                }
-            ]
-        }
-    },
-    {
         name: '快乐水世界',
         value: 'klssj',
         pageType: '12',
@@ -261,6 +173,38 @@ export const GAME_OPTIONS: any = [
                         mail_title: '凌天众游',
                         mail_content: '凌天众游-您有新的邮件，请查收！',
                         gm_pswd: '',
+                        items: stringifyBatchItems(items)
+                    })
+                }
+            ]
+        }
+    },
+    {
+        name: '时光大爆炸',
+        value: 'sgdbz',
+        pageType: '17',
+        options: {
+            ORIGIN_GOODS: [],
+            ORIGIN_ACCOUNT: 'mmzhw52',
+            ORIGIN_NUMBER: '1',
+            OPERATION: [
+                {
+                    NAME: '后台发送',
+                    TYPE: 'POST',
+                    URL: 'http://115.231.8.162:8103/ht/gm/query.php',
+                    GETDATA: (item: ItemsTypeSingle, account: string, number: any) => ({
+                        action: item.action,
+                        qid: '1',
+                        uid: account,
+                        pswd: '361d8e4b44f4bbc8271ee2bd6fc1ad176cfd9e1263e06071',
+                        items: stringifyBatchItems([{ item, number }])
+                    }),
+                    MAX_ITEM_COUNT: 5,
+                    GETDATA_BATCH: (items: BatchItem[], account: string) => ({
+                        action: items[0].item.action,
+                        qid: '1',
+                        uid: account,
+                        pswd: '361d8e4b44f4bbc8271ee2bd6fc1ad176cfd9e1263e06071',
                         items: stringifyBatchItems(items)
                     })
                 }
