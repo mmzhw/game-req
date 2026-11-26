@@ -15,6 +15,7 @@ export const isAuthorized = (header, token) => {
     return timingSafeEqual(digest(header), digest(expected))
 }
 export const managed = () => process.env.GAME_REQ_MANAGED_RELEASE === '1'
+export const supervisorToken = () => process.env.GAME_REQ_SUPERVISOR_TOKEN || process.env.GAME_REQ_UPDATE_TOKEN
 export const jobPath = (root, id) => {
     if (!validJobId(id)) throw new Error('无效的更新编号')
     return path.join(root, '.updates', id)

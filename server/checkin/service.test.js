@@ -46,6 +46,93 @@ async function fixture(t, { execute, clock = () => new Date('2026-11-24T00:00:00
     return { service, calls, dataDir, clientFactory, clock }
 }
 
+test('FNAT scheduling keeps draw submission and unknown outcomes separate from signup across restarts', async (t) => {
+    const { dataDir } = await fixture(t)
+    let now = new Date('2026-11-23T23:59:00Z')
+    let signPosts = 0
+    let drawPosts = 0
+    const options = {
+        dataDir,
+        clock: () => now,
+        site: { id: 'fnat', name: 'FNAT', url: 'https://frp.fnat.cc', requiresFingerprint: false, parseCookie: parseCookieHeader, supportsLottery: true },
+        clientFactory: () => ({
+            cookieHeader: () => cookie,
+            close() {},
+            async execute({ beforePost }) {
+                await beforePost()
+                signPosts++
+                return { status: 'success', checkinPosts: 1 }
+            },
+            async draw({ beforePost }) {
+                await beforePost()
+                drawPosts++
+                throw new Error('timeout')
+            }
+        })
+    }
+    const service = await new CheckinService(options).init()
+    assert.equal((await service.state()).lottery.enabled, false)
+    await service.saveConfig({ enabled: true, time: '08:00', account, cookie, lotteryEnabled: true })
+    now = new Date('2026-11-24T00:00:01Z')
+    await service.tick()
+    const restarted = await new CheckinService(options).init()
+    await restarted.tick()
+    assert.equal(signPosts, 1)
+    assert.equal(drawPosts, 1)
+    assert.equal((await restarted.run('manual', true)).duplicate, true)
+    const state = await restarted.state()
+    assert.equal(state.records[0].status, 'success')
+    assert.equal(state.lottery.records[0].status, 'unconfirmed')
+    assert.equal(state.runtime.nextRunAt, '2026-11-25T00:00:00.000Z')
+
+    now = new Date('2026-11-24T00:01:00Z')
+    const refreshed = await restarted.saveConfig({ enabled: true, time: '08:00', account, cookie: cookie.replace('private-test-auth', 'refreshed-auth'), lotteryEnabled: true })
+    assert.equal(refreshed.lottery.todayClaimed, true)
+    assert.equal((await restarted.run('manual', true)).duplicate, true)
+    assert.equal(drawPosts, 1)
+})
+
+test('FNAT allows only a manual draw retry after a zero-submission session failure and Cookie save', async (t) => {
+    const { dataDir } = await fixture(t)
+    let now = new Date('2026-11-23T23:59:00Z')
+    let submissions = 0
+    const freshCookie = cookie.replace('private-test-auth', 'refreshed-auth')
+    const options = {
+        dataDir,
+        clock: () => now,
+        site: { id: 'fnat', name: 'FNAT', url: 'https://frp.fnat.cc', requiresFingerprint: false, parseCookie: parseCookieHeader, supportsLottery: true },
+        clientFactory: (config) => ({
+            cookieHeader: () => config.cookie,
+            close() {},
+            async draw({ beforePost }) {
+                if (config.cookie === cookie) throw new CheckinError('SESSION_EXPIRED', '过期')
+                await beforePost()
+                submissions++
+                return { status: 'success', message: '抽奖完成', checkinPosts: 1 }
+            }
+        })
+    }
+    const settings = { enabled: true, time: '08:00', account, lotteryEnabled: true }
+    const service = await new CheckinService(options).init()
+    await service.saveConfig({ ...settings, cookie })
+    now = new Date('2026-11-24T00:00:01Z')
+    const failed = (await service.run('manual', true)).record
+    assert.equal(failed.code, 'SESSION_EXPIRED')
+    assert.equal(failed.checkinPosts, 0)
+    assert.equal((await service.state()).lottery.todayClaimed, true)
+    assert.equal((await service.run('manual', true)).duplicate, true)
+    now = new Date('2026-11-24T00:01:00Z')
+    assert.equal((await service.saveConfig({ ...settings, cookie: '' })).lottery.todayClaimed, true)
+    assert.equal((await service.saveConfig({ ...settings, cookie: freshCookie })).lottery.todayClaimed, false)
+    assert.equal((await service.run('scheduled', true)).duplicate, true)
+    const restarted = await new CheckinService(options).init()
+    assert.equal((await restarted.state()).lottery.todayClaimed, false)
+    const attempts = await Promise.all([restarted.run('manual', true), service.run('manual', true)])
+    assert.equal(attempts.filter((result) => !result.duplicate).length, 1)
+    assert.equal(submissions, 1)
+    assert.equal((await restarted.state()).lottery.todayClaimed, true)
+})
+
 test('Shanghai 08:00 schedule uses the next morning when enabled after the time', () => {
     const config = { enabled: true, cookie, time: '08:00', activatedAt: '2026-11-23T09:50:00Z' }
     assert.equal(shanghaiDate(new Date('2026-11-23T16:01:00Z')), '2026-11-24')
@@ -230,16 +317,60 @@ test('final request trace distinguishes a timeout from a response and omits HTML
     assert.ok(!JSON.stringify(htmlClient.submissionTrace).includes('server-private'))
 })
 
-test('a failed CAPTCHA causes no final POST and no automatic retry', async (t) => {
-    const { service, calls } = await fixture(t, {
-        execute: async () => {
-            throw new CheckinError('CAPTCHA_REJECTED', '验证失败')
+test('forum retries a pre-submit failure at the next hour, including after restart', async (t) => {
+    let now = new Date('2026-11-24T00:00:00Z')
+    const { service, calls, dataDir, clientFactory, clock } = await fixture(t, {
+        clock: () => now,
+        execute: async ({ beforePost }, counter) => {
+            if (counter.execute < 3) throw new CheckinError('ACCESS_BLOCKED', '站点拒绝访问')
+            await beforePost()
+            counter.posts++
+            return { status: 'success', checkinPosts: 1 }
         }
     })
-    assert.equal((await service.run()).record.status, 'failed')
+    now = new Date('2026-11-24T01:53:01Z')
     await service.tick()
-    await service.run()
+    const first = await service.state()
+    assert.equal(first.records[0].checkinPosts, 0)
+    assert.equal(first.runtime.retryAvailable, true)
+    assert.equal(first.runtime.nextRunAt, '2026-11-24T02:00:00.000Z')
+    // Existing records from the previous release have no attempt ID.
+    const legacy = { ...first.records[0] }
+    delete legacy.attemptId
+    await fs.writeFile(path.join(dataDir, 'runs', recordName(account, '2026-11-24')), JSON.stringify(legacy))
+    const restarted = await new CheckinService({ dataDir, clientFactory, clock }).init()
+    now = new Date('2026-11-24T01:59:59Z')
+    await restarted.tick()
     assert.equal(calls.execute, 1)
+    now = new Date('2026-11-24T02:00:00Z')
+    await restarted.tick()
+    assert.equal(calls.execute, 2)
+    assert.equal((await restarted.state()).runtime.nextRunAt, '2026-11-24T03:00:00.000Z')
+    now = new Date('2026-11-24T03:00:00Z')
+    await Promise.all([service.tick(), restarted.run()])
+    assert.equal(calls.posts, 1)
+    assert.equal((await service.state()).runtime.nextRunAt, '2026-11-25T00:00:00.000Z')
+    assert.equal((await service.run()).duplicate, true)
+})
+
+test('forum can retry manually before the hour, but never carries a retry across midnight', async (t) => {
+    let now = new Date('2026-11-24T00:00:00Z')
+    const { service, calls } = await fixture(t, {
+        clock: () => now,
+        execute: async () => {
+            throw new CheckinError('ACCESS_BLOCKED', '站点拒绝访问')
+        }
+    })
+    now = new Date('2026-11-24T15:53:01Z')
+    assert.equal((await service.run()).record.status, 'failed')
+    const state = await service.state()
+    assert.equal(state.runtime.retryAvailable, true)
+    assert.equal(state.runtime.nextIsRetry, false)
+    assert.equal(state.runtime.nextRunAt, '2026-11-25T00:00:00.000Z')
+    assert.equal((await service.run()).duplicate, false)
+    now = new Date('2026-11-24T16:00:00Z')
+    await service.tick()
+    assert.equal(calls.execute, 2)
     assert.equal(calls.posts, 0)
 })
 
@@ -288,6 +419,29 @@ test('saving an empty Cookie preserves the configured credential', async (t) => 
     assert.equal(service.config.cookie, cookie)
     await assert.rejects(() => service.saveConfig({ enabled: true, time: '25:00', account, cookie, proxy: '' }), { code: 'CONFIG_INVALID' })
     assert.throws(() => parseCookieHeader('X9wU_2132_auth=value'), { code: 'COOKIE_INVALID' })
+})
+
+test('password login mode is opt-in and never exposes the saved password', async (t) => {
+    const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'game-req-password-checkin-'))
+    t.after(() => fs.rm(dataDir, { recursive: true, force: true }))
+    const service = await new CheckinService({
+        dataDir,
+        site: { id: 'fnat-test', name: 'FNAT', url: 'https://frp.fnat.cc', requiresFingerprint: false, supportsPassword: true, parseCookie: () => new Map() },
+        clientFactory: (config) => ({
+            cookieHeader: () => 'PHPSESSID=renewed-session',
+            close() {},
+            inspect: async () => ({ account: config.account, signed: false, counters: null })
+        })
+    }).init()
+    await assert.rejects(() => service.saveConfig({ enabled: true, time: '08:00', account, authMode: 'password', password: 'private-password', allowInsecureLogin: false, proxy: '' }), { code: 'CONFIG_INVALID' })
+    const state = await service.saveConfig({ enabled: true, time: '08:00', account, authMode: 'password', password: 'private-password', allowInsecureLogin: true, proxy: '' })
+    assert.equal(state.config.authMode, 'password')
+    assert.equal(state.config.hasPassword, true)
+    assert.equal(state.config.credentialsReady, true)
+    assert.ok(state.runtime.nextRunAt)
+    assert.doesNotMatch(JSON.stringify(state), /private-password/)
+    await service.inspect()
+    assert.equal(service.config.cookie, 'PHPSESSID=renewed-session')
 })
 
 test('page parsing validates account, counters and signed state before acting', () => {

@@ -20,7 +20,7 @@
             <div class="summary-item">
                 <span class="summary-label">下次执行</span>
                 <strong>{{ state.runtime.running ? '正在执行' : formatTime(state.runtime.nextRunAt) }}</strong>
-                <small>{{ state.runtime.nextRunAt ? '由后台服务自动触发' : '保存配置并开启后开始计时' }}</small>
+                <small>{{ state.runtime.nextIsRetry ? '上次未提交，在整点重试' : state.runtime.nextRunAt ? '由后台服务自动触发' : '保存配置并开启后开始计时' }}</small>
             </div>
             <div class="summary-item">
                 <span class="summary-label">最近结果</span>
@@ -37,7 +37,7 @@
                             <h2>{{ siteName }}</h2>
                             <a :href="signPage" target="_blank" rel="noreferrer">打开站点 ↗</a>
                         </div>
-                        <el-tag effect="plain">Cookie 登录</el-tag>
+                        <el-tag effect="plain">{{ isFnat && form.authMode === 'password' ? '账号密码登录' : 'Cookie 登录' }}</el-tag>
                     </div>
                 </template>
                 <el-form label-position="top" @submit.prevent="save">
@@ -64,9 +64,16 @@
                         </el-form-item>
                     </div>
                     <el-form-item label="站点用户名">
-                        <el-input v-model="form.account" placeholder="需与 Cookie 对应的账号一致" maxlength="64" />
+                        <el-input v-model="form.account" :placeholder="isFnat && form.authMode === 'password' ? 'FNAT 登录用户名' : '需与 Cookie 对应的账号一致'" maxlength="64" />
                     </el-form-item>
-                    <el-form-item>
+                    <el-form-item v-if="isFnat" label="登录方式">
+                        <el-radio-group v-model="form.authMode">
+                            <el-radio-button value="cookie">Cookie / token</el-radio-button>
+                            <el-radio-button value="password">账号密码</el-radio-button>
+                        </el-radio-group>
+                        <p class="field-help">默认使用 Cookie；账号密码模式仅在会话过期时重新登录并更新 Cookie。</p>
+                    </el-form-item>
+                    <el-form-item v-if="!isFnat || form.authMode === 'cookie'">
                         <template #label>
                             <div class="cookie-label">
                                 <span>Cookie <el-tag v-if="state?.config.hasCookie" size="small" type="success">已保存</el-tag></span>
@@ -78,6 +85,14 @@
                         <el-button link type="primary" @click="helperDialog = true">获取插件没有反应？查看设置方法</el-button>
                         <p class="field-help" v-if="state?.config.credentialsUpdatedAt">上次更新：{{ formatTime(state.config.credentialsUpdatedAt) }}</p>
                     </el-form-item>
+                    <template v-if="isFnat && form.authMode === 'password'">
+                        <el-form-item label="FNAT 登录密码">
+                            <el-input v-model="form.password" type="password" show-password autocomplete="new-password" :placeholder="state?.config.hasPassword ? '密码已保存，留空会保留' : '输入 FNAT 登录密码'" />
+                            <p class="field-help">密码只保存在后台签到数据目录，状态接口和执行记录不会返回原文。</p>
+                        </el-form-item>
+                        <el-alert title="FNAT 当前会把 HTTPS 登录地址重定向到 HTTP，自动登录时账号密码可能以明文经过网络。" type="warning" :closable="false" show-icon class="login-warning" />
+                        <el-checkbox v-model="form.allowInsecureLogin" class="risk-confirm">我确认并允许在会话失效时通过 FNAT 当前的 HTTP 登录入口自动登录</el-checkbox>
+                    </template>
                     <el-collapse class="advanced-settings">
                         <el-collapse-item title="网络与首次配置" name="network">
                             <el-form-item label="代理地址（留空直连）">
@@ -91,10 +106,17 @@
                     </el-collapse>
                     <div class="form-actions">
                         <el-button type="primary" :loading="saving" @click="save">保存配置</el-button>
-                        <el-button :loading="inspecting" :disabled="!state?.config.hasCookie || state?.runtime.running" @click="inspect">检查登录态</el-button>
-                        <el-button :loading="running" :disabled="!state?.config.hasCookie || state?.runtime.todayClaimed || state?.runtime.running" @click="run">立即签到</el-button>
+                        <el-button :loading="inspecting" :disabled="!state?.config.credentialsReady || state?.runtime.running" @click="inspect">检查登录态</el-button>
+                        <el-button :loading="running" :disabled="!state?.config.credentialsReady || state?.runtime.todayClaimed || state?.runtime.running || drawing" @click="run()">{{ state?.runtime.retryAvailable ? '立即重试' : '立即签到' }}</el-button>
                     </div>
-                    <p class="field-help guard-note">每天最多执行一次；失败或结果不明时不自动重试。检查登录态不会签到。</p>
+                    <p class="field-help guard-note">{{ isFnat ? '每天最多执行一次；失败或结果不明时不自动重试。' : '每天最多提交一次；提交前失败可手动重试，自动签到开启时会在下一个整点重试。' }}检查登录态不会签到。</p>
+                    <template v-if="isFnat && state?.lottery">
+                        <el-divider />
+                        <el-form-item label="自动免费抽奖（随签到计划执行）">
+                            <el-switch v-model="form.lotteryEnabled" :disabled="!form.enabled" active-text="开启" inactive-text="关闭" />
+                        </el-form-item>
+                        <el-button :loading="drawing" :disabled="!state.config.credentialsReady || state.runtime.running || state.lottery.todayClaimed || running" @click="run(true)">立即免费抽奖</el-button>
+                    </template>
                     <el-alert v-if="inspection" :type="inspection.signed ? 'success' : 'info'" :title="inspection.account + ' · ' + (inspection.signed ? '今日已签到' : '登录有效，今日尚未签到') + (inspection.counters ? ' · 累计 ' + inspection.counters.lxtdays + ' 天' : '')" :closable="false" show-icon />
                 </el-form>
             </el-card>
@@ -128,6 +150,25 @@
                     </div>
                     <p class="record-meta">{{ sourceLabel(record.source) }} · {{ formatTime(record.finishedAt || record.startedAt) }} · 签到提交 {{ record.checkinPosts }} 次</p>
                 </div>
+                <template v-if="isFnat && state?.lottery">
+                    <el-divider />
+                    <div class="card-heading">
+                        <h2>免费抽奖记录</h2>
+                        <span class="subtle">最近 30 次</span>
+                    </div>
+                    <el-empty v-if="!state.lottery.records.length" description="暂无抽奖记录" :image-size="72" />
+                    <div v-for="record in state.lottery.records" :key="record.date + record.account" class="run-record">
+                        <div class="record-heading">
+                            <strong>{{ record.date }}</strong>
+                            <div class="record-actions">
+                                <el-tag :type="statusType(record.status)" size="small">{{ statusLabel(record.status) }}</el-tag>
+                                <el-button link type="primary" :icon="Tickets" @click="showRequest(record, true)">平台请求</el-button>
+                            </div>
+                        </div>
+                        <p class="record-message">{{ record.message }}</p>
+                        <p class="record-meta">{{ sourceLabel(record.source) }} · {{ formatTime(record.finishedAt || record.startedAt) }} · 抽奖提交 {{ record.checkinPosts }} 次</p>
+                    </div>
+                </template>
             </el-card>
         </div>
 
@@ -170,6 +211,7 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { CopyDocument, Tickets } from '@element-plus/icons-vue'
+import { adminFetch } from '@/utils/admin-api'
 
 type Counters = { lxtdays: number; lxdays: number; lxreward: number; lxlevel: number }
 type PlatformRequest = { method: string; url: string; contentType: string; fields: string[] }
@@ -179,7 +221,8 @@ type SubmissionTrace = { request: PlatformRequest; response?: PlatformResponse; 
 type DiagnosticStep = { name: string; startedAt: string; durationMs: number; outcome: 'ok' | 'error'; httpStatus?: number; code?: string }
 type RunRecord = { date: string; account: string; source: string; status: string; message: string; startedAt: string; finishedAt?: string; checkinPosts: number; responseStatus?: number | null; submissionTrace?: SubmissionTrace; code?: string; network?: 'direct' | 'proxy'; diagnostics?: DiagnosticStep[]; before?: Counters; after?: Counters }
 type ScheduleMode = 'fixed' | 'random'
-type CheckinState = { config: { enabled: boolean; time: string; scheduleMode?: ScheduleMode; randomStart?: string; randomEnd?: string; account: string; hasCookie: boolean; hasFingerprint: boolean; credentialsUpdatedAt?: string; proxy: string }; runtime: { running: boolean; serverTime: string; nextRunAt: string | null; todayClaimed: boolean }; records: RunRecord[] }
+type AuthMode = 'cookie' | 'password'
+type CheckinState = { config: { enabled: boolean; time: string; scheduleMode?: ScheduleMode; randomStart?: string; randomEnd?: string; account: string; authMode?: AuthMode; hasCookie: boolean; hasPassword?: boolean; allowInsecureLogin?: boolean; credentialsReady?: boolean; hasFingerprint: boolean; credentialsUpdatedAt?: string; proxy: string }; runtime: { running: boolean; serverTime: string; nextRunAt: string | null; todayClaimed: boolean; retryAvailable?: boolean; nextIsRetry?: boolean }; records: RunRecord[]; lottery?: { enabled: boolean; todayClaimed: boolean; records: RunRecord[] } }
 const router = useRouter()
 const props = defineProps<{ provider?: 'fnat' }>()
 const isFnat = computed(() => props.provider === 'fnat')
@@ -190,17 +233,18 @@ const loading = ref(true),
     refreshing = ref(false),
     saving = ref(false),
     inspecting = ref(false),
-    running = ref(false)
+    running = ref(false),
+    drawing = ref(false)
 const error = ref(''),
     helperDialog = ref(false),
     helperReady = ref(false)
 const inspection = ref<{ account: string; signed: boolean; counters: Pick<Counters, 'lxtdays'> | null } | null>(null)
 const requestDialog = ref(false)
 const selectedRecord = ref<RunRecord | null>(null)
+const selectedAction = ref('签到')
 const diagnosticCopyInput = ref<HTMLTextAreaElement | null>(null)
 const localOrigin = window.location.origin
-const previousTitle = document.title
-const form = reactive({ enabled: false, time: '08:00', scheduleMode: 'fixed' as ScheduleMode, randomStart: '08:00', randomEnd: '10:00', account: 'mmzhw51', cookie: '', proxy: '', fingerprint: '' })
+const form = reactive({ enabled: false, lotteryEnabled: false, time: '08:00', scheduleMode: 'fixed' as ScheduleMode, randomStart: '08:00', randomEnd: '10:00', account: 'mmzhw51', authMode: 'cookie' as AuthMode, cookie: '', password: '', allowInsecureLogin: false, proxy: '', fingerprint: '' })
 const latest = computed(() => state.value?.records[0])
 const diagnosticSections = computed(() => {
     const record = selectedRecord.value
@@ -208,7 +252,7 @@ const diagnosticSections = computed(() => {
     const sections = [
         {
             title: '执行摘要',
-            text: ['开始：' + formatTime(record.startedAt), '结束：' + formatTime(record.finishedAt), record.network && '网络：' + (record.network === 'proxy' ? '代理' : '直连'), '签到提交：' + record.checkinPosts + ' 次', record.code && '错误码：' + record.code, record.message].filter(Boolean).join('\n')
+            text: ['开始：' + formatTime(record.startedAt), '结束：' + formatTime(record.finishedAt), record.network && '网络：' + (record.network === 'proxy' ? '代理' : '直连'), selectedAction.value + '提交：' + record.checkinPosts + ' 次', record.code && '错误码：' + record.code, record.message].filter(Boolean).join('\n')
         }
     ]
     if (record.diagnostics?.length) sections.push({ title: '执行过程（北京时间）', text: record.diagnostics.map(formatStep).join('\n') })
@@ -216,10 +260,10 @@ const diagnosticSections = computed(() => {
     if (trace) {
         sections.push({ title: '发送的请求（脱敏）', text: formatRequest(trace.request) })
         sections.push({ title: '平台返回', text: trace.response ? formatResponse(trace.response) : trace.error || '未收到响应' })
-        if (trace.response) sections.push({ title: '响应正文 · ' + trace.response.body.bytes + ' 字节', text: formatResponseBody(trace.response.body) })
+        if (trace.response) sections.push({ title: selectedAction.value === '抽奖' ? '响应摘要（脱敏）' : '响应正文 · ' + trace.response.body.bytes + ' 字节', text: formatResponseBody(trace.response.body) })
     } else {
         const status = record.responseStatus != null ? '已记录状态：HTTP ' + record.responseStatus + '\n' : ''
-        sections.push({ title: '平台请求详情', text: status + (record.checkinPosts ? '这条记录未保存请求地址、表单或响应正文。' : '没有记录到最终签到提交。') })
+        sections.push({ title: '平台请求详情', text: status + (record.checkinPosts ? '这条记录未保存请求地址、表单或响应正文。' : `没有记录到最终${selectedAction.value}提交。`) })
     }
     const after = record.after
     if (after) {
@@ -230,10 +274,8 @@ const diagnosticSections = computed(() => {
 })
 let timer: ReturnType<typeof setInterval> | undefined
 let awaitingCookieUntil = 0
-const apiBase = import.meta.env.DEV ? 'http://localhost:3000' : ''
-
 async function api(route: string, body?: unknown, method = 'POST') {
-    const response = await fetch(apiBase + '/api/checkin' + (isFnat.value ? '/fnat' : '') + route, { method: body === undefined && route === '' ? 'GET' : method, headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined, body: body === undefined ? undefined : JSON.stringify(body) })
+    const response = await adminFetch('/api/checkin' + (isFnat.value ? '/fnat' : '') + route, { method: body === undefined && route === '' ? 'GET' : method, headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined, body: body === undefined ? undefined : JSON.stringify(body) })
     const value = await response.json()
     if (!response.ok) throw new Error(value.error || '请求失败，请确认后台服务已启动')
     return value
@@ -250,7 +292,8 @@ function statusType(status: string) {
 function sourceLabel(source: string) {
     return ({ scheduled: '定时执行', manual: '手动执行', verified: '首次验证' } as Record<string, string>)[source] || source
 }
-function showRequest(record: RunRecord) {
+function showRequest(record: RunRecord, draw = false) {
+    selectedAction.value = draw ? '抽奖' : '签到'
     selectedRecord.value = record
     requestDialog.value = true
 }
@@ -293,8 +336,8 @@ async function refresh(initial = false, quiet = false) {
     try {
         state.value = await api('')
         if (initial && state.value) {
-            const { enabled, time, scheduleMode = 'fixed', randomStart = '08:00', randomEnd = '10:00', account, proxy } = state.value.config
-            Object.assign(form, { enabled, time, scheduleMode, randomStart, randomEnd, account, proxy })
+            const { enabled, time, scheduleMode = 'fixed', randomStart = '08:00', randomEnd = '10:00', account, authMode = 'cookie', allowInsecureLogin = false, proxy } = state.value.config
+            Object.assign(form, { enabled, time, scheduleMode, randomStart, randomEnd, account, authMode, allowInsecureLogin, proxy, lotteryEnabled: state.value.lottery?.enabled ?? false })
         }
         helperReady.value = document.body.getAttribute('get-cookie') === 'true'
         error.value = ''
@@ -309,7 +352,9 @@ async function save() {
     saving.value = true
     try {
         state.value = await api('/config', { ...form, fingerprint: form.fingerprint || undefined }, 'PUT')
+        form.lotteryEnabled = state.value?.lottery?.enabled ?? false
         form.cookie = ''
+        form.password = ''
         form.fingerprint = ''
         inspection.value = null
         ElMessage.success('配置已保存')
@@ -331,17 +376,18 @@ async function inspect() {
         await refresh(false, true)
     }
 }
-async function run() {
-    running.value = true
+async function run(draw = false) {
+    const busy = draw ? drawing : running
+    busy.value = true
     try {
-        const result = await api('/run', {})
+        const result = await api(draw ? '/lottery/run' : '/run', {})
         const message = result.message || result.record?.message
         if (['failed', 'unconfirmed'].includes(result.record?.status)) ElMessage.warning(message)
         else ElMessage.success(message)
     } catch (reason) {
         ElMessage.error((reason as Error).message)
     } finally {
-        running.value = false
+        busy.value = false
         await refresh(false, true)
     }
 }
@@ -376,13 +422,11 @@ function receiveCookie(event: MessageEvent) {
     ElMessage.success(`已获取${siteName.value} Cookie，请点击保存配置`)
 }
 onMounted(async () => {
-    document.title = `${siteName.value}签到`
     window.addEventListener('message', receiveCookie)
     await refresh(true)
     timer = setInterval(() => refresh(false, true), 5000)
 })
 onUnmounted(() => {
-    document.title = previousTitle
     clearInterval(timer)
     window.removeEventListener('message', receiveCookie)
 })
@@ -517,6 +561,19 @@ h2 {
 }
 .guard-note {
     margin: 12px 0 16px;
+}
+.login-warning {
+    margin-bottom: 12px;
+}
+.risk-confirm {
+    align-items: flex-start;
+    height: auto;
+    margin-bottom: 20px;
+    white-space: normal;
+    :deep(.el-checkbox__label) {
+        line-height: 1.6;
+        white-space: normal;
+    }
 }
 .run-record {
     padding: 18px 0;

@@ -1,10 +1,10 @@
 # 每日签到
 
-配置入口：首页点击“每日签到”进入 `/#/checkin` 站点列表，再点击对应站点；老王论坛详情为 `/#/checkin/laowang`。
+配置入口：登录后台后从侧栏「每日签到」进入 `/#/checkin` 站点列表，再点击对应站点；老王论坛详情为 `/#/checkin/laowang`。
 
-目前接入老王论坛和 FNAT 内网穿透。每日任务由 Node.js 后台执行，不需要浏览器常开。浏览器只用于首次获取或后续更新登录 Cookie。账号、执行时间、开关、代理和执行记录都在对应站点配置页维护。
+目前接入老王论坛和 FNAT 内网穿透。每日任务由 Node.js 后台执行，不需要浏览器常开。账号、执行时间、开关、代理和执行记录都在对应站点配置页维护。
 
-FNAT 详情为 `/#/checkin/fnat`。先在同一浏览器手动登录 FNAT，再通过 Cookie 插件获取 `PHPSESSID`，保存后先检查登录态。FNAT 不需要填写浏览器标识；会话过期需重新登录，没有自动验证码登录或免费转盘操作。配置与记录位于签到数据目录下的 `fnat/`，不会覆盖老王论坛数据。
+FNAT 详情为 `/#/checkin/fnat`，默认使用 Cookie 模式：先在同一浏览器手动登录 FNAT，再通过 Cookie 插件获取 `PHPSESSID`。也可切换到账号密码模式，后台仅在会话缺失或过期时调用 PyPasser 完成 GeeTest v4 验证、登录并保存新会话。FNAT 当前会把 HTTPS 登录入口重定向到 HTTP，因此账号密码模式必须在页面明确确认风险后才能启用；密码只保存在签到数据目录，不通过状态接口返回。配置与记录位于签到数据目录下的 `fnat/`，不会覆盖老王论坛数据。
 
 ## 本地启动
 
@@ -15,6 +15,15 @@ npx --yes pnpm@10.28.0 install
 node node_modules/vite/bin/vite.js build
 pm2 start server/ecosystem.config.cjs --only game-req-checkin-local
 ~~~
+
+本地使用 FNAT 账号密码模式时还需 Python 3.9+ 和 PyPasser：
+
+~~~powershell
+python -m pip install "PyPasser[vision]==1.1.0"
+$env:FNAT_PYTHON = "python"
+~~~
+
+Docker 镜像会安装固定版本的 Python 依赖并设置 `FNAT_PYTHON`，Cookie 模式不调用 Python。
 
 本地进程名为 game-req-checkin-local，由 PM2 保持运行并在异常退出时重启。关闭配置页面或 Codex 不会主动停止该进程。电脑仍需保持开机和联网。查看与停止：
 
@@ -60,12 +69,11 @@ pm2 stop game-req-checkin-local
 
 ~~~sh
 docker build -f docker/Dockerfile -t game-req .
-docker run -d --name game-req --restart unless-stopped -p 3000:3000 \
-  --env-file /your/game-req.env \
-  -v /your/checkin-data:/opt/server/data/checkin game-req
+docker run -d --name game-req --restart unless-stopped -p 127.0.0.1:3000:3000 \
+  -v /your/game-req-data:/opt/server/data game-req
 ~~~
 
-环境文件可设置非空的 `GAME_REQ_UPDATE_TOKEN`，用于授权首页的更新与重启操作；不设置则不开放。将本地 server/data/checkin 中的配置和执行记录私下迁移到挂载目录，保留当日锁和记录。“平台请求”里的诊断随 runs/ 记录持久化，替换容器后继续可查。挂载目录包含登录凭据，勿提交或公开。切换时应先停止旧实例的调度，再开启新实例，避免两边同时签到。
+将本地 `server/data/checkin` 中的配置和执行记录私下迁移到挂载目录的 `checkin/` 子目录，保留当日锁和记录。「平台请求」里的诊断随 `runs/` 记录持久化，替换容器后继续可查。挂载目录包含登录凭据，勿提交或公开。切换时先停止旧实例，再启动新实例，避免两边同时签到。首次注册和管理员维护见 [部署说明](../../README.md)。
 
 ## 验证
 

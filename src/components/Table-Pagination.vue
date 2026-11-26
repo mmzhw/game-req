@@ -34,7 +34,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 
 const props = defineProps<{
     dataList: Array<{ no: number; message: string }>
@@ -45,7 +45,9 @@ const sizes = ref([10, 20, 50, 100, 200, 300, 400, 500, 1000, 5000])
 const current = ref(1)
 const layout = ref('')
 
-const isMobile = ref(/mobile/i.test(navigator.userAgent))
+const mobileQuery = window.matchMedia('(max-width: 700px)')
+const isMobile = ref(mobileQuery.matches)
+const updateMobile = (event: MediaQueryListEvent) => { isMobile.value = event.matches }
 const detailVisible = ref(false)
 const detailLog = ref<any>(null)
 const detailTitle = computed(() => (detailLog.value ? `日志详情 #${detailLog.value.no}` : '日志详情'))
@@ -92,12 +94,12 @@ const showDetail = (row: any) => {
 }
 
 onMounted(() => {
-    if (isMobile.value) {
-        layout.value = 'prev, next, sizes, ->, slot'
-    } else {
-        layout.value = 'prev, pager, next, jumper, sizes, ->, total'
-    }
+    mobileQuery.addEventListener('change', updateMobile)
 })
+onUnmounted(() => mobileQuery.removeEventListener('change', updateMobile))
+watch(isMobile, (mobile) => {
+    layout.value = mobile ? 'prev, pager, next' : 'prev, pager, next, jumper, sizes, ->, total'
+}, { immediate: true })
 
 const pageCurrentChange = (size: number) => {
     current.value = size
@@ -111,9 +113,11 @@ const pageSizeChange = (sizes: number) => {
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
 .pagePaginationMobile {
+    justify-content: center;
+
     :deep() {
-        .el-pagination__sizes {
-            margin-left: 5px;
+        .el-pager {
+            min-width: 0;
         }
     }
 }

@@ -6,7 +6,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as wait } from 'node:timers/promises'
 import { promisify } from 'node:util'
-import { exists, isAuthorized, jobPath, readJson, validJobId, writeJson } from './common.js'
+import { exists, isAuthorized, jobPath, readJson, supervisorToken, validJobId, writeJson } from './common.js'
 
 const root = process.cwd()
 const updates = path.join(root, '.updates')
@@ -148,7 +148,7 @@ const server = createServer(async (request, response) => {
         response.end(JSON.stringify({ message }))
     }
     if (request.method !== 'POST' || !['/apply', '/restart'].includes(request.url)) return send(404, '没有找到操作')
-    if (!isAuthorized(request.headers.authorization, process.env.GAME_REQ_UPDATE_TOKEN)) return send(401, '无权执行此操作')
+    if (!isAuthorized(request.headers.authorization, supervisorToken())) return send(401, '无权执行此操作')
     if (busy) return send(409, '已有更新或重启正在执行')
     busy = true
     try {

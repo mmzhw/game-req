@@ -23,25 +23,23 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { ArrowRight, Refresh } from '@element-plus/icons-vue'
+import { adminFetch } from '@/utils/admin-api'
 
 type Site = { id: string; name: string; site: string; enabled: boolean; running: boolean; nextRunAt: string | null }
 const router = useRouter()
 const sites = ref<(Site & { hostname: string })[]>([])
 const loading = ref(false)
 const error = ref('')
-const apiBase = import.meta.env.DEV ? 'http://localhost:3000' : ''
 const formatter = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 const formatNext = (value: string | null) => (value ? formatter.format(new Date(value)) : '未安排')
-const previousTitle = document.title
-
 async function loadSites() {
     loading.value = true
     error.value = ''
     try {
-        const response = await fetch(apiBase + '/api/checkin/sites')
+        const response = await adminFetch('/api/checkin/sites')
         if (!response.ok) throw new Error('站点列表请求失败')
         const data: Site[] = await response.json()
         sites.value = data.map((site) => ({ ...site, hostname: new URL(site.site).hostname }))
@@ -52,11 +50,7 @@ async function loadSites() {
     }
 }
 onMounted(() => {
-    document.title = '签到站点'
     void loadSites()
-})
-onUnmounted(() => {
-    document.title = previousTitle
 })
 </script>
 

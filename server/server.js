@@ -8,22 +8,28 @@ import qs from 'qs'
 import Router from 'koa-router'
 import koaStatic from 'koa-static'
 import { koaBody } from 'koa-body'
-import cors from 'koa2-cors'
 import { WebSocketServer } from 'ws'
 import { CheckinService, registerCheckinRoutes } from './checkin/service.js'
 import { FnatClient, FNAT_SITE, parseFnatCookie } from './checkin/fnat.js'
+import { ItemsRepository, registerItemsRoutes } from './items.js'
+import { GamesRepository, registerGameRoutes } from './games.js'
+import { AdminAuth } from './admin/auth.js'
+import { adminDatabaseFile, dataDir, openDatabase } from './admin/db.js'
 import { isUpdateUpload, registerUpdateRoutes } from './update/routes.js'
 
-let singleWs = null
 console.log('process.env.NODE_ENV', process.env.NODE_ENV)
 let isDev = process.env.NODE_ENV === 'dev'
 
 /* 创建Koa应用实例 */
-const app = new Koa()
+const app = new Koa({ proxy: process.env.GAME_REQ_TRUST_PROXY === '1' })
 const router = new Router()
-const checkinService = await new CheckinService().init()
+const checkinDir = process.env.CHECKIN_DATA_DIR || path.join(dataDir, 'checkin')
+const auth = new AdminAuth(openDatabase(adminDatabaseFile))
+auth.register(router)
+const checkinService = await new CheckinService({ dataDir: checkinDir }).init()
 const fnatService = await new CheckinService({
-    site: { id: 'fnat', name: 'FNAT 内网穿透', url: FNAT_SITE, requiresFingerprint: false, parseCookie: parseFnatCookie },
+    dataDir: checkinDir,
+    site: { id: 'fnat', name: 'FNAT 内网穿透', url: FNAT_SITE, requiresFingerprint: false, parseCookie: parseFnatCookie, supportsLottery: true, supportsPassword: true },
     clientFactory: (config) => new FnatClient(config)
 }).init()
 registerCheckinRoutes(router, checkinService, [fnatService])
@@ -31,8 +37,8 @@ const readBuildFile = (file) => JSON.parse(fs.readFileSync(new URL(file, import.
 const build = process.env.GAME_REQ_MANAGED_RELEASE === '1' ? readBuildFile('./.release.json') : { id: 'local' }
 registerUpdateRoutes(router, { root: process.cwd(), build })
 
-const UPLOAD_DIR = path.resolve(isDev ? './server' : './', './uploads')
-const STATIC_DIST = path.resolve('./', './dist')
+const STATIC_DIST = path.resolve(process.env.GAME_REQ_STATIC_DIR || './dist')
+const ITEMS_DIR = path.resolve(isDev ? './public/items' : path.join(STATIC_DIST, 'items'))
 const TLS_DIR = process.env.GAME_REQ_TLS_DIR
 const HTTPS_KEY = path.resolve(TLS_DIR || (isDev ? './server' : './dist'), './111.119.248.34.key')
 const HTTPS_CER = path.resolve(TLS_DIR || (isDev ? './server' : './dist'), './111.119.248.34_cer.crt')
@@ -40,9 +46,30 @@ const HTTPS_CA = path.resolve(TLS_DIR || (isDev ? './server' : './dist'), './111
 const DEFAULT_SESSION_TTL_MS = 10 * 60 * 1000
 const sessionCookieStore = new Map()
 
-const parseBody = koaBody({ multipart: true, formidable: { uploadDir: UPLOAD_DIR, keepExtensions: true } })
-app.use(cors())
-    .use((ctx, next) => (isUpdateUpload(ctx) ? next() : parseBody(ctx, next)))
+const gameDatabase = openDatabase(path.join(dataDir, 'items.db'))
+const games = new GamesRepository(gameDatabase)
+registerGameRoutes(router, games)
+const items = new ItemsRepository(gameDatabase)
+await items.seed(ITEMS_DIR)
+registerItemsRoutes(router, items)
+
+const parseBody = koaBody({ json: true, multipart: false, urlencoded: false })
+const parseCatalog = koaBody({ jsonLimit: '8mb', multipart: false, urlencoded: false })
+app.use(async (ctx, next) => {
+    try {
+        await next()
+    } catch (error) {
+        const status = error.status || 500
+        if (status >= 500) ctx.app.emit('error', error, ctx)
+        ctx.status = status
+        ctx.body = { message: status < 500 ? error.message : '服务暂不可用' }
+    }
+})
+    .use(auth.guard())
+    .use((ctx, next) => {
+        if (!['POST', 'PUT', 'PATCH'].includes(ctx.method) || isUpdateUpload(ctx)) return next()
+        return (/^\/api\/items\/[^/]+\/import\//i.test(ctx.path) ? parseCatalog : parseBody)(ctx, next)
+    })
     /* 指定一个目录作为静态资源的根目录（亦即站点根目录） */
     .use(koaStatic(STATIC_DIST))
     .use(router.routes())
@@ -127,12 +154,22 @@ const formatRequestBody = (data) => {
     return text
 }
 
-const formatRequestLog = ({ body, option, result, error, durationMs }) => {
+const formatRequestLog = ({ body, option, result, error, durationMs, repeatIndex, repeatTotal }) => {
     const config = result?.config || error?.config || option
     const nativeRequest = result?.request || error?.request
     const response = result || error?.response
     const method = String(config?.method || option.method || '').toUpperCase()
-    const lines = [`${body.account || '-'}  ${body.name || '-'}  ${durationMs}ms`, '', '[请求]', `${method} ${getRequestUrl(config, nativeRequest)}`, '请求内容', formatRequestBody(config?.data), '', '[响应]']
+    const repeatLabel = repeatIndex && repeatTotal ? `  第 ${repeatIndex}/${repeatTotal} 次` : ''
+    const lines = [
+        `${body.account || '-'}  ${body.name || '-'}${repeatLabel}  ${durationMs}ms`,
+        '',
+        '[请求]',
+        `${method} ${getRequestUrl(config, nativeRequest)}`,
+        '请求内容',
+        formatRequestBody(config?.data),
+        '',
+        '[响应]'
+    ]
 
     if (response) {
         lines.push(`HTTP ${response.status} ${response.statusText || ''}`.trim(), formatResponseData(response.data))
@@ -143,17 +180,12 @@ const formatRequestLog = ({ body, option, result, error, durationMs }) => {
 }
 
 const sendLog = (message) => {
-    if (!singleWs || singleWs.readyState !== 1) {
-        return
-    }
-    try {
-        singleWs.send(message, (error) => {
-            if (error) {
-                console.error('[WEBSOCKET SERVER] send error:', error.message)
-            }
+    for (const client of websocketServer.clients) {
+        if (client.readyState !== 1) continue
+        if (!auth.requestSession(client.request)) client.close(1008)
+        else client.send(message, (error) => {
+            if (error) console.error('[WEBSOCKET SERVER] send error:', error.message)
         })
-    } catch (e) {
-        console.error('[WEBSOCKET SERVER] send error:', e.message)
     }
 }
 
@@ -183,7 +215,9 @@ const resolveSessionCookie = async (body, session) => {
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             ...normalizeHeaders(body.headers)
         },
-        timeout: Number(session.TIMEOUT_MS) || 15000
+        timeout: Number(session.TIMEOUT_MS) || 15000,
+        maxRedirects: 0,
+        proxy: false
     })
     if (response.data?.ok === false) {
         throw new Error(`Session 绑定失败: ${response.data?.msg || '账号不存在或未创建角色'}`)
@@ -242,12 +276,16 @@ const sendWithSession = async (body, option) => {
     }
 }
 
-const axiosContent = async (bodys = [], intervalTime) => {
+const axiosContent = async (bodys = [], intervalMs, repeat = {}) => {
     for (let i = 0; i < bodys.length; i++) {
         let body = bodys[i]
         let option = {
             method: body.realReqMethod,
-            url: body.realReqUrl
+            url: body.realReqUrl,
+            maxRedirects: 0,
+            proxy: false,
+            timeout: 15000,
+            maxContentLength: 1024 * 1024
         }
         if (body.params) {
             option.params = body.params
@@ -267,7 +305,8 @@ const axiosContent = async (bodys = [], intervalTime) => {
                     option,
                     result,
                     error: null,
-                    durationMs: Date.now() - startedAt
+                    durationMs: Date.now() - startedAt,
+                    ...repeat
                 })
             )
         } catch (error) {
@@ -277,34 +316,60 @@ const axiosContent = async (bodys = [], intervalTime) => {
                     option,
                     result: null,
                     error,
-                    durationMs: Date.now() - startedAt
+                    durationMs: Date.now() - startedAt,
+                    ...repeat
                 })
             )
         }
-        if (intervalTime) {
-            await sleep(Number(intervalTime))
+        if (intervalMs) {
+            await sleep(intervalMs)
         }
     }
 }
 
 router
     .post('/api', async (ctx) => {
-        if (!ctx.request.body?.reqData || !ctx.request.body?.reqData?.length) {
-            ctx.body = '数据异常'
-            return
-        }
+        const { reqData, repeatTime, intervalTime } = ctx.request.body || {}
+        const repeatTotal = repeatTime === '' || repeatTime === undefined ? 1 : Number(repeatTime)
+        const intervalMs = Number(intervalTime || 0) * 1000
+        if (!Array.isArray(reqData) || !reqData.length || !Number.isSafeInteger(repeatTotal) || repeatTotal < 1 ||
+            reqData.length * repeatTotal > 1000 || !Number.isFinite(intervalMs) || intervalMs < 0 || intervalMs > 60000)
+            ctx.throw(400, '请求数据无效：任务最多 1000 次请求，间隔为 0–60 秒')
+        const requests = reqData.map((body) => {
+            const game = games.get(String(body?.game || ''))
+            const allowedRequests = new Set(
+                (game.config.operations || []).map((operation) => `${operation.method || 'POST'} ${operation.url}`)
+            )
+            const target = body?.realReqUrl
+            const method = String(body?.realReqMethod || '').toUpperCase()
+            if (!game.enabled || !allowedRequests.has(`${method} ${target}`) || typeof body.account !== 'string' ||
+                body.account.length > 128 || !body.formData || typeof body.formData !== 'object' || Array.isArray(body.formData))
+                ctx.throw(400, '发送请求不符合已配置的游戏平台')
+            const operation = (game.config.operations || []).find((entry) => entry.url === target && (entry.method || 'POST') === method)
+            const needsSession = !!operation?.session?.resolveUrl
+            return {
+                realReqUrl: target, realReqMethod: method, account: body.account, name: String(body.name || '').slice(0, 250),
+                params: method === 'GET' ? body.formData : undefined,
+                formData: method === 'POST' ? body.formData : undefined,
+                headers: needsSession ? {
+                    'X-Requested-With': 'XMLHttpRequest', Origin: new URL(target).origin, Referer: new URL('/gm.php', target).href
+                } : undefined,
+                session: needsSession ? { RESOLVE_URL: operation.session.resolveUrl, ACCOUNT_FIELD: 'account' } : undefined
+            }
+        })
         ctx.body = '正在处理，结果查看ws信息'
-        let intervalTime = ctx.request.body.intervalTime
-        let repeatTime = ctx.request.body.repeatTime
         if (repeatTime) {
-            for (let i = 0; i < Number(repeatTime); i++) {
-                await axiosContent(ctx.request.body.reqData, intervalTime)
-                if (intervalTime) {
-                    await sleep(Number(intervalTime))
+            for (let i = 0; i < repeatTotal; i++) {
+                await axiosContent(requests, intervalMs, {
+                    repeatIndex: i + 1,
+                    repeatTotal
+                })
+                if (intervalMs) {
+                    await sleep(intervalMs)
                 }
             }
         } else {
-            await axiosContent(ctx.request.body.reqData, intervalTime)
+            await axiosContent(requests, intervalMs)
         }
     })
 
@@ -329,27 +394,35 @@ if (hasCertFiles) {
     console.log('Using HTTP server' + (isDev ? ' (development mode)' : ' (certificates not found)'))
 }
 
-const websocketServer = new WebSocketServer({ server: mainServer })
+const websocketServer = new WebSocketServer({ noServer: true, maxPayload: 1024 })
+mainServer.on('upgrade', (request, socket, head) => {
+    let sameOrigin = false
+    try {
+        sameOrigin = new URL(request.headers.origin).host === request.headers.host
+    } catch {
+        sameOrigin = false
+    }
+    if (request.url !== '/ws' || !sameOrigin || !auth.requestSession(request)) {
+        socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')
+        return
+    }
+    websocketServer.handleUpgrade(request, socket, head, (ws) => {
+        ws.request = request
+        websocketServer.emit('connection', ws)
+    })
+})
 websocketServer.on('connection', (ws) => {
-    console.log('[WEBSOCKET SERVER] connection()')
-    singleWs = ws
-    singleWs.on('message', (message) => {
-        const result = String(message)
-        console.log(`[WEBSOCKET SERVER] Received: ${result}`)
-        if (result === 'ping') {
-            singleWs && singleWs.send('pong')
-        }
+    ws.on('message', (message) => {
+        if (!auth.requestSession(ws.request)) ws.close(1008)
+        else if (String(message) === 'ping') ws.send('pong')
     })
-    singleWs.on('error', (error) => {
+    ws.on('error', () => {
         console.log('[WEBSOCKET SERVER] disconnect error')
-    })
-    singleWs.on('close', (error) => {
-        console.log('[WEBSOCKET SERVER] disconnect close')
     })
 })
 
 /* 开始监听/启动服务（指定3000端口与成功回调） */
-mainServer.listen(3000, () => {
+mainServer.listen(Number(process.env.GAME_REQ_PORT || 3000), process.env.GAME_REQ_HOST, () => {
     checkinService.start()
     fnatService.start()
     let port = mainServer.address().port

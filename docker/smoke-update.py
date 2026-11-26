@@ -1,8 +1,7 @@
 import argparse
-import base64
+import http.cookiejar
 import io
 import json
-import os
 from pathlib import Path
 import secrets
 import subprocess
@@ -18,22 +17,21 @@ def docker(*args):
 
 def smoke(image, packages):
     name = "game-req-smoke-" + secrets.token_hex(5)
-    token = " 更新!$ "
-    authorization = "GameReq " + base64.b64encode(token.encode("utf-8")).decode("ascii")
     subprocess.run(
-        ["docker", "run", "-d", "--rm", "--name", name, "-p", "127.0.0.1::3000", "-e", "GAME_REQ_UPDATE_TOKEN", image],
-        env=dict(os.environ, GAME_REQ_UPDATE_TOKEN=token),
+        ["docker", "run", "-d", "--rm", "--name", name, "-p", "127.0.0.1::3000", image],
         stdout=subprocess.DEVNULL,
         check=True,
     )
     try:
         base = "http://" + docker("port", name, "3000/tcp")
+        session = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
         def request(route, data=None, authorized=False, content_type=None):
-            headers = {"Authorization": authorization} if authorized else {}
+            headers = {"X-Game-Req": "1"} if data is not None else {}
             if content_type:
                 headers["Content-Type"] = content_type
-            with urllib.request.urlopen(urllib.request.Request(base + route, data=data, headers=headers), timeout=15) as response:
+            opener = session.open if authorized else urllib.request.urlopen
+            with opener(urllib.request.Request(base + route, data=data, headers=headers), timeout=15) as response:
                 return json.load(response)
 
         def wait_for(route, predicate, timeout=35, authorized=False):
@@ -70,8 +68,11 @@ def smoke(image, packages):
             )
 
         wait_for("/api/update/health", lambda body: body.get("id"))
-        assert request("/api/update/status")["enabled"]
-        assert request("/api/checkin")["config"]["enabled"] is False
+        assert request("/api/auth/status")["setupRequired"]
+        credentials = {"username": "smoke", "password": secrets.token_hex(16)}
+        assert request("/api/auth/setup", json.dumps(credentials).encode(), True, "application/json")["username"] == "smoke"
+        assert request("/api/update/status", authorized=True)["enabled"]
+        assert request("/api/checkin", authorized=True)["config"]["enabled"] is False
         docker("exec", name, "sh", "-c", "test ! -e /opt/server/dist/111.119.248.34.key && test ! -e /opt/server/data/checkin/config.json && test ! -e /opt/server/dist/server.js")
         pid = docker("exec", name, "pm2", "pid", "server")
         frontend = (packages / "dist.zip").read_bytes()
@@ -94,7 +95,8 @@ def smoke(image, packages):
         assert result["phase"] == "success", result
         assert request("/api/update/health")["id"] == accepted["id"]
         assert docker("exec", name, "pm2", "pid", "server") != pid
-        assert request("/api/checkin")["config"]["enabled"] is False
+        assert request("/api/auth/status", authorized=True) == {"setupRequired": False, "username": "smoke"}
+        assert request("/api/checkin", authorized=True)["config"]["enabled"] is False
         print("PASS: Server bundle installs dependencies and proves the restarted build is healthy", flush=True)
 
         bad = io.BytesIO()
@@ -105,7 +107,7 @@ def smoke(image, packages):
         result = status(upload("/uploadServer", bad.getvalue()))
         assert result["phase"] == "failed", result
         assert request("/api/update/health")["id"] == accepted["id"]
-        assert request("/api/checkin")["config"]["enabled"] is False
+        assert request("/api/checkin", authorized=True)["config"]["enabled"] is False
         print("PASS: Failed startup restores the previous release; check-in was never enabled", flush=True)
     except BaseException:
         subprocess.run(["docker", "logs", "--tail", "50", name], check=False)

@@ -43,7 +43,27 @@ export function recordName(account, date) {
         '.json'
     )
 }
-const defaults = { enabled: false, time: '08:00', scheduleMode: 'fixed', randomStart: '08:00', randomEnd: '10:00', scheduleSeed: '', timeZone: TIME_ZONE, account: 'mmzhw51', cookie: '', fingerprint: '', proxy: '', activatedAt: null, credentialsUpdatedAt: null }
+const defaults = { enabled: false, time: '08:00', scheduleMode: 'fixed', randomStart: '08:00', randomEnd: '10:00', scheduleSeed: '', timeZone: TIME_ZONE, account: 'mmzhw51', authMode: 'cookie', cookie: '', password: '', allowInsecureLogin: false, fingerprint: '', proxy: '', activatedAt: null, credentialsUpdatedAt: null }
+function retryLock(file, record) {
+    // Claim the failed attempt, not the new Cookie, so different credential saves cannot race.
+    const attempt = createHash('sha256').update(record.attemptId || `${record.startedAt}|${record.finishedAt}`).digest('hex')
+    return `${file}.retry-${attempt}.lock`
+}
+function drawRetryLock(file, record, config) {
+    if (record?.status !== 'failed' || record.phase !== 'finished' || record.code !== 'SESSION_EXPIRED' ||
+        record.checkinPosts !== 0 || record.submissionTrace ||
+        !(Date.parse(config.credentialsUpdatedAt) > Date.parse(record.finishedAt))) return null
+    return retryLock(file, record)
+}
+async function lockExists(file) {
+    try {
+        await fs.stat(file)
+        return true
+    } catch (error) {
+        if (error.code === 'ENOENT') return false
+        throw error
+    }
+}
 async function atomicWrite(file, value) {
     const temp = file + '.' + randomUUID() + '.tmp'
     const handle = await fs.open(temp, 'wx', 0o600)
@@ -61,6 +81,7 @@ export class CheckinService {
         this.site = site
         this.dataDir = site.id === 'laowang' ? dataDir : path.join(dataDir, site.id)
         this.runsDir = path.join(this.dataDir, 'runs')
+        this.drawsDir = site.supportsLottery ? path.join(this.dataDir, 'draws') : null
         this.configFile = path.join(this.dataDir, 'config.json')
         this.clientFactory = clientFactory
         this.clock = clock
@@ -72,6 +93,7 @@ export class CheckinService {
     }
     async init() {
         await fs.mkdir(this.runsDir, { recursive: true, mode: 0o700 })
+        if (this.drawsDir) await fs.mkdir(this.drawsDir, { recursive: true, mode: 0o700 })
         try {
             this.config = { ...defaults, ...JSON.parse(await fs.readFile(this.configFile, 'utf8')) }
         } catch (error) {
@@ -82,6 +104,10 @@ export class CheckinService {
     persistConfig() {
         this.writeQueue = this.writeQueue.catch(() => {}).then(() => atomicWrite(this.configFile, this.config))
         return this.writeQueue
+    }
+    credentialsReady(config = this.config) {
+        if (this.site.supportsPassword && config.authMode === 'password') return !!config.account && !!config.password && config.allowInsecureLogin === true
+        return !!config.cookie && (!this.site.requiresFingerprint || !!config.fingerprint)
     }
     async saveConfig(input) {
         if (!input || typeof input !== 'object' || typeof input.enabled !== 'boolean' || !isTime(input.time)) throw new CheckinError('CONFIG_INVALID', '请选择每天执行时间，并设置自动签到开关')
@@ -100,24 +126,44 @@ export class CheckinService {
             }
             if (!['http:', 'https:'].includes(url.protocol) || url.hash || url.search) throw new CheckinError('CONFIG_INVALID', '代理需使用 http:// 或 https:// 地址')
         }
+        const authMode = this.site.supportsPassword ? String(input.authMode || this.config.authMode || 'cookie') : 'cookie'
+        if (!['cookie', 'password'].includes(authMode)) throw new CheckinError('CONFIG_INVALID', '请选择 Cookie 或账号密码登录')
         let cookie = this.config.cookie,
+            password = this.config.password,
             fingerprint = this.config.fingerprint
         if (typeof input.cookie === 'string' && input.cookie.trim()) cookie = [...this.site.parseCookie(input.cookie.trim())].map(([key, value]) => key + '=' + value).join('; ')
+        if (this.site.supportsPassword && typeof input.password === 'string' && input.password) {
+            if (input.password.length > 256 || /[\r\n]/.test(input.password)) throw new CheckinError('CONFIG_INVALID', 'FNAT 密码格式不正确')
+            password = input.password
+        }
+        if (this.site.supportsPassword && authMode === 'password' && account !== this.config.account && !input.password) throw new CheckinError('CONFIG_INVALID', '切换账号时请重新填写密码')
         if (input.fingerprint !== undefined) {
             if (!/^[a-f0-9]{32}$/i.test(input.fingerprint)) throw new CheckinError('CONFIG_INVALID', '浏览器标识格式不正确')
             fingerprint = input.fingerprint
         }
-        if (input.enabled && (!cookie || (this.site.requiresFingerprint && !fingerprint))) throw new CheckinError('CONFIG_INVALID', '请先保存完整的登录信息')
+        const allowInsecureLogin = this.site.supportsPassword && authMode === 'password' ? input.allowInsecureLogin === true : false
+        const credentialsReady = authMode === 'password' ? !!password && allowInsecureLogin : !!cookie && (!this.site.requiresFingerprint || !!fingerprint)
+        if (input.enabled && !credentialsReady) throw new CheckinError('CONFIG_INVALID', authMode === 'password' ? '请填写密码并确认 FNAT HTTP 登录风险' : '请先保存完整的登录信息')
         const now = this.clock().toISOString()
         const scheduleChanged = scheduleMode !== this.config.scheduleMode || (scheduleMode === 'fixed' ? input.time !== this.config.time : randomStart !== this.config.randomStart || randomEnd !== this.config.randomEnd)
         const newActivation = input.enabled && (!this.config.enabled || scheduleChanged || account !== this.config.account)
         const scheduleSeed = this.config.scheduleSeed || (scheduleMode === 'random' ? randomUUID() : '')
-        this.config = { ...this.config, enabled: input.enabled, time: input.time, scheduleMode, randomStart, randomEnd, scheduleSeed, account, proxy, cookie, fingerprint, timeZone: TIME_ZONE, activatedAt: newActivation ? now : this.config.activatedAt, credentialsUpdatedAt: input.cookie?.trim() ? now : this.config.credentialsUpdatedAt, updatedAt: now }
+        const credentialsChanged = !!input.cookie?.trim() || !!input.password || authMode !== this.config.authMode || account !== this.config.account
+        this.config = { ...this.config, enabled: input.enabled, time: input.time, scheduleMode, randomStart, randomEnd, scheduleSeed, account, proxy, authMode, cookie, password, allowInsecureLogin, fingerprint, timeZone: TIME_ZONE, activatedAt: newActivation ? now : this.config.activatedAt, credentialsUpdatedAt: credentialsChanged ? now : this.config.credentialsUpdatedAt, updatedAt: now }
+        if (this.drawsDir && typeof input.lotteryEnabled === 'boolean') {
+            this.config.lotteryEnabled = input.lotteryEnabled
+            if (input.lotteryEnabled && !this.config.lotteryActivatedAt) this.config.lotteryActivatedAt = now
+            if (!input.lotteryEnabled) this.config.lotteryActivatedAt = null
+        }
+        if (this.drawsDir && this.config.lotteryEnabled && (!this.config.enabled || !this.credentialsReady(this.config))) {
+            this.config.lotteryEnabled = false
+            this.config.lotteryActivatedAt = null
+        }
         await this.persistConfig()
         return this.state()
     }
-    async readRecord(account, date) {
-        const file = path.join(this.runsDir, recordName(account, date))
+    async readRecord(account, date, dir = this.runsDir) {
+        const file = path.join(dir, recordName(account, date))
         try {
             return JSON.parse(await fs.readFile(file, 'utf8'))
         } catch (error) {
@@ -131,25 +177,60 @@ export class CheckinService {
             }
         }
     }
-    async history() {
-        const records = await Promise.all((await fs.readdir(this.runsDir)).filter((name) => name.endsWith('.json')).map(async (name) => JSON.parse(await fs.readFile(path.join(this.runsDir, name), 'utf8'))))
+    async history(dir = this.runsDir) {
+        const records = await Promise.all((await fs.readdir(dir)).filter((name) => name.endsWith('.json')).map(async (name) => JSON.parse(await fs.readFile(path.join(dir, name), 'utf8'))))
         return records
             .filter((record) => record.account === this.config.account)
             .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
             .slice(0, 30)
     }
+    async drawClaimed(config, date) {
+        const record = await this.readRecord(config.account, date, this.drawsDir)
+        if (!record) return false
+        const lock = drawRetryLock(path.join(this.drawsDir, recordName(config.account, date)), record, config)
+        return !lock || await lockExists(lock)
+    }
+    signRetry(config, date, record) {
+        if (this.site.id !== 'laowang' || record?.status !== 'failed' || record.phase !== 'finished' ||
+            record.checkinPosts !== 0 || record.submissionTrace) return null
+        const finished = Date.parse(record.finishedAt)
+        if (!Number.isFinite(finished)) return null
+        const nextHour = new Date((Math.floor(finished / 3600000) + 1) * 3600000)
+        const file = path.join(this.runsDir, recordName(config.account, date))
+        return { lock: retryLock(file, record), due: shanghaiDate(nextHour) === date ? nextHour : null }
+    }
     async scheduleState(config, now) {
-        const today = await this.readRecord(config.account, shanghaiDate(now))
-        return { running: this.running, nextRunAt: nextRun(config, now, !!today), todayClaimed: !!today }
+        const date = shanghaiDate(now)
+        const today = await this.readRecord(config.account, date)
+        const retry = this.signRetry(config, date, today)
+        const retryAvailable = !!retry && !(await lockExists(retry.lock))
+        const retryAt = retryAvailable && config.enabled && this.credentialsReady(config) ? retry.due?.toISOString() : null
+        const drawPending = this.drawsDir && config.lotteryEnabled && new Date(config.lotteryActivatedAt) <= dailyDue(config, date) &&
+            !(await this.readRecord(config.account, date, this.drawsDir))
+        return {
+            running: this.running,
+            nextRunAt: retryAt || nextRun({ ...config, cookie: this.credentialsReady(config) ? config.cookie || '[password]' : '' }, now, !!today && !drawPending),
+            todayClaimed: !!today && !retryAvailable,
+            retryAvailable,
+            nextIsRetry: !!retryAt
+        }
     }
     async state() {
-        const { enabled, time, scheduleMode, randomStart, randomEnd, account, cookie, fingerprint, credentialsUpdatedAt, proxy } = this.config
+        const config = this.config
+        const { enabled, time, scheduleMode, randomStart, randomEnd, account, authMode, cookie, password, allowInsecureLogin, fingerprint, credentialsUpdatedAt, proxy } = config
         const now = this.clock()
-        const runtime = await this.scheduleState(this.config, now)
+        const runtime = await this.scheduleState(config, now)
         return {
-            config: { enabled, time, scheduleMode, randomStart, randomEnd, timeZone: TIME_ZONE, account, site: this.site.url, hasCookie: !!cookie, hasFingerprint: !!fingerprint, credentialsUpdatedAt, proxy },
+            config: { enabled, time, scheduleMode, randomStart, randomEnd, timeZone: TIME_ZONE, account, site: this.site.url, authMode, hasCookie: !!cookie, hasPassword: !!password, allowInsecureLogin, hasFingerprint: !!fingerprint, credentialsReady: this.credentialsReady(config), credentialsUpdatedAt, proxy },
             runtime: { ...runtime, schedulerActive: !!this.timer, serverTime: now.toISOString(), serverStartedAt: this.startedAt },
-            records: await this.history()
+            records: await this.history(),
+            ...(this.drawsDir ? {
+                lottery: {
+                    enabled: config.lotteryEnabled === true,
+                    todayClaimed: await this.drawClaimed(config, shanghaiDate(now)),
+                    records: await this.history(this.drawsDir)
+                }
+            } : {})
         }
     }
     async siteSummary() {
@@ -158,8 +239,9 @@ export class CheckinService {
         return { id: this.site.id, name: this.site.name, site: this.site.url, enabled: config.enabled, scheduleMode: config.scheduleMode, running, nextRunAt }
     }
     async saveSession(client, revision) {
-        if (this.config.credentialsUpdatedAt === revision) {
-            this.config.cookie = client.cookieHeader()
+        const cookie = client.cookieHeader()
+        if (cookie && this.config.credentialsUpdatedAt === revision) {
+            this.config.cookie = cookie
             await this.persistConfig()
         }
     }
@@ -175,23 +257,33 @@ export class CheckinService {
             client.close()
         }
     }
-    async run(source = 'manual') {
+    async run(source = 'manual', draw = false) {
+        const dir = draw ? this.drawsDir : this.runsDir
+        if (!dir) throw new CheckinError('CONFIG_INVALID', '此站点不支持免费抽奖')
+        const action = draw ? '免费抽奖' : '签到'
         if (this.running) throw new CheckinError('BUSY', '已有签到任务正在执行')
         const config = { ...this.config },
             date = shanghaiDate(this.clock())
-        if (!config.cookie || (this.site.requiresFingerprint && !config.fingerprint)) throw new CheckinError('CONFIG_INVALID', '请先保存完整的登录信息')
+        if (!this.credentialsReady(config)) throw new CheckinError('CONFIG_INVALID', '请先保存完整的登录信息')
         this.running = true
-        const file = path.join(this.runsDir, recordName(config.account, date))
+        const file = path.join(dir, recordName(config.account, date))
         let record, client
         try {
+            const previous = (!draw && this.site.id === 'laowang') || (draw && source === 'manual')
+                ? await this.readRecord(config.account, date, dir) : null
+            const signRetry = !draw && this.signRetry(config, date, previous)
+            const mayRetrySign = signRetry && (source === 'manual' || (config.enabled && signRetry.due && this.clock() >= signRetry.due))
+            const retry = draw ? drawRetryLock(file, previous, config) : mayRetrySign ? signRetry.lock : null
+            const lockFile = retry || file + '.lock'
             let lock
             try {
-                lock = await fs.open(file + '.lock', 'wx', 0o600)
+                lock = await fs.open(lockFile, 'wx', 0o600)
             } catch (error) {
-                if (error.code === 'EEXIST') return { duplicate: true, record: await this.readRecord(config.account, date), message: '今日已有执行记录，已阻止重复签到' }
+                if (error.code === 'EEXIST') return { duplicate: true, record: await this.readRecord(config.account, date, dir), message: `今日已有执行记录，已阻止重复${action}` }
                 throw error
             }
-            record = { date, account: config.account, source, network: config.proxy ? 'proxy' : 'direct', status: 'running', phase: 'reserved', startedAt: this.clock().toISOString(), checkinPosts: 0, message: '正在检查登录态和签到状态' }
+            record = { date, account: config.account, source, network: config.proxy ? 'proxy' : 'direct', status: 'running', phase: 'reserved', startedAt: this.clock().toISOString(), checkinPosts: 0, message: `正在检查登录态和${action}状态` }
+            if (!draw && this.site.id === 'laowang') record.attemptId = randomUUID()
             try {
                 await lock.writeFile(JSON.stringify({ date, account: config.account, startedAt: record.startedAt }))
                 await lock.sync()
@@ -202,7 +294,7 @@ export class CheckinService {
             client = this.clientFactory(config)
             let result
             try {
-                result = await client.execute({
+                result = await (draw ? client.draw : client.execute).call(client, {
                     beforePost: async () => {
                         if (shanghaiDate(this.clock()) !== date) throw new CheckinError('DATE_CHANGED', '日期已变化，已停止提交')
                         // Persist before the only final POST so restarts cannot send it twice.
@@ -227,7 +319,7 @@ export class CheckinService {
             record.phase = 'finished'
             record.finishedAt = this.clock().toISOString()
             record.code = error instanceof CheckinError ? error.code : 'INTERNAL'
-            record.message = error instanceof CheckinError ? error.message : '签到服务异常，请查看服务日志'
+            record.message = error instanceof CheckinError ? error.message : draw && record.checkinPosts ? '抽奖已尝试提交，但未确认结果，请到 FNAT 核对开奖记录' : `${action}服务异常，请查看服务日志`
             await atomicWrite(file, record)
             return { duplicate: false, record }
         } finally {
@@ -237,14 +329,26 @@ export class CheckinService {
     }
     async tick() {
         const config = this.config
-        if (this.running || !config.enabled || !config.cookie || (this.site.requiresFingerprint && !config.fingerprint)) return
+        if (this.running || !config.enabled || !this.credentialsReady(config)) return
         const now = this.clock(),
             date = shanghaiDate(now),
             due = dailyDue(config, date)
-        if (now < due || new Date(config.activatedAt || now) > due || (await this.readRecord(config.account, date))) return
+        const scheduledToday = now >= due && new Date(config.activatedAt || now) <= due
+        if (!scheduledToday && this.site.id !== 'laowang') return
+        const signed = await this.readRecord(config.account, date)
+        const retry = this.signRetry(config, date, signed)
+        const retryDue = retry?.due && now >= retry.due && !(await lockExists(retry.lock))
         if (this.running || this.config !== config || shanghaiDate(this.clock()) !== date) return
-        const result = await this.run('scheduled')
-        console.log('[CHECKIN]', date, result.record?.status, result.record?.message)
+        if ((!signed && scheduledToday) || retryDue) {
+            const result = await this.run('scheduled')
+            console.log('[CHECKIN]', date, result.record?.status, result.record?.message)
+        }
+        if (scheduledToday && this.drawsDir && config.lotteryEnabled && new Date(config.lotteryActivatedAt || now) <= due &&
+            !(await this.readRecord(config.account, date, this.drawsDir)) &&
+            !this.running && this.config === config && shanghaiDate(this.clock()) === date) {
+            const result = await this.run('scheduled', true)
+            console.log('[CHECKIN LOTTERY]', date, result.record?.status)
+        }
     }
     start() {
         if (this.timer) return
@@ -291,5 +395,6 @@ export function registerCheckinRoutes(router, service, otherSites = []) {
         router.put(base + '/config', wrap((ctx) => item.saveConfig(ctx.request.body)))
         router.post(base + '/inspect', wrap(() => item.inspect()))
         router.post(base + '/run', wrap(() => item.run('manual')))
+        if (item.drawsDir) router.post(base + '/lottery/run', wrap(() => item.run('manual', true)))
     }
 }

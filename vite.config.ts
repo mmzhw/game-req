@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+const backend = `http://127.0.0.1:${process.env.GAME_REQ_PORT || 3000}`
 
 // https://vitejs.dev/config/
 export default defineConfig(() => {
@@ -24,16 +25,23 @@ export default defineConfig(() => {
         },
         base: './',
         build: {
-            outDir: './server/dist'
+            outDir: './server/dist',
+            rollupOptions: { output: { onlyExplicitManualChunks: true } }
         },
         // vite 配置
         define: {
             __Admin_VERSION__: JSON.stringify(version)
         },
         server: {
-            host: '0.0.0.0', // 允许局域网访问
+            host: '127.0.0.1',
             port: 5173, // 可选：指定端口号
-            strictPort: false // 如果端口被占用，自动尝试下一个可用端口
+            strictPort: false, // 如果端口被占用，自动尝试下一个可用端口
+            proxy: {
+                '/api': backend,
+                '/upload': backend,
+                '/restart': backend,
+                '/ws': { target: backend, ws: true }
+            }
         }
     }
 })

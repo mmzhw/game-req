@@ -1,70 +1,93 @@
 <template>
-    <div class="flex-column">
-        <div class="flex-column">
-            <div class="flex-line" v-if="routeType === 'mjdx'">
-                <label>自用：</label>
-                <div style="line-height: 32px; max-height: 8vh; overflow: auto">清路尘,倚香雪,4555786550362769000,4555786550362768745</div>
-            </div>
-            <div class="flex-line" v-for="(item, index) in baseForm" :key="'base-form' + index">
-                <label>{{ item.label }}：</label>
+    <section class="send-panel">
+        <div v-if="routeType === 'mjdx'" class="form-row">
+            <label>自用：</label>
+            <div class="form-content preset-content">清路尘,倚香雪,4555786550362769000,4555786550362768745</div>
+        </div>
+        <div class="form-row" v-for="(item, index) in baseForm" :key="'base-form' + index">
+            <label>{{ item.label }}：</label>
+            <div class="form-content">
                 <el-input v-model="item.value" @input="(value:string) => LSSaveValue(item.key, value)" />
             </div>
-            <div class="flex-line">
-                <label>已选({{ selectedItems.length }})：</label>
-                <div>
-                    <template v-if="selectedItems?.length">
-                        <div class="selected-list">
-                            <div class="selected-item" v-for="(i, index) in selectedItems" :key="'selected-good' + index">
-                                <el-tag class="selected-item-tag" closable @close="clearSingleItem(i)">{{ i.name }}（{{ i.value }}）</el-tag>
-                                <el-input-number class="selected-item-number" v-model="itemNumbers[i.value]" :min="1" :step="1" :precision="0" size="small" controls-position="right" :title="'设置 ' + i.name + '（' + i.value + '）的发送数量'" />
-                            </div>
-                        </div>
-                    </template>
-                    <span v-else class="selected-empty">暂未选择</span>
+        </div>
+        <div class="form-row align-start">
+            <label>已选({{ selectedItems.length }})：</label>
+            <div class="form-content">
+                <div v-if="selectedItems?.length" class="selected-list">
+                    <div class="selected-item" v-for="(i, index) in selectedItems" :key="'selected-good' + index">
+                        <el-tag class="selected-item-tag" closable @close="clearSingleItem(i)">{{ i.name }}（{{ i.value }}）</el-tag>
+                        <el-input-number class="selected-item-number" v-model="itemNumbers[i.value]" :min="1" :step="1" :precision="0" size="small" controls-position="right" :title="'设置 ' + i.name + '（' + i.value + '）的发送数量'" />
+                    </div>
                 </div>
-            </div>
-            <div class="flex-line">
-                <label>过滤：</label>
-                <div style="display: flex">
-                    <el-input v-model="keyWord" placeholder="过滤" @input="changeGoods" />
-                    <el-input style="margin-left: 10px" v-model="keyWordLocation" placeholder="定位" @input="locationGoods()" />
-                    <el-button style="width: 100px; margin-left: 10px" @click="locationGoods()">下一个</el-button>
-                </div>
-            </div>
-            <div class="flex-line" v-if="!isMobile">
-                <label>物品：</label>
-                <div>
-                    <checkbox-pagination ref="checkboxPaginationRef" :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="pageSize" maxHeight="50vh" checkboxType="default" />
-                </div>
-            </div>
-            <checkbox-pagination v-if="isMobile" ref="checkboxPaginationRef" :data-list="goodsList" v-model:currentItem="selectedItems" :routeType="routeType" :pageSize="pageSize" maxHeight="50vh" checkboxType="default" />
-            <div style="display: flex; align-items: center; gap: 10px">
-                <el-input style="padding-bottom: 10px" v-model="intervalTime" placeholder="间隔发送"></el-input>
-                <el-input style="padding-bottom: 10px" v-model="repeatTime" placeholder="重复次数"></el-input>
-            </div>
-            <div style="display: flex; padding-bottom: 10px">
-                <!--                <el-button type="primary" @click="getGoods($event, false)">直接发送</el-button>-->
-                <!--                <el-button type="primary" @click="getGoods($event, true)">后台转发</el-button>-->
-                <!--                <el-button v-if="GAME_OPTIONS?.ORIGIN_REQ_DEL_FORM_DATA" type="primary" @click="delGoods">删除物品</el-button>-->
-                <template v-for="(operation, oIndex) in GAME_OPTIONS.OPERATION" :key="oIndex">
-                    <el-button type="primary" @click="operationSend(operation)">{{ operation.NAME }}</el-button>
-                </template>
-                <el-button type="primary" @click="selectedItems = []">清空选择</el-button>
+                <span v-else class="selected-empty">暂未选择</span>
             </div>
         </div>
-    </div>
+        <div class="form-row">
+            <label>查找物品：</label>
+            <div class="form-content filter-grid">
+                <el-input v-model="keyWord" clearable placeholder="按名称过滤" @input="changeGoods" />
+                <el-input v-model="keyWordLocation" clearable placeholder="定位物品" @input="locationGoodsOnInput" />
+                <el-button @click="locationGoods()">下一个</el-button>
+            </div>
+        </div>
+        <div class="form-row align-start items-row">
+            <label>物品列表：</label>
+            <div class="form-content">
+                <checkbox-pagination
+                    ref="checkboxPaginationRef"
+                    :data-list="goodsList"
+                    v-model:currentItem="selectedItems"
+                    :routeType="routeType"
+                    :pageSize="pageSize"
+                    :remote-total="goodsTotal"
+                    remote
+                    maxHeight="50vh"
+                    checkboxType="default"
+                    @page-change="loadGoods"
+                    @size-change="changePageSize"
+                />
+            </div>
+        </div>
+        <div class="form-row">
+            <label>发送间隔：</label>
+            <div class="form-content compact-control">
+                <el-input-number v-model="intervalTime" :min="0" :max="60" :step="0.5" :precision="1" controls-position="right" />
+                <span class="unit">秒</span>
+            </div>
+        </div>
+        <div class="form-row">
+            <label>重复次数：</label>
+            <div class="form-content compact-control">
+                <el-input-number v-model="repeatTime" :min="1" :max="1000" :step="1" :precision="0" controls-position="right" />
+            </div>
+        </div>
+        <div class="form-row align-start">
+            <label>发送操作：</label>
+            <div class="form-content action-buttons">
+                <el-button
+                    v-for="(operation, oIndex) in GAME_OPTIONS.OPERATION"
+                    :key="oIndex"
+                    type="primary"
+                    :disabled="operation.REQUIRES_ITEMS && !selectedItems.length"
+                    @click="operationSend(operation)"
+                >{{ operation.NAME }}</el-button>
+                <el-button @click="selectedItems = []">清空选择</el-button>
+            </div>
+        </div>
+    </section>
 </template>
 
 <script lang="ts" setup>
 import { defineEmits, reactive, ref, watch } from 'vue'
 import CheckboxPagination from '../components/Checkbox-Pagination.vue'
 import axios from 'axios'
-import getGameOptions from '@/constant/options'
+import { adminRequest } from '@/utils/admin-api'
+import { buildGameOptions, type GameRecord } from '@/utils/game-templates'
 import _ from 'lodash'
 
 const emit = defineEmits(['addLogs'])
 
-const reqPre = import.meta.env.DEV ? 'http://localhost:3000' : ''
+const reqPre = ''
 
 interface PropsRadioPagination {
     routeType: string
@@ -72,6 +95,7 @@ interface PropsRadioPagination {
 
 interface CheckboxPaginationInstance {
     updateSize(page: number): void
+    getPageSize(): number
 }
 
 interface SelectedItemNumber {
@@ -83,40 +107,44 @@ const props = withDefaults(defineProps<PropsRadioPagination>(), {
     routeType: ''
 })
 
-let intervalTime = ref('')
-let repeatTime = ref('')
+let intervalTime = ref(2.5)
+let repeatTime = ref(1)
 let pageSize = ref(50)
 let goodsList: any = ref([])
+let goodsTotal = ref(0)
 let selectedItems: any = ref([])
 const itemNumbers = reactive<Record<string, number>>({})
 let keyWord: any = ref('')
 let keyWordLocation: any = ref('')
 let keyWordLocationCurrent: any = ref('')
-let keyWordLocationMatchIndex: any = ref('')
+let keyWordLocationAfter = ref(-1)
 let baseForm: any = reactive([
     { label: '角色', key: 'account', value: '' },
     { label: '默认数量', key: 'number', value: '1' }
 ])
 const checkboxPaginationRef = ref<CheckboxPaginationInstance | null>(null)
 
-let originGoods: any = []
+let goodsRequestId = 0
+const itemCache = new Map<string, ItemsTypeSingle>()
 
 const GAME_OPTIONS = ref<any>({})
 
-const isMobile = ref(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
-
-const sleep = async (ms: any) => {
-    return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
 const initOptions = async () => {
-    let gameOptions = await getGameOptions(props.routeType)
+    const game = await adminRequest<GameRecord>(`/api/games/${encodeURIComponent(props.routeType)}`)
+    let gameOptions = buildGameOptions(game)
     GAME_OPTIONS.value = _.cloneDeep(gameOptions)
 
-    goodsList.value = originGoods = gameOptions?.ORIGIN_GOODS || []
-
+    itemCache.clear()
+    goodsList.value = []
+    goodsTotal.value = 0
     selectedItems.value = []
     keyWord.value = ''
+    keyWordLocation.value = ''
+    keyWordLocationCurrent.value = ''
+    keyWordLocationAfter.value = -1
+    intervalTime.value = gameOptions.ORIGIN_INTERVAL
+    repeatTime.value = 1
+    await loadGoods(1)
 
     baseForm.forEach((item: any) => {
         if (item.key === 'account') {
@@ -129,42 +157,79 @@ const initOptions = async () => {
 const LSSaveValue = (key: string, value: any) => {
     window.localStorage.setItem(props.routeType + key, String(value))
 }
-const changeGoods = (value: string) => {
-    if (value) {
-        keyWordLocation.value = ''
-        goodsList.value = _.cloneDeep(originGoods).filter((i: ItemsSingle) => {
-            return value && i.name.includes(value)
-        })
-    } else {
-        goodsList.value = _.cloneDeep(originGoods)
+
+const getCachedItems = (items: ItemsTypeSingle[]) => {
+    return items.map((item) => {
+        const key = String(item.value)
+        const cachedItem = itemCache.get(key)
+        if (cachedItem) {
+            Object.assign(cachedItem, item)
+            return cachedItem
+        }
+        itemCache.set(key, item)
+        return item
+    })
+}
+
+const loadGoods = async (page = 1, keyword = keyWord.value) => {
+    const requestId = ++goodsRequestId
+    const response = await axios.get(`${reqPre}/api/items/${props.routeType}`, {
+        params: {
+            keyword,
+            page,
+            pageSize: pageSize.value
+        }
+    })
+    if (requestId !== goodsRequestId) {
+        return
+    }
+    goodsList.value = getCachedItems(response.data.list || [])
+    goodsTotal.value = response.data.total || 0
+    checkboxPaginationRef.value?.updateSize(response.data.page || 1)
+}
+
+const changePageSize = async (size: number) => {
+    pageSize.value = size
+    await loadGoods(1)
+}
+
+const changeGoods = _.debounce(async () => {
+    keyWordLocation.value = ''
+    keyWordLocationCurrent.value = ''
+    keyWordLocationAfter.value = -1
+    await loadGoods(1)
+}, 250)
+
+const locationGoods = async () => {
+    const value = String(keyWordLocation.value || '').trim()
+    if (!value) {
+        return
+    }
+    keyWord.value = ''
+
+    if (value !== keyWordLocationCurrent.value) {
+        keyWordLocationCurrent.value = value
+        keyWordLocationAfter.value = -1
+    }
+
+    const response = await axios.get(`${reqPre}/api/items/${props.routeType}/locate`, {
+        params: {
+            keyword: value,
+            after: keyWordLocationAfter.value,
+            pageSize: pageSize.value
+        }
+    })
+    if (response.data.found) {
+        keyWordLocationAfter.value = response.data.index
+        await loadGoods(response.data.page, '')
     }
 }
-const locationGoods = () => {
-    let value = keyWordLocation.value
-    if (value) {
-        keyWord.value = ''
 
-        const indices: any = []
-        _.cloneDeep(originGoods).forEach((i: ItemsSingle, index: number) => {
-            if (i.name.includes(value)) {
-                indices.push(index)
-            }
-        })
-
-        if (value === keyWordLocationCurrent.value) {
-            keyWordLocationMatchIndex.value += 1
-        } else {
-            keyWordLocationMatchIndex.value = 0
-            keyWordLocationCurrent.value = value
-        }
-
-        let matchIndex = indices[keyWordLocationMatchIndex.value]
-
-        if (matchIndex > 0 && checkboxPaginationRef.value) {
-            checkboxPaginationRef.value?.updateSize(Math.floor(matchIndex / pageSize.value) + 1)
-        }
-    }
-}
+const locationGoodsOnInput = _.debounce(async () => {
+    keyWordLocationCurrent.value = ''
+    keyWordLocationAfter.value = -1
+    await locationGoods()
+}, 250)
 const clearSingleItem = (i: ItemsSingle) => {
     selectedItems.value = selectedItems.value.filter((z: ItemsSingle) => {
         return z.value !== i.value
@@ -196,6 +261,7 @@ const operationSend = async (operation: any) => {
     }))
     const maxItemCount = Number(operation.MAX_ITEM_COUNT) || 0
     const requestMeta = {
+        game: props.routeType,
         realReqUrl: operation.URL,
         realReqMethod: operation.TYPE,
         headers: operation.HEADERS,
@@ -204,6 +270,15 @@ const operationSend = async (operation: any) => {
 
     let reqData: any = []
     realTimeAccount.forEach((account: string) => {
+        if (operation.MODE === 'command') {
+            reqData.push({
+                name: operation.NAME,
+                account,
+                formData: operation.GETDATA(account),
+                ...requestMeta
+            })
+            return
+        }
         if (selectedItemNumbers.length) {
             if (operation.GETDATA_BATCH && maxItemCount > 0) {
                 const actionGroups = _.groupBy(selectedItemNumbers, ({ item }) => item.action || '')
@@ -305,40 +380,82 @@ watch(
 
 <style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
-:deep() {
-    .el-radio-button {
-        margin-right: 5px;
+.send-panel {
+    width: 100%;
+    max-width: 1180px;
+    padding: 18px;
+    border: 1px solid #e1e7e4;
+    border-radius: 8px;
+    background: #fff;
+    box-sizing: border-box;
+}
 
-        .el-radio-button__inner {
-            box-shadow: none !important;
-            border: 1px solid #dcdfe6;
-            border-radius: 4px !important;
-            margin-bottom: 5px;
-        }
+.form-row {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+
+    > label {
+        color: #46534f;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 32px;
+        text-align: right;
     }
 }
 
-.gameTypeWrap {
-    :deep() {
-        .el-radio-button__inner {
-            margin-bottom: 0;
-        }
+.align-start {
+    align-items: start;
+}
 
-        .el-radio-button {
-            margin-bottom: 5px;
-        }
+.form-content {
+    min-width: 0;
+}
+
+.preset-content {
+    max-height: 80px;
+    overflow: auto;
+    line-height: 32px;
+    overflow-wrap: anywhere;
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto;
+    gap: 10px;
+}
+
+.compact-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    :deep(.el-input-number) {
+        width: 180px;
     }
 }
 
-.marginRightFive {
-    margin-right: 5px;
+.unit {
+    color: #64736e;
+}
+
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    :deep(.el-button) {
+        margin-left: 0;
+    }
 }
 
 .selected-list {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    max-height: 20vh;
+    max-height: 180px;
     overflow: auto;
     line-height: 1;
 }
@@ -355,5 +472,73 @@ watch(
 
 .selected-empty {
     line-height: 32px;
+    color: #89948f;
+}
+
+@media (max-width: 700px) {
+    .send-panel {
+        padding: 14px 12px;
+        border-right: 0;
+        border-left: 0;
+        border-radius: 0;
+    }
+
+    .form-row {
+        display: block;
+        margin-bottom: 16px;
+
+        > label {
+            display: block;
+            margin-bottom: 5px;
+            line-height: 22px;
+            text-align: left;
+        }
+    }
+
+    .filter-grid {
+        grid-template-columns: minmax(0, 1fr) auto;
+
+        :deep(.el-input:first-child) {
+            grid-column: 1 / -1;
+        }
+    }
+
+    .compact-control {
+        :deep(.el-input-number) {
+            width: min(100%, 220px);
+        }
+    }
+
+    .selected-item {
+        width: 100%;
+        align-items: stretch;
+    }
+
+    .selected-item-tag {
+        flex: 1;
+        min-width: 0;
+        height: auto;
+        white-space: normal;
+    }
+
+    .selected-item-number {
+        flex: 0 0 92px;
+        width: 92px;
+    }
+
+    .action-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        :deep(.el-button) {
+            width: 100%;
+        }
+    }
+}
+
+@media (max-width: 420px) {
+    .action-buttons {
+        grid-template-columns: 1fr;
+    }
 }
 </style>

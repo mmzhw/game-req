@@ -1,57 +1,45 @@
 <template>
-    <div class="flex-column" style="padding: 10px">
-        <div class="flex-line marginBottomFive">
-            <label @click="jumpVersion">类型：</label>
-            <div class="gameTypeWrap">
-                <el-radio-group v-model="routeType" @change="changeRouteType">
-                    <el-radio-button v-for="(item, index) in gameList" :key="'game' + index" :value="item.value">{{ item.name }}</el-radio-button>
-                </el-radio-group>
-            </div>
-        </div>
-        <game-req-new :routeType="routeOption.value" @addLogs="addLogs" />
+    <div class="game-page">
+        <h1>{{ gameName }}</h1>
+        <game-req-new v-if="routeType" :routeType="routeType" @addLogs="addLogs" />
         <table-pagination :dataList="logList" />
     </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import GameReqNew from '@/views/GameReq.vue'
 import TablePagination from '@/components/Table-Pagination.vue'
-import { GAME_OPTIONS } from '@/constant/options'
+import { adminRequest } from '@/utils/admin-api'
+import type { GameRecord } from '@/utils/game-templates'
 
 let logList: any = ref([])
 
-const router = useRouter()
-const routeParams = useRoute().params as Record<string, string>
-const routeType = ref<string>(routeParams.id || '')
-const gameList = ref(GAME_OPTIONS)
+const route = useRoute()
+const routeType = ref<string>(String(route.params.id || ''))
+const gameName = ref('')
 
-let routeOption = computed(() => {
-    return gameList.value.find((item: any) => item.value === routeType.value) || {}
-})
+watch(() => route.params.id, async (id) => {
+    routeType.value = String(id || '')
+    const game = await adminRequest<GameRecord>(`/api/games/${encodeURIComponent(routeType.value)}`)
+    gameName.value = game.name
+    document.title = `${game.name} - 后台发送`
+}, { immediate: true, flush: 'post' })
 
 onMounted(() => {
     initWs()
 })
-//跳转到版本控制
-const jumpVersion = () => {
-    router.push({ path: '/' })
-}
-
-const changeRouteType = () => {
-    router.push({ name: 'manage', params: { id: routeType.value } })
-}
-
 const addLogs = (message: any) => {
     logList.value.unshift({ no: logList.value.length + 1, message: message })
 }
 
 let ws: WebSocket | null = null
 let pingId: number | null = null
+let reconnectId: number | null = null
 
 const initWs = () => {
-    const wsUrl = process.env.NODE_ENV === 'development' ? 'ws://localhost:3000' : (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host
+    const wsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws'
 
     // 如果已有连接，先关闭
     if (ws) {
@@ -79,7 +67,7 @@ const initWs = () => {
     ws.onclose = () => {
         addLogs(`${wsUrl}连接关闭`)
         cleanup()
-        setTimeout(() => {
+        reconnectId = window.setTimeout(() => {
             initWs()
         }, 1000)
     }
@@ -90,11 +78,16 @@ const initWs = () => {
 }
 
 const cleanup = () => {
+    if (reconnectId !== null) {
+        window.clearTimeout(reconnectId)
+        reconnectId = null
+    }
     if (pingId) {
         clearInterval(pingId)
         pingId = null
     }
     if (ws) {
+        ws.onclose = null
         ws.close()
         ws = null
     }
@@ -106,33 +99,11 @@ onUnmounted(() => {
 </script>
 
 <style scoped src="../assets/game-req.scss"></style>
-<style scoped lang="scss">
-:deep() {
-    .el-radio-button {
-        margin-right: 5px;
-
-        .el-radio-button__inner {
-            box-shadow: none !important;
-            border: 1px solid #dcdfe6;
-            border-radius: 4px !important;
-            margin-bottom: 5px;
-        }
-    }
-}
-
-.gameTypeWrap {
-    :deep() {
-        .el-radio-button__inner {
-            margin-bottom: 0;
-        }
-
-        .el-radio-button {
-            margin-bottom: 5px;
-        }
-    }
-}
-
-.marginRightFive {
-    margin-right: 5px;
+<style scoped>
+.game-page { padding: 18px 20px 28px; }
+h1 { font-size: 22px; margin: 0 0 14px; }
+@media (max-width: 700px) {
+    .game-page { padding: 14px 0 24px; }
+    h1 { padding: 0 12px; font-size: 20px; }
 }
 </style>

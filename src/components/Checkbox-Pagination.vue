@@ -21,19 +21,19 @@
             :layout="layout"
             :page-sizes="sizes"
             :page-size="size"
-            :total="dataList?.length"
+            :total="total"
             :current-page="current"
             @current-change="pageCurrentChange"
             @size-change="pageSizeChange"
         >
-            <template #default><span style="padding-left: 5px">{{ current }} / {{ Math.ceil(dataList?.length / size) }}页</span></template>
+            <template #default><span style="padding-left: 5px">{{ current }} / {{ Math.max(1, Math.ceil(total / size)) }}页</span></template>
         </el-pagination>
     </div>
 
 </template>
 
 <script lang="ts" setup>
-import {computed, onMounted, ref, watch} from 'vue'
+import {computed, onMounted, onUnmounted, ref, watch} from 'vue'
 
 interface PropsRadioPagination {
     dataList: ItemsSingle[]
@@ -42,6 +42,8 @@ interface PropsRadioPagination {
     checkboxType: string
     pageSize: number
     maxHeight: string
+    remote: boolean
+    remoteTotal: number
 }
 
 const props = withDefaults(defineProps<PropsRadioPagination>(), {
@@ -50,10 +52,12 @@ const props = withDefaults(defineProps<PropsRadioPagination>(), {
     routeType: '',
     checkboxType: 'button',
     pageSize: 10,
-    maxHeight: ''
+    maxHeight: '',
+    remote: false,
+    remoteTotal: 0
 })
 
-const emit = defineEmits(['update:currentItem'])
+const emit = defineEmits(['update:currentItem', 'page-change', 'size-change'])
 
 const size = ref(props.pageSize)
 const sizes = ref([10, 20, 50, 100, 200, 300, 400, 500, 1000, 5000])
@@ -61,11 +65,14 @@ const current = ref(1)
 const layout = ref('')
 const realItem = ref([])
 
-const isMobile = ref(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+const mobileQuery = window.matchMedia('(max-width: 700px)')
+const isMobile = ref(mobileQuery.matches)
+const updateMobile = (event: MediaQueryListEvent) => { isMobile.value = event.matches }
 
 let realList = computed(() => {
-    return props.dataList?.slice(size.value * (current.value - 1), size.value * current.value)
+    return props.remote ? props.dataList : props.dataList?.slice(size.value * (current.value - 1), size.value * current.value)
 })
+const total = computed(() => (props.remote ? props.remoteTotal : props.dataList?.length || 0))
 watch(
     () => props.currentItem,
     (newVal: any, oldVal: any) => {
@@ -74,20 +81,22 @@ watch(
     {deep: true}
 )
 onMounted(() => {
-    if (isMobile.value) {
-        layout.value = 'prev, next, jumper, sizes, ->, slot'
-    } else {
-        layout.value = 'total, prev, pager, next, jumper, sizes, ->, slot'
-    }
+    mobileQuery.addEventListener('change', updateMobile)
 })
+onUnmounted(() => mobileQuery.removeEventListener('change', updateMobile))
+watch(isMobile, (mobile) => {
+    layout.value = mobile ? 'prev, next, jumper, sizes, ->, slot' : 'total, prev, pager, next, jumper, sizes, ->, slot'
+}, { immediate: true })
 
 const pageCurrentChange = (s: number) => {
     current.value = s
+    emit('page-change', s)
 }
 
-const pageSizeChange = (sizes: number) => {
-    size.value = sizes
+const pageSizeChange = (pageSize: number) => {
+    size.value = pageSize
     current.value = 1
+    emit('size-change', pageSize)
 }
 
 const changeItemId = (item: []) => {
@@ -112,6 +121,9 @@ const clickAll = () => {
 defineExpose({
     updateSize: (currentPage: number) => {
         current.value = currentPage
+    },
+    getPageSize: () => {
+        return size.value
     }
 })
 </script>
@@ -205,5 +217,23 @@ defineExpose({
 .maxHeight {
     max-height: 50vh;
     overflow: auto;
+}
+
+@media (max-width: 700px) {
+    .check-group-wrap {
+        padding: 8px;
+
+        :deep(.el-checkbox) {
+            width: 100%;
+            margin-right: 0;
+        }
+    }
+
+    .pagePaginationWrap {
+        flex: 1;
+        min-width: 0;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
 }
 </style>

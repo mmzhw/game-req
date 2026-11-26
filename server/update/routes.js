@@ -1,27 +1,23 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import process from 'node:process'
 import { randomUUID } from 'node:crypto'
 import { koaBody } from 'koa-body'
 import { stageBundle } from './bundle.js'
-import { isAuthorized, jobPath, managed, MAX_ZIP_BYTES, readJson, tokenConfigured, updateAuthorization, validJobId, writeJson } from './common.js'
+import { jobPath, managed, MAX_ZIP_BYTES, readJson, supervisorToken, tokenConfigured, updateAuthorization, validJobId, writeJson } from './common.js'
 
 const uploadKinds = new Map([['/upload', 'frontend'], ['/uploadServer', 'server']])
 const STATUS = '/api/update/jobs/'
-const token = () => process.env.GAME_REQ_UPDATE_TOKEN
-const canUpdate = () => managed() && tokenConfigured(token())
+const canUpdate = () => managed() && tokenConfigured(supervisorToken())
 export const isUpdateUpload = (ctx) => ctx.method === 'POST' && /^\/(?:upload|uploadServer)\/?$/i.test(ctx.path)
 
-async function authorize(ctx, next) {
+async function ensureManaged(ctx, next) {
     ctx.set('Cache-Control', 'no-store')
-    if (!canUpdate()) ctx.throw(503, '页面更新未开启，请在新版 Docker 容器中配置管理员口令')
-    if (!isAuthorized(ctx.get('Authorization'), token())) ctx.throw(401, '管理员口令不正确')
-    if (ctx.method === 'POST' && ctx.get('Sec-Fetch-Site') === 'cross-site') ctx.throw(403, '请从当前服务页面操作')
+    if (!canUpdate()) ctx.throw(503, '页面更新仅在具有更新进程的 Docker 部署中可用')
     await next()
 }
 
 async function supervisor(route, id) {
-    const secret = token()
+    const secret = supervisorToken()
     const send = (authorization) => fetch('http://127.0.0.1:3001' + route, {
         method: 'POST',
         headers: { Authorization: authorization, 'Content-Type': 'application/json' },
@@ -48,7 +44,7 @@ export function registerUpdateRoutes(router, { root, build }) {
         ctx.set('Cache-Control', 'no-store')
         ctx.body = { enabled: canUpdate(), version: build.version }
     })
-    router.get(STATUS + ':id', authorize, async (ctx) => {
+    router.get(STATUS + ':id', ensureManaged, async (ctx) => {
         if (!validJobId(ctx.params.id)) ctx.throw(404)
         try {
             ctx.body = await readJson(path.join(jobPath(root, ctx.params.id), 'status.json'))
@@ -57,7 +53,7 @@ export function registerUpdateRoutes(router, { root, build }) {
             throw error
         }
     })
-    router.post('/restart', authorize, async (ctx) => {
+    router.post('/restart', ensureManaged, async (ctx) => {
         try {
             await supervisor('/restart')
             ctx.status = 202
@@ -67,7 +63,7 @@ export function registerUpdateRoutes(router, { root, build }) {
         }
     })
     for (const [route, kind] of uploadKinds) {
-        router.post(route, authorize, async (ctx) => {
+        router.post(route, ensureManaged, async (ctx) => {
             if (staging) ctx.throw(409, '已有更新包正在处理，请稍后再试')
             staging = true
             const id = randomUUID().replaceAll('-', '')
