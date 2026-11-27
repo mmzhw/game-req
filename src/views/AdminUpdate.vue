@@ -1,6 +1,5 @@
 <template>
     <section class="update-page">
-        <h1>服务更新</h1>
         <ControlServer @upload-success="addLog" @upload-error="addLog" />
         <TablePagination v-if="logs.length" :dataList="logs" />
     </section>
@@ -18,6 +17,19 @@ function addLog(message: string) {
 </script>
 
 <style scoped>
-.update-page { padding: 24px; }
-h1 { font-size: 23px; font-weight: 650; margin-bottom: 16px; }
+.update-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    min-width: 0;
+    color: var(--ui-text);
+}
+.update-page :deep(.el-table) {
+    max-width: 100%;
+    border-radius: var(--ui-radius);
+}
+.update-page :deep(.el-pagination) {
+    flex-wrap: wrap;
+    row-gap: 8px;
+}
 </style>

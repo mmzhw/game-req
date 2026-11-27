@@ -247,12 +247,24 @@ export class LaowangClient {
     }
     async inspect(phase) {
         const readPage = async () => {
-            const page = await this.request(SIGN_PAGE)
+            const started = Date.now()
+            let page
             try {
+                page = await this.request(SIGN_PAGE)
                 if (page.status !== 200) throw new CheckinError('HTTP_STATUS', '读取签到页面失败（' + page.status + '）')
                 return { ...parsePage(page.text, this.config.account), status: page.status }
             } catch (error) {
-                throw Object.assign(error, { httpStatus: page.status })
+                const ray = page?.headers?.['cf-ray']
+                throw Object.assign(error, {
+                    httpStatus: page?.status ?? error.httpStatus,
+                    inspectionDiagnostic: {
+                        stage: page?.status === 200 ? '解析登录状态' : '读取签到页面',
+                        durationMs: Date.now() - started,
+                        connection: this.agent ? '代理' : '直连',
+                        upstreamStatus: page?.status ?? error.httpStatus,
+                        cfRay: typeof ray === 'string' && /^[a-f0-9]{16,32}(?:-[A-Z]{3})?$/i.test(ray) ? ray : undefined
+                    }
+                })
             }
         }
         return phase ? this.step(phase, readPage) : readPage()

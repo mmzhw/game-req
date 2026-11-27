@@ -6,19 +6,19 @@
         </div>
         <div class="form-row" v-for="(item, index) in baseForm" :key="'base-form' + index">
             <label>{{ item.label }}：</label>
-            <div class="form-content">
+            <div class="form-content base-field">
                 <el-input v-model="item.value" @input="(value:string) => LSSaveValue(item.key, value)" />
             </div>
         </div>
         <div class="form-row align-start">
             <label>已选({{ selectedItems.length }})：</label>
             <div class="form-content">
-                <div v-if="selectedItems?.length" class="selected-list">
+                <el-scrollbar v-if="selectedItems?.length" max-height="180px" view-class="selected-list">
                     <div class="selected-item" v-for="(i, index) in selectedItems" :key="'selected-good' + index">
                         <el-tag class="selected-item-tag" closable @close="clearSingleItem(i)">{{ i.name }}（{{ i.value }}）</el-tag>
                         <el-input-number class="selected-item-number" v-model="itemNumbers[i.value]" :min="1" :step="1" :precision="0" size="small" controls-position="right" :title="'设置 ' + i.name + '（' + i.value + '）的发送数量'" />
                     </div>
-                </div>
+                </el-scrollbar>
                 <span v-else class="selected-empty">暂未选择</span>
             </div>
         </div>
@@ -36,6 +36,7 @@
                 <checkbox-pagination
                     ref="checkboxPaginationRef"
                     :data-list="goodsList"
+                    :highlight-keyword="keyWord"
                     v-model:currentItem="selectedItems"
                     :routeType="routeType"
                     :pageSize="pageSize"
@@ -378,36 +379,41 @@ watch(
 )
 </script>
 
-<style scoped src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
 .send-panel {
-    width: 100%;
-    max-width: 1180px;
-    padding: 18px;
-    border: 1px solid #e1e7e4;
-    border-radius: 8px;
-    background: #fff;
-    box-sizing: border-box;
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-surface);
+    box-shadow: var(--ui-shadow);
 }
 
 .form-row {
     display: grid;
-    grid-template-columns: 104px minmax(0, 1fr);
+    grid-template-columns: 100px minmax(0, 1fr);
     align-items: center;
     gap: 12px;
-    margin-bottom: 14px;
 
     > label {
-        color: #46534f;
+        color: var(--ui-muted);
         font-size: 14px;
-        font-weight: 500;
-        line-height: 32px;
-        text-align: right;
+        font-weight: 600;
+        line-height: 1.4;
     }
-}
 
-.align-start {
-    align-items: start;
+    &.align-start {
+        align-items: start;
+
+        > label { padding-block: 8px; }
+    }
+
+    &:last-child {
+        padding-top: 14px;
+        border-top: 1px solid var(--ui-border);
+    }
 }
 
 .form-content {
@@ -415,16 +421,21 @@ watch(
 }
 
 .preset-content {
-    max-height: 80px;
-    overflow: auto;
-    line-height: 32px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: var(--ui-bg);
+    color: var(--ui-muted);
+    font-size: 13px;
     overflow-wrap: anywhere;
 }
 
 .filter-grid {
     display: grid;
-    grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+
+    :deep(.el-button) { min-height: var(--el-component-size); }
 }
 
 .compact-control {
@@ -433,112 +444,136 @@ watch(
     gap: 8px;
 
     :deep(.el-input-number) {
-        width: 180px;
+        width: 156px;
+        max-width: 100%;
     }
 }
 
-.unit {
-    color: #64736e;
+.unit,
+.selected-empty {
+    color: var(--ui-muted);
+}
+
+.selected-empty {
+    display: flex;
+    align-items: center;
+    min-height: 36px;
+    padding-inline: 12px;
+    border: 1px dashed var(--ui-border);
+    border-radius: 6px;
+    background: var(--ui-bg);
+    font-size: 13px;
 }
 
 .action-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
 
     :deep(.el-button) {
-        margin-left: 0;
+        height: auto;
+        min-height: 36px;
+        max-width: 100%;
+        margin: 0;
+        line-height: 1.4;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 }
 
-.selected-list {
-    display: flex;
-    flex-wrap: wrap;
+:deep(.selected-list) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
     gap: 8px;
-    max-height: 180px;
-    overflow: auto;
-    line-height: 1;
+    padding: 2px 8px 2px 2px;
 }
 
 .selected-item {
     display: flex;
-    align-items: center;
-    gap: 4px;
+    align-items: stretch;
+    gap: 6px;
+    min-width: 0;
+}
+
+.selected-item-tag {
+    --el-tag-bg-color: var(--ui-accent-soft);
+    --el-tag-border-color: var(--ui-border);
+    --el-tag-text-color: var(--ui-accent);
+
+    flex: 1;
+    justify-content: space-between;
+    min-width: 0;
+    height: auto;
+    min-height: 32px;
+    padding-block: 4px;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
+
+    :deep(.el-tag__content) { min-width: 0; }
+    :deep(.el-tag__close) { flex-shrink: 0; }
 }
 
 .selected-item-number {
-    width: 100px;
+    flex: 0 0 92px;
+    width: 92px;
+    align-self: center;
 }
 
-.selected-empty {
-    line-height: 32px;
-    color: #89948f;
-}
+@media (width > 768px) {
+    .form-row > label { text-align: end; }
 
-@media (max-width: 700px) {
-    .send-panel {
-        padding: 14px 12px;
-        border-right: 0;
-        border-left: 0;
-        border-radius: 0;
+    .base-field,
+    .filter-grid,
+    .selected-empty { max-width: 385px; }
+
+    :deep(.selected-list) {
+        display: flex;
+        flex-wrap: wrap;
+        padding-block-start: 0;
+        padding-inline-start: 0;
     }
 
-    .form-row {
-        display: block;
-        margin-bottom: 16px;
+    .selected-item {
+        width: min(100%, 320px);
+    }
 
-        > label {
-            display: block;
-            margin-bottom: 5px;
-            line-height: 22px;
-            text-align: left;
-        }
+    .selected-item-tag,
+    .selected-item-number :deep(.el-input__wrapper) {
+        min-height: var(--el-component-size);
+    }
+}
+
+.form-row:not(.items-row) :deep(.el-input-number.is-controls-right :is(.el-input-number__increase, .el-input-number__decrease)) {
+    --el-input-number-controls-height: calc((var(--el-component-size) - 2px) / 2);
+}
+
+@media (max-width: 768px) {
+    .send-panel { padding: 12px; }
+
+    .form-row,
+    .form-row.align-start {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 6px;
+
+        > label { padding: 0; }
     }
 
     .filter-grid {
         grid-template-columns: minmax(0, 1fr) auto;
 
-        :deep(.el-input:first-child) {
-            grid-column: 1 / -1;
-        }
+        :deep(.el-input:first-child) { grid-column: 1 / -1; }
     }
 
-    .compact-control {
-        :deep(.el-input-number) {
-            width: min(100%, 220px);
-        }
+    .form-content :deep(.el-input__wrapper),
+    .filter-grid :deep(.el-button),
+    .action-buttons :deep(.el-button) {
+        min-height: 40px;
     }
 
-    .selected-item {
-        width: 100%;
-        align-items: stretch;
-    }
-
-    .selected-item-tag {
-        flex: 1;
-        min-width: 0;
-        height: auto;
-        white-space: normal;
-    }
-
-    .selected-item-number {
-        flex: 0 0 92px;
-        width: 92px;
-    }
-
-    .action-buttons {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-
-        :deep(.el-button) {
-            width: 100%;
-        }
-    }
-}
-
-@media (max-width: 420px) {
-    .action-buttons {
-        grid-template-columns: 1fr;
+    .selected-item-tag :deep(.el-tag__close) {
+        width: 26px;
+        height: 26px;
     }
 }
 </style>

@@ -5,7 +5,7 @@
         <el-button :icon="RefreshRight" @click="open('restart')">重启服务</el-button>
     </div>
 
-    <el-dialog v-model="visible" :title="title" width="min(500px, 94vw)" :close-on-click-modal="!busy" :close-on-press-escape="!busy" :show-close="!busy" @closed="clear">
+    <ScrollDialog v-model="visible" :title="title" width="min(500px, 94vw)" :close-on-click-modal="!busy" :close-on-press-escape="!busy" :show-close="!busy" @closed="clear">
         <el-form v-if="!job" label-position="top" @submit.prevent="submit">
             <el-form-item v-if="kind !== 'restart'" label="更新包">
                 <input ref="fileInput" type="file" accept=".zip" class="file-input" :disabled="busy" @change="selectFile" />
@@ -20,13 +20,14 @@
             <el-button v-if="!job" type="primary" :loading="busy || checking" :disabled="!configured || (kind !== 'restart' && !file)" @click="submit">{{ kind === 'restart' ? '确认重启' : '开始更新' }}</el-button>
             <el-button v-else-if="job.phase === 'success'" type="primary" @click="reloadPage">刷新页面</el-button>
         </template>
-    </el-dialog>
+    </ScrollDialog>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { Box, FolderOpened, RefreshRight, Upload } from '@element-plus/icons-vue'
 import axios from 'axios'
+import ScrollDialog from './ScrollDialog.vue'
 
 declare const __Admin_VERSION__: string
 type Kind = 'frontend' | 'server' | 'restart'
@@ -139,20 +140,46 @@ async function submit() {
 .update-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-surface);
 }
 .update-actions .el-button {
+    max-width: 100%;
     margin: 0;
 }
 .file-input {
     display: none;
 }
 .restart-warning {
-    margin-bottom: 12px;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--el-color-warning);
+    border-radius: 4px;
+    background: var(--el-color-warning-light-9);
+    color: var(--ui-text);
 }
 .filename {
-    margin-left: 10px;
+    flex: 0 1 100%;
+    min-width: 0;
+    margin-top: 6px;
     overflow-wrap: anywhere;
-    color: var(--el-text-color-secondary);
+    color: var(--ui-muted);
+    line-height: 1.5;
+}
+@media (max-width: 500px) {
+    .update-actions {
+        padding: 12px;
+    }
+    .update-actions .el-button {
+        flex: 1 1 152px;
+        height: auto;
+        min-height: 40px;
+        padding-block: 8px;
+        white-space: normal;
+        line-height: 1.35;
+    }
 }
 </style>

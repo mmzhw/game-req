@@ -1,6 +1,13 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { adminName, authStatus, sessionExpired } from '@/utils/admin-api'
 
+declare module 'vue-router' {
+    interface RouteMeta {
+        title?: string
+        breadcrumbParent?: 'games' | 'checkin'
+    }
+}
+
 const DEFAULT_TITLE = '游戏工具箱'
 
 const router = createRouter({
@@ -8,7 +15,7 @@ const router = createRouter({
     routes: [
         { path: '/login', name: 'login', component: () => import('@/views/AdminLogin.vue'), meta: { title: '后台登录' } },
         { path: '/games', name: 'games', component: () => import('@/views/AdminItems.vue'), meta: { title: '游戏控制台' } },
-        { path: '/games/:id/items', name: 'game-items', component: () => import('@/views/AdminGameItems.vue'), meta: { title: '编辑物品' } },
+        { path: '/games/:id/items', name: 'game-items', component: () => import('@/views/AdminGameItems.vue'), meta: { title: '编辑物品', breadcrumbParent: 'games' } },
         { path: '/catalogs', redirect: '/games' },
         { path: '/system/update', name: 'system-update', component: () => import('@/views/AdminUpdate.vue'), meta: { title: '服务更新' } },
         {
@@ -21,7 +28,7 @@ const router = createRouter({
             path: '/manage/:id',
             name: 'manage',
             component: () => import('@/views/GameMain.vue'),
-            meta: { title: '手游后台发送' }
+            meta: { title: '手游后台发送', breadcrumbParent: 'games' }
         },
         {
             path: '/checkin',
@@ -33,14 +40,14 @@ const router = createRouter({
             path: '/checkin/laowang',
             name: 'checkin-laowang',
             component: () => import('@/views/CheckinConfig.vue'),
-            meta: { title: '老王论坛签到' }
+            meta: { title: '老王论坛签到', breadcrumbParent: 'checkin' }
         },
         {
             path: '/checkin/fnat',
             name: 'checkin-fnat',
             component: () => import('@/views/CheckinConfig.vue'),
             props: { provider: 'fnat' },
-            meta: { title: 'FNAT 签到' }
+            meta: { title: 'FNAT 签到', breadcrumbParent: 'checkin' }
         },
         {
             path: '/dxlzz',

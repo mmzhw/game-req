@@ -89,10 +89,32 @@ onMounted(load)
 </script>
 
 <style scoped>
-.login-page { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: #f2f5f4; }
-.login-panel { width: min(100%, 390px); padding: 28px; background: white; border: 1px solid #dce4e1; border-radius: 8px; }
-header { display: flex; gap: 10px; align-items: center; color: #25695b; font-weight: 600; }
-h1 { font-size: 23px; font-weight: 650; margin: 14px 0 20px; }
-.el-alert { margin-bottom: 14px; }
-.el-button { width: 100%; margin-top: 4px; }
+.login-page {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: 24px var(--ui-page-pad);
+    background-color: var(--ui-bg);
+    background-image: radial-gradient(#d9e2e6 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+.login-panel {
+    width: min(100%, 420px);
+    padding: 30px 32px 32px;
+    border: 1px solid var(--ui-border);
+    border-top: 3px solid var(--ui-accent);
+    border-radius: var(--ui-radius);
+    background: var(--ui-surface);
+    box-shadow: 0 12px 36px rgb(29 41 57 / 9%);
+}
+header { display: flex; align-items: center; gap: 10px; color: var(--ui-text); font-size: 15px; font-weight: 650; }
+header .el-icon { width: 38px; height: 38px; border-radius: var(--ui-radius); background: var(--ui-accent); color: white; }
+h1 { margin: 20px 0; font-size: 26px; font-weight: 700; line-height: 1.25; }
+.el-alert { margin-bottom: 16px; }
+.el-button { width: 100%; min-height: 44px; margin-top: 6px; }
+@media (max-width: 520px) {
+    .login-panel { padding: 22px 20px 24px; }
+    h1 { margin-block: 16px; font-size: 23px; }
+}
 </style>

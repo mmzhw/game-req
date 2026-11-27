@@ -1,23 +1,24 @@
 <template>
-    <el-checkbox-group
-        :class="['check-group-wrap', isMobile && 'mobileCheck', props.checkboxType !== 'button' && 'boxLine', props.maxHeight && 'maxHeight']"
-        v-model="realItem"
-        @change="changeItemId"
-    >
-        <template v-if="props.checkboxType === 'button'">
-            <el-checkbox-button v-for="(item, index) in realList" :key="index" :value="item" :title="item.name + '（' + item.value + '）'">{{ item.name }}（{{ item.value }}）</el-checkbox-button>
-        </template>
-        <template v-else>
-            <el-checkbox v-for="(item, index) in realList" :key="index" :value="item" :title="item.name + '（' + item.value + '）'">{{ item.name }}（{{ item.value }}）</el-checkbox>
-        </template>
-    </el-checkbox-group>
-    <div :style="{display: 'flex', alignItems: 'center', marginBottom: isMobile ? '10px' : ''}">
-        <el-button type="text" @click="clickAll" style="margin-right: 10px">全选</el-button>
+    <el-scrollbar :max-height="props.maxHeight || undefined">
+        <el-checkbox-group
+            :class="['check-group-wrap', props.checkboxType !== 'button' && 'boxLine']"
+            v-model="realItem"
+            @change="changeItemId"
+        >
+            <template v-if="props.checkboxType === 'button'">
+                <el-checkbox-button v-for="(item, index) in realList" :key="index" :value="item" :title="item.name + '（' + item.value + '）'"><template v-for="(part, i) in nameParts(item.name)" :key="i"><mark v-if="i % 2" class="item-match">{{ part }}</mark><template v-else>{{ part }}</template></template>（{{ item.value }}）</el-checkbox-button>
+            </template>
+            <template v-else>
+                <el-checkbox v-for="(item, index) in realList" :key="index" :value="item" :title="item.name + '（' + item.value + '）'"><template v-for="(part, i) in nameParts(item.name)" :key="i"><mark v-if="i % 2" class="item-match">{{ part }}</mark><template v-else>{{ part }}</template></template>（{{ item.value }}）</el-checkbox>
+            </template>
+        </el-checkbox-group>
+    </el-scrollbar>
+    <div class="selection-toolbar">
+        <el-button class="select-all" type="text" @click="clickAll">全选</el-button>
         <el-pagination
-            class="pagePaginationWrap"
+            class="game-pagination"
             background
             hide-on-single-page
-            :class="isMobile && 'pagePaginationMobile'"
             :layout="layout"
             :page-sizes="sizes"
             :page-size="size"
@@ -26,7 +27,7 @@
             @current-change="pageCurrentChange"
             @size-change="pageSizeChange"
         >
-            <template #default><span style="padding-left: 5px">{{ current }} / {{ Math.max(1, Math.ceil(total / size)) }}页</span></template>
+            <template #default><span>{{ current }} / {{ Math.max(1, Math.ceil(total / size)) }}页</span></template>
         </el-pagination>
     </div>
 
@@ -44,6 +45,7 @@ interface PropsRadioPagination {
     maxHeight: string
     remote: boolean
     remoteTotal: number
+    highlightKeyword?: string
 }
 
 const props = withDefaults(defineProps<PropsRadioPagination>(), {
@@ -56,6 +58,16 @@ const props = withDefaults(defineProps<PropsRadioPagination>(), {
     remote: false,
     remoteTotal: 0
 })
+
+const highlightPattern = computed(() => {
+    const keyword = props.highlightKeyword?.trim()
+    return keyword ? new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'iu') : null
+})
+
+const nameParts = (name: string) => {
+    const pattern = highlightPattern.value
+    return pattern ? name.split(pattern) : [name]
+}
 
 const emit = defineEmits(['update:currentItem', 'page-change', 'size-change'])
 
@@ -127,113 +139,100 @@ defineExpose({
     }
 })
 </script>
-<style scoped src="../assets/game-req.scss"></style>
+<style scoped lang="scss" src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
-.check-group-wrap {
-    :deep() {
-        .el-checkbox-button {
-            margin: 0 0 5px 0;
-        }
-
-        .el-checkbox {
-            width: 22%;
-            display: inline-flex;
-
-            span:nth-child(1) {
-                display: block;
-            }
-
-            span:nth-child(2) {
-                display: block;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-        }
-
-    }
+.item-match {
+    border-radius: 2px;
+    background: #fef0b8;
+    color: #583c00;
 }
 
-.mobileCheck {
+.check-group-wrap {
     display: flex;
-    justify-content: space-between;
     flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
 
-    :deep() {
-        .el-checkbox-button {
-            width: calc((100% - 10px) / 2);
+    :deep(.el-checkbox-button) {
+        min-width: 0;
+        max-width: 100%;
+    }
 
-            .el-checkbox-button__inner {
-                width: 100%;
-                font-size: 12px;
-                border-radius: 4px !important;
-                border: 1px solid #dcdfe6 !important;
-            }
-        }
+    :deep(.el-checkbox-button .el-checkbox-button__inner) {
+        width: 100%;
+        min-height: 34px;
+        border: 1px solid var(--ui-border);
+        border-radius: 6px;
+        line-height: 1.4;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
 
-        .el-checkbox {
-            width: 100%;
-        }
+    :deep(.el-checkbox-button.is-checked .el-checkbox-button__inner) {
+        border-color: var(--ui-accent);
+        background: var(--ui-accent-soft);
+        color: var(--ui-accent);
+        box-shadow: none;
     }
 }
 
 .boxLine {
-    border: 1px solid #cccccc;
-    padding: 0 10px;
-    margin-bottom: 10px;
-}
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 182px), 1fr));
+    padding: 6px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-bg);
 
-.pagePaginationWrap {
-    :deep() {
-        .el-pagination__jump{
-            margin-left: 2px;
-        }
-    }
-}
-
-.pagePaginationMobile {
-    :deep() {
-        .el-pagination__sizes {
-            margin-left: 5px;
-
-            .el-select {
-                width: 85px;
-            }
-
-            .el-select__wrapper {
-                padding: 4px 6px;
-            }
-        }
-        .el-pagination__editor.el-input {
-            width: 40px;
-        }
-        .el-input__wrapper{
-            //padding: 0 2px;
-            padding: 0;
-        }
-    }
-}
-
-.maxHeight {
-    max-height: 50vh;
-    overflow: auto;
-}
-
-@media (max-width: 700px) {
-    .check-group-wrap {
-        padding: 8px;
-
-        :deep(.el-checkbox) {
-            width: 100%;
-            margin-right: 0;
-        }
-    }
-
-    .pagePaginationWrap {
-        flex: 1;
+    :deep(.el-checkbox) {
+        gap: 6px;
         min-width: 0;
-        overflow-x: auto;
-        padding-bottom: 4px;
+        height: auto;
+        min-height: 34px;
+        margin: 0;
+        padding: 5px 7px;
+        border-radius: 5px;
+        background: var(--ui-surface);
+    }
+
+    :deep(.el-checkbox.is-checked) {
+        background: var(--ui-accent-soft);
+    }
+
+    :deep(.el-checkbox__label) {
+        min-width: 0;
+        padding-left: 0;
+        line-height: 1.4;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+}
+
+.selection-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+}
+
+.select-all {
+    min-height: 36px;
+    margin: 0;
+    color: var(--ui-accent);
+}
+
+.game-pagination {
+    flex: 1 1 0;
+}
+
+@media (max-width: 768px) {
+    .selection-toolbar { align-items: flex-start; }
+    .game-pagination { flex-basis: 100%; }
+
+    .boxLine :deep(.el-checkbox),
+    .check-group-wrap :deep(.el-checkbox-button .el-checkbox-button__inner) {
+        min-height: 40px;
     }
 }
 </style>

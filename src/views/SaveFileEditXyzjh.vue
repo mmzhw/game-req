@@ -4,6 +4,7 @@ import axios from 'axios'
 import { cloneDeep } from 'lodash'
 import { ElLoading, ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
+import ScrollDialog from '@/components/ScrollDialog.vue'
 import { downloadFile } from '@/utils/download-file'
 
 const dictMap: any = {
@@ -346,7 +347,7 @@ const quickAddItems = () => {
 </script>
 
 <template>
-    <el-upload v-if="!fileLoaded" class="upload-demo" drag action="#" :on-change="handleFileSelect" :auto-upload="false" :show-file-list="false">
+    <el-upload v-if="!fileLoaded" class="editor-upload" drag action="#" :on-change="handleFileSelect" :auto-upload="false" :show-file-list="false">
         <el-icon class="el-icon--upload">
             <upload-filled />
         </el-icon>
@@ -354,19 +355,19 @@ const quickAddItems = () => {
     </el-upload>
     <el-button class="save-button-wrap" v-if="fileLoaded" type="primary" @click="saveFile">保存</el-button>
 
-    <el-scrollbar v-if="fileLoaded" style="height: calc(100vh - 60px); padding: 52px 10px 0">
+    <el-scrollbar v-if="fileLoaded">
         <div class="container">
-            <div style="display: flex; gap: 10px; flex-direction: column">
+            <div class="character-stats">
                 <div class="item-flex">
-                    <p style="width: 50px">金钱</p>
+                    <p class="label">金钱</p>
                     <el-input-number class="item-edit" v-model="mValueBase[68]" />
                 </div>
                 <div class="item-flex">
-                    <p style="width: 50px">修为</p>
+                    <p class="label">修为</p>
                     <el-input-number class="item-edit" v-model="mValueBase[69]" />
                 </div>
                 <div class="item-flex">
-                    <p style="width: 50px">感悟</p>
+                    <p class="label">感悟</p>
                     <el-input-number class="item-edit" v-model="mValueBase[70]" />
                 </div>
             </div>
@@ -380,9 +381,9 @@ const quickAddItems = () => {
             </div>
             <template v-for="(key, index) in paginatedItems" :key="key">
                 <div class="item-wrap" :class="{ 'item-bg': index % 2 === 0 }">
-                    <div class="item-flex">
+                    <div class="item-flex slot-row">
                         <div class="label">槽位：</div>
-                        <div style="flex: 1">{{ key }}</div>
+                        <div class="slot-number">{{ key }}</div>
                         <el-button size="small" @click="setItem(key, 99)">99</el-button>
                         <el-button size="small" @click="setItem(key, 999)">999</el-button>
                         <el-button size="small" @click="setItem(key, 9999)">9999</el-button>
@@ -402,9 +403,9 @@ const quickAddItems = () => {
         </div>
     </el-scrollbar>
 
-    <el-pagination v-if="Object.keys(itemObj).length" class="page-wrap" background v-model:current-page="currentPage" v-model:page-size="pageSize" @current-change="handlePageChange" layout="prev, pager, next, total" :total="filteredKeys.length" :pager-count="isMobile ? 5 : 7" size="small" />
-    <el-dialog v-model="dialogVisible" title="新增/编辑" width="90vw" top="10px" class="dialog-wrap">
-        <el-form :model="form" label-width="auto">
+    <el-pagination v-if="Object.keys(itemObj).length" class="game-pagination page-wrap" background v-model:current-page="currentPage" v-model:page-size="pageSize" @current-change="handlePageChange" layout="prev, pager, next, total" :total="filteredKeys.length" :pager-count="isMobile ? 5 : 7" size="small" />
+    <ScrollDialog v-model="dialogVisible" title="新增/编辑" class="save-editor-dialog">
+        <el-form class="edit-fields" :model="form" label-width="auto">
             <el-form-item v-for="key in Object.keys(dictMap)" :key="key" :label="dictMap[key].label">
                 <el-select-v2 class="item-edit" v-if="dictMap[key].type === 'select'" v-model="form[key]" :options="itemOptions" filterable />
                 <el-switch class="item-edit" v-else-if="dictMap[key].type === 'boolean'" v-model="form[key]" />
@@ -412,20 +413,20 @@ const quickAddItems = () => {
                 <el-input class="item-edit" v-else v-model="form[key]" :rows="getRows(form[key])" type="textarea" />
             </el-form-item>
         </el-form>
-        <div class="dialog-footer">
+        <template #footer>
             <el-button @click="dialogVisible = false">取消</el-button>
             <el-button type="primary" @click="saveItem">确认</el-button>
-        </div>
-    </el-dialog>
+        </template>
+    </ScrollDialog>
 
-    <el-dialog v-model="quickAddDialogVisible" title="一键添加物品" width="100vw" class="dialog-wrap">
-        <div style="display: flex; flex-direction: column; gap: 15px">
-            <div style="display: flex; gap: 10px">
-                <el-input v-model="quickAddKeyword" placeholder="输入物品名称关键词" style="flex: 1" @keyup.enter="quickAddItems" />
+    <ScrollDialog v-model="quickAddDialogVisible" title="一键添加物品" class="save-editor-dialog">
+        <div class="quick-dialog-content">
+            <div class="quick-search">
+                <el-input v-model="quickAddKeyword" placeholder="输入物品名称关键词" @keyup.enter="quickAddItems" />
                 <el-button type="success" @click="quickAddItems">添加</el-button>
             </div>
             <el-divider border-style="dashed" />
-            <div style="display: flex; flex-wrap: wrap; gap: 10px">
+            <div class="quick-actions">
                 <el-button type="primary" @click="addItemsByNames(['配方'], 1, '配方', false, (item: any) => item.value >= 1000 && item.value < 1100)">配方</el-button>
                 <el-button type="primary" @click="addItemsByNames(['宝册'], 999, '宝册')">宝册</el-button>
                 <el-button type="primary" @click="addItemsByNames(['道学·', '佛学·', '儒学·', '墨学·', '农学·', '琴艺·', '棋艺·', '书法·', '画道·', '酒量·', '悟性·', '魔学·', '垂钓·'], 1, '书籍')">书籍</el-button>
@@ -435,92 +436,164 @@ const quickAddItems = () => {
                 <el-button type="primary" @click="addItemsByNames(['秘术：'], 1, '秘术', true)">秘术</el-button>
             </div>
         </div>
-    </el-dialog>
+    </ScrollDialog>
 </template>
 
+<style scoped lang="scss" src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
-.upload-demo {
-    padding: 10px;
-}
 .save-button-wrap {
-    width: calc(100% - 20px);
-    box-sizing: border-box;
-    margin: 10px 10px 0 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    z-index: 100;
-    position: fixed;
-    top: 0;
-    left: 0;
+    min-width: 88px;
+    margin-bottom: 14px;
 }
+
 .container {
-    width: 100%;
-    position: relative;
-    > div {
-        width: 100%;
-    }
+    display: grid;
+    gap: 12px;
+    min-width: 0;
 }
+
+.character-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-surface);
+
+    p { margin: 0; }
+}
+
 .item-edit {
     width: 100%;
+    min-width: 0;
 }
+
 .page-wrap {
-    width: 100%;
-    background-color: #fff;
-    padding: 10px;
-    z-index: 100;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    border-top: 1px solid #dcdfe6;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-surface);
 }
-.dialog-footer {
+
+:global(.save-editor-dialog.el-dialog) {
+    --el-dialog-width: min(680px, calc(100vw - 24px));
+    --el-dialog-margin-top: min(48px, 6vh);
+    --el-dialog-padding-primary: 18px;
+    --el-dialog-border-radius: var(--ui-radius);
+}
+
+.quick-actions {
     display: flex;
-    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    :deep(.el-button) { margin: 0; }
 }
+
 .item-flex {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    min-width: 0;
+
     > .label {
-        width: 75px;
-        flex-shrink: 0;
+        flex: 0 0 84px;
+        color: var(--ui-muted);
+        font-size: 14px;
+        font-weight: 600;
     }
+
     > .item-edit {
         flex: 1;
-    }
-    :deep() {
-        .el-button {
-            margin: 0;
-        }
+        overflow-wrap: anywhere;
     }
 }
 
-.item-wrap {
-    padding: 10px;
-    border-radius: 4px;
-    gap: 10px;
-    display: flex;
-    flex-direction: column;
-}
-.item-bg {
-    background-color: #f5f7fa;
-}
-:deep() {
-    .el-divider {
-        margin: 15px 0;
-    }
-}
-.add-wrap {
-    display: flex;
-    align-items: center;
+.character-stats .label { flex-basis: auto; }
+
+.slot-row {
+    flex-wrap: wrap;
     padding-bottom: 10px;
+    border-bottom: 1px solid var(--ui-border);
+
+    > .label { flex-basis: auto; }
+
+    :deep(.el-button) { margin: 0; }
+}
+
+.slot-number {
+    margin-right: auto;
+    min-width: 2ch;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.item-wrap {
+    display: grid;
     gap: 10px;
-    :deep() {
-        .el-button {
-            margin: 0;
-        }
-        .el-input-group__append {
-            padding: 0 5px;
-        }
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-surface);
+}
+
+.item-bg {
+    background: color-mix(in srgb, var(--ui-bg) 40%, var(--ui-surface));
+}
+
+.container :deep(.el-divider),
+.quick-dialog-content :deep(.el-divider) {
+    margin: 0;
+}
+
+.add-wrap,
+.quick-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+
+    :deep(.el-button) { margin: 0; }
+
+    :deep(.el-input) {
+        flex: 1 1 180px;
+        min-width: 0;
+    }
+
+    :deep(.el-input-group__append) { padding-inline: 8px; }
+}
+
+.quick-dialog-content {
+    display: grid;
+    gap: 12px;
+}
+
+@media (max-width: 768px) {
+    .character-stats { grid-template-columns: minmax(0, 1fr); }
+
+    .character-stats .label { flex-basis: 3em; }
+
+    .add-wrap :deep(.el-input) { flex-basis: 100%; }
+
+    .slot-row,
+    .character-stats,
+    .item-wrap { gap: 8px; }
+
+    .item-wrap,
+    .character-stats { padding: 10px; }
+
+    .save-button-wrap,
+    .container :deep(.el-button),
+    .container :deep(.el-input__wrapper),
+    .quick-dialog-content :deep(.el-button),
+    .quick-dialog-content :deep(.el-input__wrapper),
+    .edit-fields :deep(.el-input__wrapper),
+    .edit-fields :deep(.el-select__wrapper) {
+        min-height: 40px;
     }
 }
 </style>

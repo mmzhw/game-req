@@ -131,7 +131,7 @@ export class CheckinService {
         let cookie = this.config.cookie,
             password = this.config.password,
             fingerprint = this.config.fingerprint
-        if (typeof input.cookie === 'string' && input.cookie.trim()) cookie = [...this.site.parseCookie(input.cookie.trim())].map(([key, value]) => key + '=' + value).join('; ')
+        if (authMode === 'cookie' && typeof input.cookie === 'string' && input.cookie.trim()) cookie = [...this.site.parseCookie(input.cookie.trim())].map(([key, value]) => key + '=' + value).join('; ')
         if (this.site.supportsPassword && typeof input.password === 'string' && input.password) {
             if (input.password.length > 256 || /[\r\n]/.test(input.password)) throw new CheckinError('CONFIG_INVALID', 'FNAT 密码格式不正确')
             password = input.password
@@ -382,7 +382,7 @@ export function registerCheckinRoutes(router, service, otherSites = []) {
             ctx.body = await handler(ctx)
         } catch (error) {
             ctx.status = error.code === 'BUSY' ? 409 : error instanceof CheckinError ? 400 : 500
-            ctx.body = { error: error instanceof CheckinError ? error.message : '签到配置读取或保存失败', code: error.code || 'INTERNAL' }
+            ctx.body = { error: error instanceof CheckinError ? error.message : '签到配置读取或保存失败', code: error.code || 'INTERNAL', ...(ctx.path.endsWith('/inspect') && error instanceof CheckinError && error.inspectionDiagnostic ? { diagnostic: { ...error.inspectionDiagnostic, checkedAt: new Date().toISOString() } } : {}) }
         }
     }
     router.get(

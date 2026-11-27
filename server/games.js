@@ -165,15 +165,15 @@ export class GamesRepository {
                 updated_at TEXT NOT NULL
             );
         `)
-        if (!db.prepare("SELECT 1 FROM app_meta WHERE key = 'games_seeded'").get()) {
+        if (!db.prepare('SELECT 1 FROM app_meta WHERE key = \'games_seeded\'').get()) {
             transaction(db, () => {
                 const insert = db.prepare('INSERT OR IGNORE INTO games VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
                 const now = new Date().toISOString()
                 defaults.forEach((game) => insert.run(game.key, game.name, game.template, 1, game.sortOrder, JSON.stringify(game.config), now, now))
-                db.prepare("INSERT INTO app_meta VALUES ('games_seeded', '1')").run()
+                db.prepare('INSERT INTO app_meta VALUES (\'games_seeded\', \'1\')').run()
             })
         }
-        const migrate = db.prepare("UPDATE games SET template = 'operations', config = ?, updated_at = ? WHERE key = ?")
+        const migrate = db.prepare('UPDATE games SET template = \'operations\', config = ?, updated_at = ? WHERE key = ?')
         db.prepare('SELECT key, config FROM games').all().forEach((row) => {
             const config = parseConfig(row.config)
             if (Array.isArray(config.operations) && config.operations.length) return
@@ -224,7 +224,7 @@ export class GamesRepository {
     remove(key) {
         this.get(key)
         transaction(this.db, () => {
-            const hasItems = this.db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'item_versions'").get()
+            const hasItems = this.db.prepare('SELECT 1 FROM sqlite_master WHERE type = \'table\' AND name = \'item_versions\'').get()
             if (hasItems) {
                 const versions = this.db.prepare('SELECT id FROM item_versions WHERE game = ?').all(key).map((row) => row.id)
                 const removeRows = this.db.prepare('DELETE FROM item_rows WHERE version = ?')

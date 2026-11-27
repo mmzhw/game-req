@@ -1,6 +1,5 @@
 <template>
     <div class="game-page">
-        <h1>{{ gameName }}</h1>
         <game-req-new v-if="routeType" :routeType="routeType" @addLogs="addLogs" />
         <table-pagination :dataList="logList" />
     </div>
@@ -18,12 +17,10 @@ let logList: any = ref([])
 
 const route = useRoute()
 const routeType = ref<string>(String(route.params.id || ''))
-const gameName = ref('')
 
 watch(() => route.params.id, async (id) => {
     routeType.value = String(id || '')
     const game = await adminRequest<GameRecord>(`/api/games/${encodeURIComponent(routeType.value)}`)
-    gameName.value = game.name
     document.title = `${game.name} - 后台发送`
 }, { immediate: true, flush: 'post' })
 
@@ -98,12 +95,14 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped src="../assets/game-req.scss"></style>
 <style scoped>
-.game-page { padding: 18px 20px 28px; }
-h1 { font-size: 22px; margin: 0 0 14px; }
-@media (max-width: 700px) {
-    .game-page { padding: 14px 0 24px; }
-    h1 { padding: 0 12px; font-size: 20px; }
+.game-page {
+    display: grid;
+    gap: 20px;
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .game-page { gap: 14px; }
 }
 </style>

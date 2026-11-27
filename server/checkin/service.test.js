@@ -444,6 +444,32 @@ test('password login mode is opt-in and never exposes the saved password', async
     assert.equal(service.config.cookie, 'PHPSESSID=renewed-session')
 })
 
+test('password login mode ignores an unrelated Cookie field', async (t) => {
+    const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'game-req-password-only-checkin-'))
+    t.after(() => fs.rm(dataDir, { recursive: true, force: true }))
+    let cookieParses = 0
+    const service = await new CheckinService({
+        dataDir,
+        site: {
+            id: 'fnat-password-only-test',
+            name: 'FNAT',
+            url: 'https://frp.fnat.cc',
+            requiresFingerprint: false,
+            supportsPassword: true,
+            parseCookie: () => {
+                cookieParses++
+                throw new Error('password mode must not parse Cookie input')
+            }
+        }
+    }).init()
+    const state = await service.saveConfig({ enabled: true, time: '08:00', account, authMode: 'password', cookie: 'not-a-fnat-cookie', password: 'private-password', allowInsecureLogin: true, proxy: '' })
+    assert.equal(cookieParses, 0)
+    assert.equal(state.config.authMode, 'password')
+    assert.equal(state.config.hasPassword, true)
+    assert.equal(state.config.hasCookie, false)
+    assert.equal(state.config.credentialsReady, true)
+})
+
 test('page parsing validates account, counters and signed state before acting', () => {
     const stats = Object.entries(before)
         .map(([key, value]) => '<input id="' + key + '" value="' + value + '">')

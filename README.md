@@ -6,6 +6,8 @@
 
 ## Docker 部署与页面更新
 
+通过 `192.168.200.130` 构建并发布 Docker Hub 镜像的完整步骤见 [Docker 镜像构建与发布](docs/docker-image-release.md)。
+
 首次启用新版后台请换镜像，不要在旧版上单独上传前端包。在项目根目录运行 `pnpm run build-only` 后构建镜像：
 
 ```sh

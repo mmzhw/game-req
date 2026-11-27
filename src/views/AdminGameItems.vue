@@ -3,7 +3,6 @@
         <div class="page-head">
             <div>
                 <el-button link :icon="ArrowLeft" @click="router.push('/games')">返回控制台</el-button>
-                <h1>{{ game?.name || route.params.id }} · 编辑物品</h1>
             </div>
             <el-button type="primary" :icon="Plus" @click="openItem()">新增物品</el-button>
         </div>
@@ -11,7 +10,7 @@
             <el-input v-model="keyword" clearable placeholder="搜索物品名称" @input="searchLater" />
             <span>共 {{ total }} 条</span>
         </div>
-        <el-table :data="items" v-loading="busy" empty-text="暂无物品" style="width: 100%">
+        <el-table class="items-table" :data="items" v-loading="busy" empty-text="暂无物品" style="width: 100%">
             <el-table-column label="名称" prop="name" min-width="180" show-overflow-tooltip />
             <el-table-column label="编号" prop="value" min-width="140" show-overflow-tooltip />
             <el-table-column label="动作" prop="action" width="150" />
@@ -24,7 +23,7 @@
         </el-table>
         <el-pagination v-model:current-page="page" v-model:page-size="pageSize" :total="total" :page-sizes="[20, 50, 100, 200]" layout="total, sizes, prev, pager, next" @current-change="load" @size-change="load(1)" />
 
-        <el-dialog v-model="showItem" :title="form.position === null ? '新增物品' : '编辑物品'" width="min(520px, 94vw)">
+        <ScrollDialog v-model="showItem" :title="form.position === null ? '新增物品' : '编辑物品'" width="min(520px, 94vw)">
             <el-form label-position="top">
                 <el-form-item label="物品名称"><el-input v-model="form.name" maxlength="512" /></el-form-item>
                 <el-form-item label="物品编号"><el-input v-model="form.value" maxlength="128" /></el-form-item>
@@ -34,7 +33,7 @@
                 <el-button :disabled="saving" @click="showItem = false">取消</el-button>
                 <el-button type="primary" :loading="saving" @click="saveItem">保存</el-button>
             </template>
-        </el-dialog>
+        </ScrollDialog>
     </section>
 </template>
 
@@ -43,6 +42,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Delete, Edit, Plus } from '@element-plus/icons-vue'
+import ScrollDialog from '@/components/ScrollDialog.vue'
 import { adminRequest } from '@/utils/admin-api'
 import type { GameRecord } from '@/utils/game-templates'
 
@@ -115,12 +115,68 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.items-page { padding: 24px; }
-.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
-h1 { font-size: 22px; margin: 8px 0 0; }
-.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
-.toolbar .el-input { width: 320px; max-width: 70%; }
-.el-pagination { margin-top: 16px; justify-content: flex-end; }
-.el-select { width: 100%; }
-@media (max-width: 700px) { .items-page { padding: 16px; } .page-head { align-items: flex-start; } }
+.items-page {
+    min-width: 0;
+    color: var(--ui-text);
+}
+.page-head,
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+}
+.page-head {
+    align-items: flex-end;
+    margin-bottom: 18px;
+}
+.page-head > div {
+    min-width: 0;
+}
+.toolbar {
+    margin-bottom: 12px;
+    color: var(--ui-muted);
+    font-size: 13px;
+}
+.toolbar .el-input {
+    flex: 0 1 320px;
+    width: 320px;
+    max-width: 100%;
+}
+.items-table {
+    max-width: 100%;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+}
+.el-pagination {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px 4px;
+    margin-top: 14px;
+}
+.el-select {
+    width: 100%;
+}
+@media (max-width: 900px) {
+    .items-table :deep(.el-table-fixed-column--right) {
+        position: relative !important;
+        right: auto !important;
+        z-index: var(--el-table-index);
+    }
+    .items-table :deep(.el-table-fixed-column--right::before) {
+        content: none;
+    }
+}
+@media (max-width: 600px) {
+    .toolbar .el-input {
+        flex: 1 1 180px;
+    }
+    .el-pagination {
+        justify-content: flex-start;
+    }
+    .el-pagination :deep(.el-pager li) {
+        min-width: 24px;
+    }
+}
 </style>

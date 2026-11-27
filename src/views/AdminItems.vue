@@ -1,12 +1,12 @@
 <template>
-    <section class="admin-page">
+    <section class="admin-page business-panel">
         <div class="page-head">
-            <div><h1>游戏控制台</h1><p>管理游戏、发送配置和物品数据。</p></div>
+            <div><p>管理游戏、发送配置和物品数据。</p></div>
             <el-button type="primary" :icon="Plus" @click="openGame()">新增游戏</el-button>
         </div>
         <input ref="picker" class="file-input" type="file" accept=".txt,.text,.json" @change="chooseFile" />
         <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon />
-        <el-table :data="rows" empty-text="暂无游戏" style="width: 100%" v-loading="busy">
+        <el-table class="games-table" :data="rows" empty-text="暂无游戏" style="width: 100%" v-loading="busy">
             <el-table-column label="游戏" prop="name" min-width="130" />
             <el-table-column label="标识" prop="key" min-width="100" />
             <el-table-column label="功能数" width="90"><template #default="{ row }">{{ row.config.operations.length }}</template></el-table-column>
@@ -23,7 +23,7 @@
             </el-table-column>
         </el-table>
 
-        <el-dialog v-model="showGame" :title="editingKey ? '编辑游戏' : '新增游戏'" width="min(680px, 96vw)" :close-on-click-modal="!saving">
+        <ScrollDialog v-model="showGame" :title="editingKey ? '编辑游戏' : '新增游戏'" width="min(680px, 96vw)" :close-on-click-modal="!saving">
             <el-form label-position="top">
                 <div class="form-grid">
                     <el-form-item label="游戏名称"><el-input v-model="form.name" maxlength="40" /></el-form-item>
@@ -31,7 +31,7 @@
                     <el-form-item label="菜单排序"><el-input-number v-model="form.sortOrder" :min="0" :max="9999" /></el-form-item>
                     <el-form-item label="默认账号"><el-input v-model="form.config.defaultAccount" /></el-form-item>
                     <el-form-item label="默认数量"><el-input-number v-model="form.config.defaultNumber" :min="1" /></el-form-item>
-                    <el-form-item label="默认发送间隔">
+                    <el-form-item class="interval-field" label="默认发送间隔">
                         <el-input-number v-model="form.config.defaultInterval" :min="0" :max="60" :step="0.5" :precision="1" />
                         <span class="input-unit">秒</span>
                     </el-form-item>
@@ -78,9 +78,9 @@
                 <el-button :disabled="saving" @click="showGame = false">取消</el-button>
                 <el-button type="primary" :loading="saving" @click="saveGame">保存</el-button>
             </template>
-        </el-dialog>
+        </ScrollDialog>
 
-        <el-dialog v-model="showImport" title="导入物品" width="min(720px, 96vw)" :close-on-click-modal="!saving">
+        <ScrollDialog v-model="showImport" title="导入物品" width="min(720px, 96vw)" :close-on-click-modal="!saving">
             <el-tabs v-model="importMode">
                 <el-tab-pane label="文件导入" name="file">
                     <div class="import-file">
@@ -115,9 +115,9 @@
                 <el-button :disabled="saving" @click="showImport = false">取消</el-button>
                 <el-button v-if="importMode === 'paste'" type="primary" :loading="saving" @click="previewPaste">预览转换结果</el-button>
             </template>
-        </el-dialog>
+        </ScrollDialog>
 
-        <el-dialog v-model="showPreview" title="导入预览" width="min(540px, 94vw)" :close-on-click-modal="!saving">
+        <ScrollDialog v-model="showPreview" title="导入预览" width="min(540px, 94vw)" :close-on-click-modal="!saving">
             <template v-if="preview">
                 <p class="source">{{ source }}</p>
                 <dl>
@@ -132,13 +132,13 @@
                     <el-table-column label="ID" prop="value" min-width="100" show-overflow-tooltip />
                     <el-table-column label="Action" prop="action" min-width="100" show-overflow-tooltip />
                 </el-table>
-                <el-alert v-if="preview.invalid" :title="`有 ${preview.invalid} 条无效记录：第 ${preview.issues.join('、')} 项`" type="error" :closable="false" />
+                <el-alert class="preview-alert" v-if="preview.invalid" :title="`有 ${preview.invalid} 条无效记录：第 ${preview.issues.join('、')} 项`" type="error" :closable="false" />
             </template>
             <template #footer>
                 <el-button :disabled="saving" @click="showPreview = false">取消</el-button>
                 <el-button type="primary" :disabled="!preview || preview.invalid > 0" :loading="saving" @click="commitImport">导入并替换</el-button>
             </template>
-        </el-dialog>
+        </ScrollDialog>
     </section>
 </template>
 
@@ -147,6 +147,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Edit, Plus, Setting, Upload } from '@element-plus/icons-vue'
+import ScrollDialog from '@/components/ScrollDialog.vue'
 import { adminRequest, notifyGamesChanged } from '@/utils/admin-api'
 import type { GameRecord } from '@/utils/game-templates'
 
@@ -313,26 +314,138 @@ onMounted(reload)
 </script>
 
 <style scoped>
-.admin-page { padding: 24px; }
-.page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
-h1 { font-size: 23px; font-weight: 650; margin: 0; }
-.page-head p { margin: 5px 0 0; color: #64736e; }
-.file-input { display: none; }
-.import-file { padding: 20px 4px 28px; text-align: center; }
-.import-file p { margin: 0 0 16px; color: #64736e; }
-.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
-.form-grid .wide { grid-column: 1 / -1; }
-.form-grid :deep(.el-select), .form-grid :deep(.el-input-number) { width: 100%; }
-.input-unit { margin-left: 8px; color: #64736e; line-height: 32px; }
-.source { font-weight: 650; overflow-wrap: anywhere; }
-.operations-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin: 8px 0 12px; padding-top: 14px; border-top: 1px solid #e3e8e6; }
-.operations-head h3 { margin: 0; font-size: 16px; }
-.operations-head p { margin: 4px 0 0; color: #64736e; font-size: 13px; }
-.operation-item { padding: 12px; margin-bottom: 12px; border: 1px solid #dfe6e3; border-radius: 6px; }
-.operation-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.field-help { margin-top: 5px; color: #6b7974; font-size: 12px; overflow-wrap: anywhere; }
-dl { display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 8px; }
-dt { color: #5e6e68; }
-dd { margin: 0; overflow-wrap: anywhere; }
-@media (max-width: 700px) { .admin-page { padding: 16px; } .form-grid { grid-template-columns: 1fr; } .form-grid .wide { grid-column: auto; } }
+.admin-page {
+    min-width: 0;
+    color: var(--ui-text);
+}
+.page-head,
+.operations-head,
+.operation-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+}
+.page-head {
+    margin-bottom: 18px;
+}
+.page-head p,
+.operations-head p {
+    margin: 5px 0 0;
+    color: var(--ui-muted);
+}
+.admin-page > .el-alert {
+    margin-bottom: 12px;
+}
+.games-table {
+    max-width: 100%;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+}
+.file-input {
+    display: none;
+}
+.import-file {
+    padding: 18px 12px 22px;
+    text-align: center;
+    border: 1px dashed var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-bg);
+}
+.import-file p {
+    margin: 0 0 14px;
+    color: var(--ui-muted);
+}
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
+}
+.form-grid .wide {
+    grid-column: 1 / -1;
+}
+.form-grid :deep(.el-select),
+.form-grid :deep(.el-input-number) {
+    width: 100%;
+}
+.interval-field :deep(.el-form-item__content) {
+    flex-wrap: nowrap;
+    gap: 8px;
+}
+.interval-field :deep(.el-input-number) {
+    flex: 1;
+    min-width: 0;
+}
+.input-unit {
+    flex: none;
+    color: var(--ui-muted);
+}
+.operations-head {
+    margin: 8px 0 12px;
+    padding-top: 14px;
+    border-top: 1px solid var(--ui-border);
+}
+.operations-head h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 650;
+}
+.operations-head p,
+.field-help {
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+.operation-item {
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-bg);
+}
+.operation-title {
+    margin-bottom: 8px;
+}
+.field-help {
+    margin-top: 5px;
+    color: var(--ui-muted);
+}
+.source {
+    margin: 0 0 12px;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+dl {
+    display: grid;
+    grid-template-columns: minmax(78px, 108px) minmax(0, 1fr);
+    gap: 8px;
+    margin: 0 0 14px;
+}
+dt {
+    color: var(--ui-muted);
+}
+dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+.preview-alert {
+    margin-top: 12px;
+}
+@media (max-width: 1100px) {
+    /* The wide action column scrolls with the other fields on narrow workspaces. */
+    .games-table :deep(.el-table-fixed-column--right) {
+        position: relative !important;
+        right: auto !important;
+        z-index: var(--el-table-index);
+    }
+    .games-table :deep(.el-table-fixed-column--right::before) {
+        content: none;
+    }
+}
+@media (max-width: 600px) {
+    .form-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
 </style>

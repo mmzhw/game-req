@@ -1,11 +1,7 @@
 <template>
     <main class="checkin-page" v-loading="loading">
         <header class="page-header">
-            <div>
-                <el-button link @click="router.push({ name: 'checkin' })">← 返回签到站点</el-button>
-                <h1>{{ siteName }}签到</h1>
-                <p>服务端定时执行，配置完成后无需打开浏览器。</p>
-            </div>
+            <p>服务端定时执行，配置完成后无需打开浏览器。</p>
             <el-button @click="refresh()" :loading="refreshing">刷新状态</el-button>
         </header>
 
@@ -71,7 +67,7 @@
                             <el-radio-button value="cookie">Cookie / token</el-radio-button>
                             <el-radio-button value="password">账号密码</el-radio-button>
                         </el-radio-group>
-                        <p class="field-help">默认使用 Cookie；账号密码模式仅在会话过期时重新登录并更新 Cookie。</p>
+                        <p class="field-help">两种方式可独立使用。账号密码模式无需预先配置 Cookie，首次执行时会自动登录并保存会话。</p>
                     </el-form-item>
                     <el-form-item v-if="!isFnat || form.authMode === 'cookie'">
                         <template #label>
@@ -88,10 +84,10 @@
                     <template v-if="isFnat && form.authMode === 'password'">
                         <el-form-item label="FNAT 登录密码">
                             <el-input v-model="form.password" type="password" show-password autocomplete="new-password" :placeholder="state?.config.hasPassword ? '密码已保存，留空会保留' : '输入 FNAT 登录密码'" />
-                            <p class="field-help">密码只保存在后台签到数据目录，状态接口和执行记录不会返回原文。</p>
+                            <p class="field-help">无需填写 Cookie；密码只保存在后台签到数据目录，状态接口和执行记录不会返回原文。</p>
                         </el-form-item>
                         <el-alert title="FNAT 当前会把 HTTPS 登录地址重定向到 HTTP，自动登录时账号密码可能以明文经过网络。" type="warning" :closable="false" show-icon class="login-warning" />
-                        <el-checkbox v-model="form.allowInsecureLogin" class="risk-confirm">我确认并允许在会话失效时通过 FNAT 当前的 HTTP 登录入口自动登录</el-checkbox>
+                        <el-checkbox v-model="form.allowInsecureLogin" class="risk-confirm">我确认并允许通过 FNAT 当前的 HTTP 登录入口自动登录</el-checkbox>
                     </template>
                     <el-collapse class="advanced-settings">
                         <el-collapse-item title="网络与首次配置" name="network">
@@ -174,7 +170,16 @@
 
         <footer>后台时间：{{ formatTime(state?.runtime.serverTime) }} · 时区 Asia/Shanghai <span>关闭本页面不影响后台执行</span></footer>
 
-        <el-dialog v-model="requestDialog" title="平台请求" width="min(672px, 94vw)">
+        <ScrollDialog v-model="inspectionDialog" title="登录态检查失败" width="min(560px, 94vw)">
+            <div class="request-details"><pre>{{ inspectionFailure }}</pre></div>
+            <textarea ref="inspectionCopyInput" class="diagnostic-copy-input" aria-hidden="true" tabindex="-1" />
+            <template #footer>
+                <el-button :icon="CopyDocument" @click="copyDiagnosticText(inspectionFailure, inspectionCopyInput)">复制诊断</el-button>
+                <el-button type="primary" @click="inspectionDialog = false">关闭</el-button>
+            </template>
+        </ScrollDialog>
+
+        <ScrollDialog v-model="requestDialog" title="平台请求" width="min(672px, 94vw)">
             <template v-if="selectedRecord">
                 <p class="request-summary">{{ selectedRecord.date }} · {{ sourceLabel(selectedRecord.source) }} · {{ statusLabel(selectedRecord.status) }}</p>
                 <div class="request-details">
@@ -189,9 +194,9 @@
                 <el-button :icon="CopyDocument" @click="copyDiagnostics">复制诊断</el-button>
                 <el-button type="primary" @click="requestDialog = false">关闭</el-button>
             </template>
-        </el-dialog>
+        </ScrollDialog>
 
-        <el-dialog v-model="helperDialog" title="使用现有获取 Cookie 插件" width="min(560px, 92vw)">
+        <ScrollDialog v-model="helperDialog" title="使用现有获取 Cookie 插件" width="min(560px, 92vw)">
             <ol class="helper-steps">
                 <li>在 Chrome 中右键你现有的“获取 Cookies”插件，打开“选项”。</li>
                 <li>
@@ -202,15 +207,15 @@
             </ol>
             <el-alert :title="helperReady ? '已检测到 Cookie 插件，可以获取' : '当前页面尚未检测到 Cookie 插件'" :type="helperReady ? 'success' : 'info'" :closable="false" show-icon />
             <template #footer><el-button type="primary" @click="helperDialog = false">知道了</el-button></template>
-        </el-dialog>
+        </ScrollDialog>
     </main>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { CopyDocument, Tickets } from '@element-plus/icons-vue'
+import ScrollDialog from '@/components/ScrollDialog.vue'
 import { adminFetch } from '@/utils/admin-api'
 
 type Counters = { lxtdays: number; lxdays: number; lxreward: number; lxlevel: number }
@@ -223,7 +228,6 @@ type RunRecord = { date: string; account: string; source: string; status: string
 type ScheduleMode = 'fixed' | 'random'
 type AuthMode = 'cookie' | 'password'
 type CheckinState = { config: { enabled: boolean; time: string; scheduleMode?: ScheduleMode; randomStart?: string; randomEnd?: string; account: string; authMode?: AuthMode; hasCookie: boolean; hasPassword?: boolean; allowInsecureLogin?: boolean; credentialsReady?: boolean; hasFingerprint: boolean; credentialsUpdatedAt?: string; proxy: string }; runtime: { running: boolean; serverTime: string; nextRunAt: string | null; todayClaimed: boolean; retryAvailable?: boolean; nextIsRetry?: boolean }; records: RunRecord[]; lottery?: { enabled: boolean; todayClaimed: boolean; records: RunRecord[] } }
-const router = useRouter()
 const props = defineProps<{ provider?: 'fnat' }>()
 const isFnat = computed(() => props.provider === 'fnat')
 const siteName = computed(() => isFnat.value ? 'FNAT' : '老王论坛')
@@ -240,6 +244,9 @@ const error = ref(''),
     helperReady = ref(false)
 const inspection = ref<{ account: string; signed: boolean; counters: Pick<Counters, 'lxtdays'> | null } | null>(null)
 const requestDialog = ref(false)
+const inspectionDialog = ref(false)
+const inspectionFailure = ref('')
+const inspectionCopyInput = ref<HTMLTextAreaElement | null>(null)
 const selectedRecord = ref<RunRecord | null>(null)
 const selectedAction = ref('签到')
 const diagnosticCopyInput = ref<HTMLTextAreaElement | null>(null)
@@ -277,7 +284,7 @@ let awaitingCookieUntil = 0
 async function api(route: string, body?: unknown, method = 'POST') {
     const response = await adminFetch('/api/checkin' + (isFnat.value ? '/fnat' : '') + route, { method: body === undefined && route === '' ? 'GET' : method, headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined, body: body === undefined ? undefined : JSON.stringify(body) })
     const value = await response.json()
-    if (!response.ok) throw new Error(value.error || '请求失败，请确认后台服务已启动')
+    if (!response.ok) throw Object.assign(new Error(value.error || '请求失败，请确认后台服务已启动'), { code: value.code, diagnostic: value.diagnostic })
     return value
 }
 function formatTime(value?: string | null) {
@@ -316,11 +323,13 @@ async function copyDiagnostics() {
     const record = selectedRecord.value
     if (!record) return
     const text = [siteName.value + ' · ' + record.date + ' · ' + sourceLabel(record.source) + ' · ' + statusLabel(record.status), ...diagnosticSections.value.map((section) => '[' + section.title + ']\n' + section.text)].join('\n\n')
+    await copyDiagnosticText(text, diagnosticCopyInput.value)
+}
+async function copyDiagnosticText(text: string, input: HTMLTextAreaElement | null) {
     try {
         if (navigator.clipboard?.writeText) {
             await navigator.clipboard.writeText(text)
         } else {
-            const input = diagnosticCopyInput.value
             if (!input) throw new Error()
             input.value = text
             input.select()
@@ -351,7 +360,10 @@ async function refresh(initial = false, quiet = false) {
 async function save() {
     saving.value = true
     try {
-        state.value = await api('/config', { ...form, fingerprint: form.fingerprint || undefined }, 'PUT')
+        const credentials = isFnat.value && form.authMode === 'password'
+            ? { cookie: '', password: form.password }
+            : { cookie: form.cookie, password: '' }
+        state.value = await api('/config', { ...form, ...credentials, fingerprint: form.fingerprint || undefined }, 'PUT')
         form.lotteryEnabled = state.value?.lottery?.enabled ?? false
         form.cookie = ''
         form.password = ''
@@ -370,7 +382,21 @@ async function inspect() {
         inspection.value = await api('/inspect', {})
         ElMessage.success('已检查登录态，未提交签到')
     } catch (reason) {
-        ElMessage.error((reason as Error).message)
+        inspection.value = null
+        const error = reason as Error & { code?: string; diagnostic?: { stage: string; durationMs: number; connection: string; upstreamStatus?: number; cfRay?: string; checkedAt: string } }
+        const detail = error.diagnostic
+        inspectionFailure.value = [
+            `站点：${siteName.value}`,
+            `错误：${error.message}`,
+            error.code && `错误代码：${error.code}`,
+            detail && `检查时间：${formatTime(detail.checkedAt)}（北京时间）`,
+            detail && `失败阶段：${detail.stage}`,
+            detail && `耗时：${detail.durationMs} ms`,
+            detail && `连接方式：${detail.connection}`,
+            detail?.upstreamStatus && `上游 HTTP 状态：${detail.upstreamStatus}`,
+            detail?.cfRay && `CF-Ray：${detail.cfRay}`
+        ].filter(Boolean).join('\n')
+        inspectionDialog.value = true
     } finally {
         inspecting.value = false
         await refresh(false, true)
@@ -434,24 +460,19 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .checkin-page {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 28px 24px;
-    color: #303b49;
+    min-width: 0;
+    color: var(--ui-text);
 }
 .page-header {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 24px;
-    h1 {
-        font-size: 27px;
-        font-weight: 600;
-        margin: 5px 0;
-    }
+    align-items: flex-end;
+    gap: 10px 16px;
+    margin-bottom: 18px;
     p {
-        color: #718094;
+        margin: 5px 0 0;
+        color: var(--ui-muted);
         font-size: 14px;
     }
 }
@@ -460,29 +481,35 @@ onUnmounted(() => {
 }
 .overview {
     display: grid;
-    grid-template-columns: 1fr 1.4fr 1fr;
-    background: #f5f8fc;
-    border: 1px solid #e6ecf4;
-    border-radius: 8px;
-    margin-bottom: 22px;
-    padding: 24px;
-    gap: 20px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 16px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
 }
 .summary-item {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 5px;
+    min-width: 0;
+    padding: 14px 16px;
+    overflow-wrap: anywhere;
+    & + & {
+        border-left: 1px solid var(--ui-border);
+    }
     strong {
-        font-size: 20px;
-        font-weight: 600;
+        font-size: 18px;
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
     }
     small {
-        color: #7b889a;
+        color: var(--ui-muted);
+        line-height: 1.5;
     }
 }
 .summary-label,
 .subtle {
-    color: #7b889a;
+    color: var(--ui-muted);
     font-size: 13px;
 }
 .status-dot {
@@ -491,43 +518,58 @@ onUnmounted(() => {
     display: inline-block;
     margin-right: 9px;
     border-radius: 50%;
-    background: #a6b1bf;
+    background: var(--el-color-info);
     &.active {
-        background: #24a378;
+        background: var(--el-color-success);
     }
 }
 .page-columns {
     display: grid;
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    gap: 22px;
+    gap: 16px;
     align-items: start;
 }
+.config-card,
+.record-card {
+    min-width: 0;
+    --el-card-border-color: var(--ui-border);
+    --el-card-border-radius: var(--ui-radius);
+    --el-card-padding: 16px;
+    --el-card-bg-color: var(--ui-surface);
+}
 h2 {
-    font-size: 17px;
-    font-weight: 600;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 650;
 }
 .card-heading {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     justify-content: space-between;
-    gap: 10px;
+    gap: 8px 12px;
     a {
-        color: var(--el-color-primary);
-        font-size: 12px;
+        color: var(--ui-accent);
+        font-size: 13px;
         text-decoration: none;
+        &:hover,
+        &:focus-visible {
+            text-decoration: underline;
+        }
     }
 }
 .form-row {
     display: grid;
-    grid-template-columns: 1fr 1.3fr;
-    gap: 18px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    gap: 14px;
 }
 .cookie-label {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
     width: 100%;
-    gap: 8px;
+    gap: 4px 8px;
 }
 :deep(.el-form-item__label) {
     width: 100%;
@@ -535,20 +577,30 @@ h2 {
 .cookie-button {
     border: 0;
     background: transparent;
-    color: var(--el-color-primary);
+    color: var(--ui-accent);
     cursor: pointer;
     font-size: 13px;
-    padding: 0;
+    padding: 4px 0;
+    &:hover,
+    &:focus-visible {
+        text-decoration: underline;
+    }
+}
+.config-card :deep(.el-button.is-link) {
+    height: auto;
+    white-space: normal;
+    text-align: left;
 }
 .field-help {
-    color: #8993a1;
-    font-size: 12px;
-    line-height: 1.7;
-    margin-top: 6px;
+    margin: 6px 0 0;
     width: 100%;
+    color: var(--ui-muted);
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
 }
 .advanced-settings {
-    margin: 0 0 22px;
+    margin: 0 0 18px;
     border-top: 0;
 }
 .form-actions {
@@ -568,16 +620,21 @@ h2 {
 .risk-confirm {
     align-items: flex-start;
     height: auto;
-    margin-bottom: 20px;
+    max-width: 100%;
+    margin: 0 0 18px;
     white-space: normal;
+    :deep(.el-checkbox__input) {
+        flex: none;
+        margin-top: 2px;
+    }
     :deep(.el-checkbox__label) {
         line-height: 1.6;
         white-space: normal;
     }
 }
 .run-record {
-    padding: 18px 0;
-    border-bottom: 1px solid #edf0f5;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--ui-border);
     &:first-child {
         padding-top: 0;
     }
@@ -588,38 +645,43 @@ h2 {
 }
 .record-heading {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    gap: 6px 10px;
     strong {
-        font-weight: 600;
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
     }
 }
 .record-actions {
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-end;
     align-items: center;
-    gap: 8px 12px;
+    gap: 6px 10px;
 }
 .record-message {
-    margin: 9px 0;
+    margin: 8px 0;
     font-size: 14px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
 }
 .record-meta {
-    color: #8b95a4;
+    margin: 8px 0 0;
+    color: var(--ui-muted);
     font-size: 12px;
-    margin-top: 9px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
 }
 .counters {
     display: flex;
     flex-wrap: wrap;
     gap: 4px 12px;
     font-size: 13px;
-    color: #6e7d90;
+    color: var(--ui-muted);
     b {
-        color: #344b65;
-        font-weight: 600;
+        color: var(--ui-text);
+        font-weight: 650;
     }
 }
 .detail-label {
@@ -627,11 +689,10 @@ h2 {
 }
 .request-summary {
     margin: 0 0 12px;
-    color: var(--el-text-color-secondary);
+    color: var(--ui-muted);
+    overflow-wrap: anywhere;
 }
 .request-details {
-    max-height: min(60vh, 480px);
-    overflow: auto;
     section + section {
         margin-top: 16px;
     }
@@ -643,8 +704,9 @@ h2 {
     pre {
         margin: 0;
         padding: 10px 12px;
-        border-radius: 4px;
-        background: var(--el-fill-color-light);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        background: var(--ui-bg);
         white-space: pre-wrap;
         overflow-wrap: anywhere;
         font-size: 12px;
@@ -659,54 +721,55 @@ h2 {
     pointer-events: none;
 }
 footer {
-    margin-top: 22px;
+    margin-top: 16px;
     font-size: 12px;
-    color: #8993a1;
+    color: var(--ui-muted);
     display: flex;
     justify-content: space-between;
     gap: 10px;
     flex-wrap: wrap;
 }
 .helper-steps {
+    margin: 0;
     padding-left: 20px;
     li {
-        margin-bottom: 16px;
-        line-height: 1.8;
+        margin-bottom: 12px;
+        line-height: 1.7;
     }
     code {
         display: block;
-        background: #f3f6fa;
-        border-radius: 4px;
         padding: 5px 10px;
-        margin-top: 8px;
-        color: #344b65;
-        word-break: break-all;
+        margin-top: 6px;
+        border: 1px solid var(--ui-border);
+        border-radius: 4px;
+        background: var(--ui-bg);
+        color: var(--ui-text);
+        overflow-wrap: anywhere;
     }
 }
-@media (max-width: 760px) {
-    .checkin-page {
-        padding: 16px 12px;
-    }
-    .overview {
-        grid-template-columns: 1fr;
-        gap: 18px;
-        padding: 18px;
-    }
-    .summary-item {
-        gap: 4px;
-        strong {
-            font-size: 19px;
-        }
-    }
+@media (max-width: 1000px) {
     .page-columns {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
-    .page-header {
-        align-items: flex-start;
+}
+@media (max-width: 600px) {
+    .overview,
+    .form-row {
+        grid-template-columns: minmax(0, 1fr);
     }
     .form-row {
-        grid-template-columns: 1fr;
         gap: 0;
+    }
+    .summary-item {
+        padding: 10px 12px;
+        & + & {
+            border-top: 1px solid var(--ui-border);
+            border-left: 0;
+        }
+    }
+    .config-card,
+    .record-card {
+        --el-card-padding: 12px;
     }
 }
 </style>

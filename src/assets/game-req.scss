@@ -1,59 +1,85 @@
-.flex-column {
+.game-pagination {
+    --el-pagination-button-color: var(--ui-muted);
+    --el-pagination-button-bg-color: var(--ui-surface);
+    --el-pagination-button-disabled-bg-color: var(--ui-bg);
+    --el-pagination-bg-color: var(--ui-surface);
+    --el-pagination-hover-color: var(--ui-accent);
+    --el-pagination-border-radius: 6px;
+    --el-pagination-button-width: 32px;
+    --el-pagination-button-height: 32px;
+
     display: flex;
-    flex-direction: column;
-}
-.flex-space-around {
-    display: flex;
-    justify-content: space-around;
-}
-.flex-space-between {
-    display: flex;
-    justify-content: space-between;
-}
-.marginTopTen {
-    margin-top: 10px;
-}
+    flex-wrap: wrap;
+    gap: 8px;
+    max-width: 100%;
+    min-width: 0;
+    color: var(--ui-muted);
+    font-variant-numeric: tabular-nums;
 
-.marginTopFive {
-    margin-top: 5px;
-}
-
-.marginBottomTen {
-    margin-bottom: 10px;
-}
-
-.marginBottomFive {
-    margin-bottom: 5px !important;
-}
-
-.paddingTen {
-    padding: 10px;
-}
-.paddingBottomTen {
-    padding-bottom: 10px;
-}
-
-.flex-line {
-    display: flex;
-    margin-bottom: 10px;
-
-    > label {
-        text-align: right;
-        //width: 98px;
-        padding-right: 10px;
-        box-sizing: border-box;
-        height: 32px;
-        line-height: 32px;
+    :deep(.el-pager),
+    :deep(.el-pagination__rightwrapper) {
+        flex-wrap: wrap;
+        gap: 4px;
+        min-width: 0;
+        max-width: 100%;
     }
 
-    > div {
-        flex: 1;
-        overflow-x: auto;
+    :deep(.el-pagination__sizes),
+    :deep(.el-pagination__total),
+    :deep(.el-pagination__jump),
+    :deep(.el-pagination__rightwrapper),
+    :deep(.el-pager li),
+    :deep(.btn-prev),
+    :deep(.btn-next) {
+        margin: 0;
     }
 
-    :deep() {
-        .el-radio-group {
-            display: flex;
+    :deep(.el-pagination__rightwrapper) {
+        flex: 1 1 auto;
+        justify-content: flex-end;
+    }
+
+    :deep(.el-pagination__sizes .el-select) {
+        width: 112px;
+    }
+}
+
+.editor-upload :deep(.el-upload-dragger) {
+    padding: 24px 16px;
+    border: 1px dashed var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-surface);
+
+    &:hover,
+    &.is-dragover {
+        border-color: var(--ui-accent);
+        background: var(--ui-accent-soft);
+    }
+}
+
+.editor-upload :deep(.el-icon--upload) {
+    margin: 0 0 10px;
+    font-size: 36px;
+    color: var(--ui-accent);
+}
+
+@media (max-width: 768px) {
+    .game-pagination {
+        gap: 6px;
+        row-gap: 8px;
+
+        :deep(.el-pagination__rightwrapper) {
+            flex: 0 1 auto;
+            justify-content: flex-start;
+        }
+
+        :deep(.el-pagination__sizes .el-select) {
+            width: 102px;
+        }
+
+        :deep(.el-pagination__sizes .el-select__wrapper),
+        :deep(.el-pagination__editor .el-input__wrapper) {
+            min-height: 36px;
         }
     }
 }

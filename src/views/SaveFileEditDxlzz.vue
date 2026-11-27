@@ -94,13 +94,13 @@ const save = () => {
             <p>4、将保存后的文件访问<a href="https://es3.tusinean.ro" target="_blank">https://es3.tusinean.ro</a>后在Encryption下上传，并勾选GZip后将加密后的文件下载下来</p>
             <p>5、将加密后的文件名称改为SaveObjectDynamicData.save放到游戏原位置即可</p>
         </div>
-        <el-upload class="upload-demo" drag action="#" :on-change="handleFileChange" :auto-upload="false" :show-file-list="false">
+        <el-upload class="editor-upload" drag action="#" :on-change="handleFileChange" :auto-upload="false" :show-file-list="false">
             <el-icon class="el-icon--upload">
                 <upload-filled />
             </el-icon>
             <div class="el-upload__text">Drop file here or <em>click to upload</em></div>
         </el-upload>
-        <el-button type="primary" @click="save">保存</el-button>
+        <el-button class="save-button" type="primary" @click="save">保存</el-button>
         <p v-if="itemList.length" class="warn-text">TIP：不知道如何修改的，多合一些功法抄就行了</p>
         <div class="list-wrap" v-for="(item, index) in itemList" :key="index">
             <div class="item">
@@ -142,7 +142,7 @@ const save = () => {
                     <div class="small-item" v-for="(_, zIndex) in item.CharacterPropAdd" :key="'small' + zIndex">
                         <p>{{ zIndex + 1 }}</p>
                         <el-input v-model="item.CharacterPropAdd[zIndex]" />
-                        <el-button style="margin-left: 5px" :icon="Close" @click="item.CharacterPropAdd.splice(zIndex, 1)"></el-button>
+                        <el-button :icon="Close" @click="item.CharacterPropAdd.splice(zIndex, 1)"></el-button>
                     </div>
                     <el-button :icon="Plus" @click="item.CharacterPropAdd.push('')"></el-button>
                 </div>
@@ -153,7 +153,7 @@ const save = () => {
                     <div class="small-item" v-for="(_, zIndex) in item.CharacterPropNeed" :key="'small1' + zIndex">
                         <p>{{ zIndex + 1 }}</p>
                         <el-input v-model="item.CharacterPropNeed[zIndex]" />
-                        <el-button style="margin-left: 5px" :icon="Close" @click="item.CharacterPropNeed.splice(zIndex, 1)"></el-button>
+                        <el-button :icon="Close" @click="item.CharacterPropNeed.splice(zIndex, 1)"></el-button>
                     </div>
                     <el-button :icon="Plus" @click="item.CharacterPropNeed.push('')"></el-button>
                 </div>
@@ -161,57 +161,118 @@ const save = () => {
         </div>
     </div>
 </template>
+<style scoped lang="scss" src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
 .wrap {
-    padding: 10px;
-}
-div {
-    box-sizing: border-box;
+    display: grid;
+    gap: 14px;
+    min-width: 0;
 }
 
-.upload-demo {
-    margin-bottom: 10px;
+.save-button {
+    justify-self: start;
+    min-width: 88px;
+}
+
+.list-wrap,
+.flow-wrap {
+    padding: 16px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-surface);
+}
+
+.flow-wrap {
+    display: grid;
+    gap: 8px;
+    color: var(--ui-muted);
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+
+    p { margin: 0; }
+
+    a {
+        color: var(--ui-accent);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    :deep(.el-button) {
+        height: auto;
+        padding: 3px 4px;
+    }
 }
 
 .list-wrap {
-    width: 100%;
-    border: 1px dashed #ccc;
-    padding: 10px;
-    margin-bottom: 10px;
-
-    .item {
-        display: flex;
-        line-height: 32px;
-        padding-bottom: 10px;
-
-        .label {
-            width: 80px;
-        }
-
-        .value {
-            flex: 1;
-        }
-
-        .select-wrap {
-            width: 100%;
-        }
-    }
+    display: grid;
+    gap: 12px;
+    box-shadow: var(--ui-shadow);
 }
+
+.item {
+    display: grid;
+    grid-template-columns: 100px minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+    line-height: 1.5;
+}
+
+.label {
+    padding-block: 5px;
+    color: var(--ui-muted);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.value {
+    align-self: center;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.select-wrap { width: 100%; }
 
 .small-item {
     display: flex;
-    padding-bottom: 5px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
 
     p {
-        padding-right: 10px;
+        margin: 0;
+        color: var(--ui-muted);
+        font-variant-numeric: tabular-nums;
     }
+
+    :deep(.el-input) { min-width: 0; }
+    :deep(.el-button) { margin: 0; }
 }
 
 .warn-text {
-    color: red;
-    font-size: 12px;
+    margin: 5px 0 0;
+    color: #875411;
+    font-size: 13px;
+    line-height: 1.5;
 }
-.flow-wrap {
-    padding-bottom: 10px;
+
+@media (max-width: 768px) {
+    .wrap { gap: 10px; }
+    .flow-wrap,
+    .list-wrap { padding: 12px; }
+    .save-button { min-height: 40px; }
+
+    .item {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+    }
+
+    .label { padding: 0; }
+
+    .value :deep(.el-button),
+    .value :deep(.el-input__wrapper),
+    .value :deep(.el-select__wrapper) {
+        min-height: 40px;
+    }
 }
 </style>

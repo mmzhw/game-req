@@ -1,34 +1,117 @@
 @import './base.css';
 
-#app {
-    width: 100%;
-    min-height: 100%;
-    box-sizing: border-box;
+:root {
+    --el-color-primary: var(--ui-accent);
+    --el-color-primary-light-3: #309181;
+    --el-color-primary-light-5: #70b3a5;
+    --el-color-primary-light-7: #acd6c8;
+    --el-color-primary-light-8: #cbe7dd;
+    --el-color-primary-light-9: var(--ui-accent-soft);
+    --el-color-primary-dark-2: var(--ui-accent-hover);
+    --el-color-success: #26774a;
+    --el-color-warning: #9a5b14;
+    --el-color-danger: #bd3b49;
+    --el-color-error: var(--el-color-danger);
+    --el-color-info: #64748b;
+    --el-text-color-primary: var(--ui-text);
+    --el-text-color-regular: #3e4c60;
+    --el-text-color-secondary: var(--ui-muted);
+    --el-text-color-placeholder: #66758a;
+    --el-bg-color: var(--ui-surface);
+    --el-bg-color-page: var(--ui-bg);
+    --el-border-color: #cdd7e1;
+    --el-border-color-light: var(--ui-border);
+    --el-border-color-lighter: #e9eef3;
+    --el-fill-color-light: var(--ui-subtle);
+    --el-fill-color-lighter: #fafbfd;
+    --el-border-radius-base: 6px;
+    --el-box-shadow-light: 0 6px 24px rgb(29 41 57 / 12%);
+    --el-component-size: 36px;
 }
 
-body {
-    width: 100vw;
-    min-height: 100vh;
-    box-sizing: border-box;
-    overflow-x: hidden;
+#app { min-height: 100vh; }
+
+.business-panel {
+    padding: 16px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-surface);
 }
 
-/*滚动条 start*/
-::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-    background-color: #eceff2;
-    border-radius: 10px;
+@media (max-width: 780px) {
+    .business-panel { padding: 12px; }
 }
-/*定义滚动条轨道 内阴影+圆角*/
-::-webkit-scrollbar-track {
-    box-shadow: inset 0 0 3px rgba(0, 0, 0, 0);
-    border-radius: 5px;
-    background-color: transparent;
+
+.el-button {
+    font-weight: 600;
 }
-/*定义滑块 内阴影+圆角*/
-::-webkit-scrollbar-thumb {
-    border-radius: 5px;
-    box-shadow: inset 0 0 3px rgba(0, 0, 0, 0);
-    background-color: #bdc0c2;
+
+.el-button.is-link:focus-visible,
+.el-button.is-text:focus-visible {
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 2px;
+}
+
+.el-form-item__label { font-weight: 600; }
+.el-form-item__content, .el-select, .el-input, .el-textarea { min-width: 0; }
+
+.el-card {
+    --el-card-border-radius: var(--ui-radius);
+    --el-card-border-color: var(--ui-border);
+}
+
+.el-table {
+    --el-table-header-bg-color: var(--ui-subtle);
+    --el-table-header-text-color: var(--ui-muted);
+    --el-table-row-hover-bg-color: #f1f9f6;
+    --el-table-border-color: var(--ui-border);
+    min-width: 0;
+    max-width: 100%;
+}
+
+.el-table th.el-table__cell { font-weight: 650; }
+.el-table .el-scrollbar__bar.is-horizontal { height: 6px; }
+
+.el-dialog, .el-message-box {
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    box-shadow: 0 16px 48px rgb(29 41 57 / 16%);
+}
+
+.el-dialog {
+    max-width: calc(100% - 32px);
+    --el-dialog-padding-primary: 24px;
+}
+
+.el-dialog__title, .el-message-box__title { font-weight: 650; }
+.el-dialog__body { overflow-wrap: anywhere; }
+.el-dialog__footer { border-top: 1px solid var(--ui-border); padding-top: 16px; }
+.el-message-box, .el-message, .el-notification { max-width: calc(100% - 24px); }
+.el-message__content, .el-notification__content { overflow-wrap: anywhere; }
+
+@media (max-width: 780px) {
+    :root { --el-component-size: 40px; --el-component-size-small: 34px; }
+
+    .el-dialog {
+        width: min(var(--el-dialog-width, 50%), 100%);
+        max-width: calc(100% - 24px);
+        margin: 16px auto;
+        --el-dialog-padding-primary: 16px;
+    }
+    .el-dialog:not([style*='--el-dialog-width']) { width: calc(100% - 24px); }
+    .el-dialog__footer, .el-message-box__btns { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .el-dialog__footer .el-button + .el-button, .el-message-box__btns .el-button + .el-button { margin-left: 0; }
+    .el-dialog__headerbtn, .el-message-box__headerbtn { min-width: 44px; min-height: 44px; }
+    .el-input__inner, .el-textarea__inner, .el-select__selected-item { font-size: 16px; }
+    .el-pagination { flex-wrap: wrap; row-gap: 6px; white-space: normal; }
+    .el-pagination .el-pagination__total, .el-pagination .el-pagination__jump { white-space: nowrap; }
+    .el-scrollbar__bar.is-horizontal { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .el-overlay, .el-dialog, .el-popper, .el-tooltip__trigger,
+    .el-button, .el-input__wrapper, .el-select__wrapper {
+        transition-duration: 0s !important;
+        animation-duration: 0.01ms !important;
+    }
 }

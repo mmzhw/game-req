@@ -1,7 +1,6 @@
 <template>
     <el-radio-group
-        class="marginTopFive"
-        :class="isMobile && 'mobileRadio'"
+        class="item-radio-group"
         v-model="realItem"
         @change="changeItemId"
     >
@@ -10,8 +9,7 @@
         </el-radio-button>
     </el-radio-group>
     <el-pagination
-        class="marginBottomTen"
-        :class="isMobile && 'pagePaginationMobile'"
+        class="game-pagination"
         :layout="layout"
         :page-sizes="sizes"
         :total="dataList?.length"
@@ -83,32 +81,47 @@ const changeItemId = (item: string) => {
     emit('update:currentItem', item)
 }
 </script>
-<style scoped src="../assets/game-req.scss"></style>
+<style scoped lang="scss" src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
-.mobileRadio {
+.item-radio-group {
     display: flex;
-    justify-content: space-between;
     flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+    margin-bottom: 12px;
 
-    :deep() {
-        .el-radio-button {
-            width: calc((100% - 10px) / 2);
-            margin: 0;
+    :deep(.el-radio-button) {
+        min-width: 0;
+        max-width: 100%;
+    }
 
-            .el-radio-button__inner {
-                width: 100%;
-                font-size: 12px;
-                border-radius: 4px !important;
-            }
-        }
+    :deep(.el-radio-button .el-radio-button__inner) {
+        display: grid;
+        place-items: center;
+        width: 100%;
+        min-height: 34px;
+        padding: 6px 12px;
+        border: 1px solid var(--ui-border);
+        border-radius: 6px;
+        line-height: 1.4;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    :deep(.el-radio-button.is-active .el-radio-button__inner) {
+        border-color: var(--ui-accent);
+        background: var(--ui-accent-soft);
+        color: var(--ui-accent);
+        box-shadow: none;
     }
 }
 
-.pagePaginationMobile {
-    :deep() {
-        .el-pagination__sizes {
-            margin-left: 5px;
-        }
+@media (max-width: 768px) {
+    .item-radio-group {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        :deep(.el-radio-button .el-radio-button__inner) { min-height: 40px; }
     }
 }
 </style>

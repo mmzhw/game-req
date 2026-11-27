@@ -1,35 +1,38 @@
 <template>
-    <el-table :data="realList" style="width: 100%" border>
-        <el-table-column prop="no" label="序号" width="80" />
-        <el-table-column label="平台结果">
-            <template #default="{ row }">
-                <div class="log-summary" :title="getLogSummary(row.message)">{{ getLogSummary(row.message) }}</div>
+    <div class="log-panel">
+        <el-table class="log-table" :data="realList" style="width: 100%" border>
+            <el-table-column prop="no" label="序号" width="80" />
+            <el-table-column label="平台结果">
+                <template #default="{ row }">
+                    <div class="log-summary" :title="getLogSummary(row.message)">{{ getLogSummary(row.message) }}</div>
+                </template>
+            </el-table-column>
+            <el-table-column label="操作" width="80" align="center" fixed="right">
+                <template #default="{ row }">
+                    <el-button link type="primary" @click="showDetail(row)">详情</el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+        <el-pagination
+            class="game-pagination log-pagination"
+            :layout="layout"
+            :page-sizes="sizes"
+            :total="dataList?.length"
+            :page-size="size"
+            :current-page="current"
+            @current-change="pageCurrentChange"
+            @size-change="pageSizeChange"
+            background
+        >
+            <template #default>
+                <span>{{ current }}页 / {{ dataList?.length }}条</span>
             </template>
-        </el-table-column>
-        <el-table-column label="操作" width="80" align="center" fixed="right">
-            <template #default="{ row }">
-                <el-button link type="primary" @click="showDetail(row)">详情</el-button>
-            </template>
-        </el-table-column>
-    </el-table>
-    <el-pagination
-        class="marginTopFive paddingBottomTen"
-        :class="isMobile && 'pagePaginationMobile'"
-        :layout="layout"
-        :page-sizes="sizes"
-        :total="dataList?.length"
-        :page-size="size"
-        :current-page="current"
-        @current-change="pageCurrentChange"
-        @size-change="pageSizeChange"
-        background
-    >
-        <template #default>
-            <span>{{ current }}页 / {{ dataList?.length }}条</span>
-        </template>
-    </el-pagination>
-    <el-drawer v-model="detailVisible" :title="detailTitle" :size="isMobile ? '90%' : '60%'">
-        <pre class="log-detail">{{ detailLog?.message }}</pre>
+        </el-pagination>
+    </div>
+    <el-drawer v-model="detailVisible" :title="detailTitle" :size="isMobile ? '90%' : '60%'" body-class="log-drawer-body">
+        <el-scrollbar class="log-detail-scroll" :tabindex="0">
+            <pre class="log-detail">{{ detailLog?.message }}</pre>
+        </el-scrollbar>
     </el-drawer>
 </template>
 
@@ -110,16 +113,31 @@ const pageSizeChange = (sizes: number) => {
     current.value = 1
 }
 </script>
-<style scoped src="../assets/game-req.scss"></style>
+<style scoped lang="scss" src="../assets/game-req.scss"></style>
 <style scoped lang="scss">
-.pagePaginationMobile {
-    justify-content: center;
+.log-panel {
+    min-width: 0;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-surface);
+    box-shadow: var(--ui-shadow);
+}
 
-    :deep() {
-        .el-pager {
-            min-width: 0;
-        }
-    }
+.log-table {
+    --el-table-border-color: var(--ui-border);
+    --el-table-header-bg-color: var(--ui-bg);
+    --el-table-header-text-color: var(--ui-muted);
+    --el-table-text-color: var(--ui-text);
+    --el-table-row-hover-bg-color: var(--ui-accent-soft);
+
+    border-radius: var(--ui-radius) var(--ui-radius) 0 0;
+    font-variant-numeric: tabular-nums;
+
+    :deep(.el-button.is-link) { min-height: 32px; }
+}
+
+.log-pagination {
+    padding: 12px;
 }
 
 .log-summary {
@@ -128,11 +146,39 @@ const pageSizeChange = (sizes: number) => {
     text-overflow: ellipsis;
 }
 
+:global(.el-drawer__body.log-drawer-body) {
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.log-detail-scroll {
+    height: 100%;
+
+    :deep(.el-scrollbar__view) { padding: 0 var(--el-drawer-padding-primary) var(--el-drawer-padding-primary); }
+    :deep(.el-scrollbar__wrap:focus-visible) { outline-offset: -2px; }
+}
+
 .log-detail {
     margin: 0;
-    font-family: inherit;
+    padding: 14px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius);
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 13px;
     line-height: 1.6;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+    .log-pagination { justify-content: center; }
+
+    .log-table :deep(.el-button.is-link) {
+        min-width: 36px;
+        min-height: 36px;
+    }
 }
 </style>
